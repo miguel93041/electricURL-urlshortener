@@ -25,7 +25,7 @@ interface ProcessCsvUseCase {
      * @param reader The source of CSV data containing URLs.
      * @param writer The destination to write the results of URL shortening or error messages.
      */
-    fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest)
+    fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest, qrRequested: Boolean)
 }
 
 /**
@@ -55,29 +55,42 @@ class ProcessCsvUseCaseImpl (
      * @param reader The source of CSV data containing URLs.
      * @param writer The destination to write the results of URL shortening or error messages.
      */
-    override fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest) {
+    override fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest, qrRequested: Boolean) {
         val geoLocation = geoLocationService.get(request.remoteAddr)
-        writer.append("original-url,shortened-url\n")
+        writer.append("original-url | shortened-url")
+        if (qrRequested) {
+            writer.append(" | qr-code-url")
+        }
+        writer.append("\n")
 
         BufferedReader(reader).use { br ->
             br.forEachLine { line ->
                 val originalUrl = line.trim()
                 try {
                     if (!urlAccessibilityCheckUseCase.isUrlReachable(originalUrl)) {
-                        writer.append("$originalUrl,ERROR: Not reachable\n")
+                        writer.append("$originalUrl | ERROR: Not reachable")
+                        if (qrRequested) writer.append(" | QR not generated")
+                        writer.append("\n")
                     }
                     if (!urlSafetyService.isSafe(originalUrl)) {
-                        writer.append("$originalUrl,ERROR: Not safe\n")
+                        writer.append("$originalUrl | ERROR: Not safe")
+                        if (qrRequested) writer.append(" | QR not generated")
+                        writer.append("\n")
                     } else {
                         val shortUrl = createShortUrlUseCase.create(originalUrl, ShortUrlProperties(
                             ip = geoLocation.ip,
                             country = geoLocation.country
                         ))
                         val shortenedUrl = buildShortenedUrl(shortUrl.hash)
-                        writer.append("$originalUrl,$shortenedUrl\n")
+                        writer.append("$originalUrl | $shortenedUrl")
+                        if (qrRequested) {
+                            val qrCodeUrl = buildQrCodeUrl(shortUrl.hash)
+                            writer.append(" | $qrCodeUrl")
+                        }
+                        writer.append("\n")
                     }
                 } catch (e: Exception) {
-                    writer.append("$originalUrl,ERROR: ${e.message}\n")
+                    writer.append("$originalUrl | ERROR: ${e.message}\n")
                 }
             }
         }
@@ -91,5 +104,15 @@ class ProcessCsvUseCaseImpl (
      */
     fun buildShortenedUrl(hashUrl: String): String {
         return "${baseUrlProvider.get()}/${hashUrl}"
+    }
+
+    /**
+     * Builds the URL for the QR code for a specific shortened URL hash.
+     *
+     * @param hashUrl The hash generated for the short URL.
+     * @return The complete URL for the QR code.
+     */
+    fun buildQrCodeUrl(hashUrl: String): String {
+        return "${baseUrlProvider.get()}/api/qr/${hashUrl}"
     }
 }

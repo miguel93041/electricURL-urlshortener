@@ -33,6 +33,7 @@ function processFileUpload() {
     if (file.name.endsWith('.csv')) {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('qrRequested', $('#qrCheckbox').is(':checked'));
 
         $.ajax({
             type: "POST",
@@ -52,7 +53,7 @@ function processUrlShortening() {
     $.ajax({
         type: "POST",
         url: "/api/link",
-        data: $("#shortener").serialize(),
+        data: $("#shortener").serialize() + "&qrRequested=" + $('#qrCheckbox').is(':checked'),
         success: handleUrlShorteningSuccess,
         error: handleError
     });
@@ -71,16 +72,24 @@ function handleFileUploadSuccess(data) {
 }
 
 function handleUrlShorteningSuccess(msg, status, request) {
-    const imgSrc = `data:image/png;base64,${msg.qrCode}`;
     const shortenedUrl = request.getResponseHeader('Location');
 
-    $("#result").html(
-        `<div class='alert alert-success lead'>
+    let resultHtml = `
+        <div class='alert alert-success lead'>
             <a target='_blank' href='${shortenedUrl}'>${shortenedUrl}</a>
-            <br>
-            <img src='${imgSrc}' alt='Generated QR Code' />
-        </div>`
-    );
+    `;
+
+    if ($('#qrCheckbox').is(':checked') && msg.qrCodeUrl) {
+        resultHtml += `
+            <br><br>
+            View QR Code at:
+            <a href="${msg.qrCodeUrl}" target="_blank">${msg.qrCodeUrl}</a>
+        `;
+    }
+
+    resultHtml += `</div>`;
+
+    $("#result").html(resultHtml);
 
     resetForm();
 }
@@ -96,4 +105,5 @@ function showErrorMessage(message) {
 function resetForm() {
     $("#urlInput").val('').prop("disabled", false);
     $("#fileInput").val('');
+    $("#qrCheckbox").prop("checked", false);
 }

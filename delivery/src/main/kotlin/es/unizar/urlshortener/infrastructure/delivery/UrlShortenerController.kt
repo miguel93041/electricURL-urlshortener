@@ -1,11 +1,8 @@
 @file:Suppress("WildcardImport")
 package es.unizar.urlshortener.infrastructure.delivery
 
-import es.unizar.urlshortener.core.ClickProperties
-import es.unizar.urlshortener.core.GeoLocationService
+import es.unizar.urlshortener.core.*
 
-import es.unizar.urlshortener.core.ShortUrlProperties
-import es.unizar.urlshortener.core.UrlSafetyService
 import es.unizar.urlshortener.core.usecases.*
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.hateoas.server.mvc.linkTo
@@ -51,7 +48,8 @@ interface UrlShortenerController {
  */
 data class ShortUrlDataIn(
     val url: String,
-    val sponsor: String? = null
+    val sponsor: String? = null,
+    val qrRequested: Boolean = false
 )
 
 /**
@@ -60,7 +58,7 @@ data class ShortUrlDataIn(
 data class ShortUrlDataOut(
     val url: URI? = null,
     val properties: Map<String, Any> = emptyMap(),
-    val qrCode: ByteArray = byteArrayOf()
+    val qrCodeUrl: URI? = null
 )
 
 /**
@@ -81,6 +79,7 @@ class UrlShortenerControllerImpl(
     val processCsvUseCase: ProcessCsvUseCase,
     val urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
     val urlValidationService: UrlSafetyService,
+    private val baseUrlProvider: BaseUrlProvider,
 ) : UrlShortenerController {
 
     /**
@@ -98,7 +97,7 @@ class UrlShortenerControllerImpl(
         val geoLocation = geoLocationService.get(request.remoteAddr)
         val browserPlatform = browserPlatformIdentificationUseCase.parse(request.getHeader("User-Agent"))
 
-            return redirectUseCase.redirectTo(id).run {
+        return redirectUseCase.redirectTo(id).run {
             logClickUseCase.logClick(id, ClickProperties(
                 ip = geoLocation.ip,
                 country = geoLocation.country,
@@ -111,14 +110,36 @@ class UrlShortenerControllerImpl(
         }
     }
 
+    @GetMapping("/api/qr/{id}", produces = [MediaType.IMAGE_PNG_VALUE])
+    fun redirectToQrCode(@PathVariable id: String, request: HttpServletRequest): ResponseEntity<ByteArray> {
+        if (redirectionLimitUseCase.isRedirectionLimit(id)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build()
+        }
+        val geoLocation = geoLocationService.get(request.remoteAddr)
+        val browserPlatform = browserPlatformIdentificationUseCase.parse(request.getHeader("User-Agent"))
+        val qrCode = qrUseCase.create("${baseUrlProvider.get()}/${id}", QR_SIZE)
+
+        logClickUseCase.logClick(id, ClickProperties(
+            ip = geoLocation.ip,
+            country = geoLocation.country,
+            browser = browserPlatform.browser,
+            platform = browserPlatform.platform
+        ))
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.IMAGE_PNG)
+            .body(qrCode)
+    }
+
     @PostMapping("/api/upload-csv", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun shortenUrlsFromCsv(@RequestParam("file") file: MultipartFile,
+                           @RequestParam("qrRequested") qrRequested: Boolean,
                            request: HttpServletRequest): ResponseEntity<StreamingResponseBody> {
         val reader = InputStreamReader(file.inputStream.buffered())
 
         val responseBody = StreamingResponseBody { outputStream ->
             BufferedWriter(OutputStreamWriter(outputStream)).use { writer ->
-                processCsvUseCase.processCsv(reader, writer, request)
+                processCsvUseCase.processCsv(reader, writer, request, qrRequested)
             }
         }
 
@@ -162,13 +183,14 @@ class UrlShortenerControllerImpl(
         ).run {
             val h = HttpHeaders()
             val url = linkTo<UrlShortenerControllerImpl> { redirectTo(hash, request) }.toUri()
+            val qrUrl = if (data.qrRequested) linkTo<UrlShortenerControllerImpl> { redirectToQrCode(hash, request) }.toUri() else null
             h.location = url
             val response = ShortUrlDataOut(
                 url = url,
                 properties = mapOf(
                     "safe" to properties.safe,
                 ),
-                qrCode = qrUseCase.create(url.toString(), QR_SIZE)
+                qrCodeUrl = qrUrl
             )
             ResponseEntity<ShortUrlDataOut>(response, h, HttpStatus.CREATED)
         }
