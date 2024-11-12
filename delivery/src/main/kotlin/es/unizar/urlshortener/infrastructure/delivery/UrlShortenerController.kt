@@ -112,8 +112,8 @@ class UrlShortenerControllerImpl(
         }
     }
 
-    @GetMapping("/api/qr/{id}", produces = [MediaType.IMAGE_PNG_VALUE])
-    fun redirectToQrCode(@PathVariable id: String, request: HttpServletRequest): ResponseEntity<ByteArray> {
+    @GetMapping("/api/qr", produces = [MediaType.IMAGE_PNG_VALUE])
+    fun redirectToQrCode(@RequestParam id: String, request: HttpServletRequest): ResponseEntity<ByteArray> {
         if (redirectionLimitUseCase.isRedirectionLimit(id)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build()
         }
