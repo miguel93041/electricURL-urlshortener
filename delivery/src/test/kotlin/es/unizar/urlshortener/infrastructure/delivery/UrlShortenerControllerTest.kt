@@ -63,6 +63,10 @@ class UrlShortenerControllerTest {
     @MockBean
     private lateinit var urlSafetyService: UrlSafetyService
 
+    @Suppress("UnusedPrivateProperty")
+    @MockBean
+    private lateinit var baseUrlProvider: BaseUrlProvider
+
     /**
      * Tests that `redirectTo` returns a redirect when the key exists.
      */

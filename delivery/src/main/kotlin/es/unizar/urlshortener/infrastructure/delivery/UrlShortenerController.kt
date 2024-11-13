@@ -78,7 +78,7 @@ class UrlShortenerControllerImpl(
     val processCsvUseCase: ProcessCsvUseCase,
     val urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
     val urlValidationService: UrlSafetyService,
-    private val baseUrlProvider: BaseUrlProvider,
+    val baseUrlProvider: BaseUrlProvider,
 ) : UrlShortenerController {
 
     /**
