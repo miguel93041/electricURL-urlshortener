@@ -38,10 +38,9 @@ class RedirectUseCaseImpl(
      */
     override fun redirectTo(key: String) = safeCall {
         try {
-            // Verificar y aumentar el contador de redirecciones
             redirectionLimitUseCase.incrementRedirectionCount(key)
         } catch (e: TooManyRequestsException) {
-            // Manejar el caso en el que se excede el límite de redirecciones
+            print(e)
             throw TooManyRequestsException("Redirection limit exceeded for key: $key")
         }
         shortUrlRepository.findByKey(key)
