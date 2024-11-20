@@ -133,7 +133,7 @@ class ApplicationConfiguration(
      */
     @Bean
     fun redirectionLimitUseCase(redirectionCountRepository: RedirectionCountRepository): RedirectionLimitUseCase {
-        return RedirectionLimitUseCaseImpl(redirectionLimit = 10, redirectionCountRepository)
+        return RedirectionLimitUseCaseImpl(redirectionLimit = 10, timeFrameInSeconds = 60, redirectionCountRepository)
     }
 
     /**
