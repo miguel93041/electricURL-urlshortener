@@ -17,9 +17,10 @@ class RedirectUseCaseTest {
     fun `redirectTo returns a redirect when the key exists`() {
         val repository = mock<ShortUrlRepositoryService> ()
         val redirection = mock<Redirection>()
+        val redlimit = mock<RedirectionLimitUseCase>()
         val shortUrl = ShortUrl("key", redirection)
         whenever(repository.findByKey("key")).thenReturn(shortUrl)
-        val useCase = RedirectUseCaseImpl(repository)
+        val useCase = RedirectUseCaseImpl(repository, redlimit)
 
         assertEquals(redirection, useCase.redirectTo("key"))
     }
@@ -27,8 +28,9 @@ class RedirectUseCaseTest {
     @Test
     fun `redirectTo returns a not found when the key does not exist`() {
         val repository = mock<ShortUrlRepositoryService> ()
+        val redlimit = mock<RedirectionLimitUseCase>()
         whenever(repository.findByKey("key")).thenReturn(null)
-        val useCase = RedirectUseCaseImpl(repository)
+        val useCase = RedirectUseCaseImpl(repository, redlimit)
 
         assertFailsWith<RedirectionNotFound> {
             useCase.redirectTo("key")
@@ -38,8 +40,9 @@ class RedirectUseCaseTest {
     @Test
     fun `redirectTo returns a not found when find by key fails`() {
         val repository = mock<ShortUrlRepositoryService> ()
+        val redlimit = mock<RedirectionLimitUseCase>()
         whenever(repository.findByKey("key")).thenThrow(RuntimeException())
-        val useCase = RedirectUseCaseImpl(repository)
+        val useCase = RedirectUseCaseImpl(repository, redlimit)
 
         assertFailsWith<InternalError> {
             useCase.redirectTo("key")
