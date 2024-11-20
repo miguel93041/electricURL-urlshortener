@@ -2,10 +2,7 @@
 package es.unizar.urlshortener
 
 import com.google.zxing.qrcode.QRCodeWriter
-import es.unizar.urlshortener.core.BaseUrlProvider
-import es.unizar.urlshortener.core.BaseUrlProviderImpl
-import es.unizar.urlshortener.core.GeoLocationService
-import es.unizar.urlshortener.core.UrlSafetyService
+import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.usecases.*
 import es.unizar.urlshortener.infrastructure.delivery.HashServiceImpl
 import es.unizar.urlshortener.infrastructure.delivery.ValidatorServiceImpl
@@ -190,6 +187,19 @@ class ApplicationConfiguration(
     @Bean
     fun urlAccesibilityCheckUseCase(webClient: WebClient): UrlAccessibilityCheckUseCase =
         UrlAccessibilityCheckUseCaseImpl(webClient)
+
+    /**
+     * Defines the [GetAnalyticsUseCase] bean.
+     *
+     * Creates an instance of [GetAnalyticsUseCaseImpl] with the required dependencies:
+     * [ClickRepositoryService] for click data and [ShortUrlRepositoryService] for URL validation.
+     */
+    @Bean
+    fun getAnalyticsUseCase(
+        clickRepository: ClickRepositoryService,
+        shortUrlRepository: ShortUrlRepositoryService
+    ): GetAnalyticsUseCase =
+        GetAnalyticsUseCaseImpl(clickRepository, shortUrlRepository);
 
     @Bean
     fun baseUrlProvider(): BaseUrlProvider = BaseUrlProviderImpl()

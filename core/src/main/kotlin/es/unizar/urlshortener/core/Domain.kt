@@ -68,3 +68,26 @@ data class BrowserPlatform(
     val browser: String,
     val platform: String
 )
+
+/**
+ * Data class representing aggregated analytics data for a shortened URL.
+ *
+ * @property totalClicks The total number of clicks for the URL.
+ * @property byBrowser A map containing the breakdown of clicks by browser. The key is the browser name,
+ *                     and the value is the number of clicks. Default is null if not requested.
+ * @property byCountry A map containing the breakdown of clicks by country. The key is the country name,
+ *                     and the value is the number of clicks. Default is null if not requested.
+ * @property byPlatform A map containing the breakdown of clicks by platform. The key is the platform name
+ *                      (e.g., "Windows", "macOS"), and the value is the number of clicks. Default is null
+ *                      if not requested.
+ * @property byReferrer A map containing the breakdown of clicks by referrer. The key is the referrer
+ *                      (e.g., "Google", "Facebook"),
+ *                      and the value is the number of clicks. Default is null if not requested.
+ */
+data class AnalyticsData(
+    val totalClicks: Int,
+    val byBrowser: Map<String, Int>? = null,
+    val byCountry: Map<String, Int>? = null,
+    val byPlatform: Map<String, Int>? = null,
+    val byReferrer: Map<String, Int>? = null
+)
