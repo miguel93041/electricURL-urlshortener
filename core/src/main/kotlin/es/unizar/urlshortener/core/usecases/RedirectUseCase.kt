@@ -26,7 +26,8 @@ interface RedirectUseCase {
  * Implementation of [RedirectUseCase].
  */
 class RedirectUseCaseImpl(
-    private val shortUrlRepository: ShortUrlRepositoryService
+    private val shortUrlRepository: ShortUrlRepositoryService,
+    private val redirectionLimitUseCase: RedirectionLimitUseCase
 ) : RedirectUseCase {
     /**
      * Redirects to the target URL associated with the given key.
@@ -36,6 +37,13 @@ class RedirectUseCaseImpl(
      * @throws RedirectionNotFound if no redirection is found for the given key.
      */
     override fun redirectTo(key: String) = safeCall {
+        try {
+            // Verificar y aumentar el contador de redirecciones
+            redirectionLimitUseCase.incrementRedirectionCount(key)
+        } catch (e: TooManyRequestsException) {
+            // Manejar el caso en el que se excede el límite de redirecciones
+            throw TooManyRequestsException("Redirection limit exceeded for key: $key")
+        }
         shortUrlRepository.findByKey(key)
     }?.redirection ?: throw RedirectionNotFound(key)
 }

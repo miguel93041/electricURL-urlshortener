@@ -63,11 +63,19 @@ class ApplicationConfiguration(
     fun hashService() = HashServiceImpl()
 
     /**
-     * Provides an implementation of the RedirectUseCase.
-     * @return an instance of RedirectUseCaseImpl.
-     */
+    * Provides an implementation of the RedirectUseCase.
+    * @return an instance of RedirectUseCaseImpl.
+    */
     @Bean
-    fun redirectUseCase() = RedirectUseCaseImpl(shortUrlRepositoryService())
+    fun redirectUseCase(
+        shortUrlRepositoryService: ShortUrlRepositoryServiceImpl,
+        redirectionLimitUseCase: RedirectionLimitUseCase
+    ): RedirectUseCase {
+    return RedirectUseCaseImpl(
+        shortUrlRepository = shortUrlRepositoryService,
+        redirectionLimitUseCase = redirectionLimitUseCase // Se pasa correctamente la instancia
+    )
+}
 
     /**
      * Provides an implementation of the LogClickUseCase.
