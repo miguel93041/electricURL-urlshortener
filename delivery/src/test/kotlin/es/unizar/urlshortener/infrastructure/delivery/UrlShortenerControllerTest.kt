@@ -1,4 +1,4 @@
-@file:Suppress("WildcardImport")
+@file:Suppress("WildcardImport", "UnusedPrivateProperty")
 
 package es.unizar.urlshortener.infrastructure.delivery
 
@@ -50,7 +50,6 @@ class UrlShortenerControllerTest {
     @MockBean
     private lateinit var redirectionLimitUseCase: RedirectionLimitUseCase
 
-    @Suppress("UnusedPrivateProperty")
     @MockBean
     private lateinit var processCsvUseCase: ProcessCsvUseCase
 
@@ -63,7 +62,9 @@ class UrlShortenerControllerTest {
     @MockBean
     private lateinit var urlSafetyService: UrlSafetyService
 
-    @Suppress("UnusedPrivateProperty")
+    @MockBean
+    private lateinit var getAnalyticsUseCase: GetAnalyticsUseCase
+
     @MockBean
     private lateinit var baseUrlProvider: BaseUrlProvider
 

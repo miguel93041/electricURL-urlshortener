@@ -8,6 +8,18 @@ import es.unizar.urlshortener.core.ShortUrlRepositoryService
 class ClickRepositoryServiceImpl(
     private val clickEntityRepository: ClickEntityRepository
 ) : ClickRepositoryService {
+    /**
+     * Finds all [Click] entities associated with the given hash.
+     *
+     * @param hash The hash associated with the shortened URL.
+     * @return A list of [Click] entities.
+     */
+    override fun findAllByHash(hash: String): List<Click> {
+        val clickEntities = clickEntityRepository.findAllByHash(hash)
+        val clicks = clickEntities.map { it.toDomain() }
+        System.out.println("Retrieved Click entities for hash $hash: $clicks")
+        return clicks
+    }
 
     /**
      * Saves a [Click] entity to the repository.

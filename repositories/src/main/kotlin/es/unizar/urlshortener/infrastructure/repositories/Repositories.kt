@@ -22,4 +22,13 @@ interface ShortUrlEntityRepository : JpaRepository<ShortUrlEntity, String> {
  *
  * **Note**: Spring Boot is able to discover this [JpaRepository] without further configuration.
  */
-interface ClickEntityRepository : JpaRepository<ClickEntity, Long>
+interface ClickEntityRepository : JpaRepository<ClickEntity, Long> {
+
+    /**
+     * Finds all [ClickEntity] instances associated with the given hash.
+     *
+     * @param hash The hash associated with the shortened URL.
+     * @return A list of [ClickEntity] instances.
+     */
+    fun findAllByHash(hash: String): List<ClickEntity>
+}

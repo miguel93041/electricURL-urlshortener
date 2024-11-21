@@ -78,6 +78,7 @@ class UrlShortenerControllerImpl(
     val processCsvUseCase: ProcessCsvUseCase,
     val urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
     val urlValidationService: UrlSafetyService,
+    val getAnalyticsUseCase: GetAnalyticsUseCase,
 ) : UrlShortenerController {
 
     /**
@@ -201,6 +202,38 @@ class UrlShortenerControllerImpl(
             )
             ResponseEntity<ShortUrlDataOut>(response, h, HttpStatus.CREATED)
         }
+    }
+
+    /**
+     * Endpoint to retrieve aggregated analytics data for a shortened URL.
+     *
+     * This method provides a way to fetch total clicks and optionally include breakdowns by browser,
+     * country, platform, and referrer based on the provided query parameters.
+     *
+     * @param id The hash of the shortened URL for which analytics data is requested. (Required)
+     * @param browser Indicates whether to include a breakdown of clicks by browser. Defaults to false. (Optional)
+     * @param country Indicates whether to include a breakdown of clicks by country. Defaults to false. (Optional)
+     * @param platform Indicates whether to include a breakdown of clicks by platform. Defaults to false. (Optional)
+     * @param referrer Indicates whether to include a breakdown of clicks by referrer. Defaults to false. (Optional)
+     * @return A ResponseEntity containing the analytics data. Returns 200 OK with the data on success,
+     *         or 404 NOT FOUND if hash is invalid.
+     */
+    @GetMapping("/api/analytics")
+    fun getAnalytics(
+        @RequestParam id: String,
+        @RequestParam(required = false, defaultValue = "false") browser: Boolean,
+        @RequestParam(required = false, defaultValue = "false") country: Boolean,
+        @RequestParam(required = false, defaultValue = "false") platform: Boolean,
+        @RequestParam(required = false, defaultValue = "false") referrer: Boolean
+    ): ResponseEntity<AnalyticsData> {
+        val analyticsData = getAnalyticsUseCase.getAnalytics(
+            id = id,
+            includeBrowser = browser,
+            includeCountry = country,
+            includePlatform = platform,
+            includeReferrer = referrer
+        )
+        return ResponseEntity.ok(analyticsData)
     }
 
     companion object {
