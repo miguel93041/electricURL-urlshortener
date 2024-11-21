@@ -7,6 +7,14 @@ import java.time.OffsetDateTime
  */
 interface ClickRepositoryService {
     /**
+     * Finds all [Click] entities associated with the given hash.
+     *
+     * @param hash The hash associated with the shortened URL.
+     * @return A list of [Click] entities.
+     */
+    fun findAllByHash(hash: String): List<Click>
+
+    /**
      * Saves a [Click] entity to the repository.
      *
      * @param cl The [Click] entity to be saved.

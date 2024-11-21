@@ -28,7 +28,8 @@ class UrlSafetyServiceImpl (
             .bodyToMono(Map::class.java)
             .block()
 
-        return !isDangerous(response)
+        // Returns true if response is empty ({}) which means URL is safe or does not exist
+        return response.isNullOrEmpty()
     }
 
     private fun createRequestBody(url: String): Map<String, Any> {
@@ -44,10 +45,6 @@ class UrlSafetyServiceImpl (
                 "threatEntries" to listOf(mapOf("url" to url))
             )
         )
-    }
-
-    private fun isDangerous(response: Map<*, *>?): Boolean {
-        return response?.containsKey("matches") == true
     }
 
     private fun buildRequestUrl(): String {

@@ -1,4 +1,4 @@
-@file:Suppress("WildcardImport")
+@file:Suppress("WildcardImport", "UnusedPrivateProperty")
 
 package es.unizar.urlshortener.infrastructure.delivery
 
@@ -47,7 +47,6 @@ class UrlShortenerControllerTest {
     @MockBean
     private lateinit var geoLocationService: GeoLocationService
 
-    @Suppress("UnusedPrivateProperty")
     @MockBean
     private lateinit var processCsvUseCase: ProcessCsvUseCase
 
@@ -59,6 +58,12 @@ class UrlShortenerControllerTest {
 
     @MockBean
     private lateinit var urlSafetyService: UrlSafetyService
+
+    @MockBean
+    private lateinit var getAnalyticsUseCase: GetAnalyticsUseCase
+
+    @MockBean
+    private lateinit var baseUrlProvider: BaseUrlProvider
 
     /**
      * Tests that `redirectTo` returns a redirect when the key exists.

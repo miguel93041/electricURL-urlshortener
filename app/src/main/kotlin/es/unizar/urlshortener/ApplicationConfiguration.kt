@@ -189,6 +189,19 @@ class ApplicationConfiguration(
     fun urlAccesibilityCheckUseCase(webClient: WebClient): UrlAccessibilityCheckUseCase =
         UrlAccessibilityCheckUseCaseImpl(webClient)
 
+    /**
+     * Defines the [GetAnalyticsUseCase] bean.
+     *
+     * Creates an instance of [GetAnalyticsUseCaseImpl] with the required dependencies:
+     * [ClickRepositoryService] for click data and [ShortUrlRepositoryService] for URL validation.
+     */
+    @Bean
+    fun getAnalyticsUseCase(
+        clickRepository: ClickRepositoryService,
+        shortUrlRepository: ShortUrlRepositoryService
+    ): GetAnalyticsUseCase =
+        GetAnalyticsUseCaseImpl(clickRepository, shortUrlRepository);
+
     @Bean
     fun baseUrlProvider(): BaseUrlProvider = BaseUrlProviderImpl()
 }
