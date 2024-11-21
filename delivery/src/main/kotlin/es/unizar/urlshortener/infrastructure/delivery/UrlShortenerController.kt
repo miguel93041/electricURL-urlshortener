@@ -21,6 +21,8 @@ import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.URI
+import org.slf4j.LoggerFactory
+
 
 /**
  * The specification of the controller.
@@ -158,46 +160,51 @@ class UrlShortenerControllerImpl(
     @Suppress("ReturnCount")
     @PostMapping("/api/link", consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE])
     override fun shortener(data: ShortUrlDataIn, request: HttpServletRequest): ResponseEntity<ShortUrlDataOut> {
-        if (!urlAccessibilityCheckUseCase.isUrlReachable(data.url)) {
-            return ResponseEntity(ShortUrlDataOut(), HttpStatus.BAD_REQUEST)
-        }
-
-        if (!urlValidationService.isSafe(data.url)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ShortUrlDataOut())
-        }
 
         val geoLocation = geoLocationService.get(request.remoteAddr)
-
-        return createShortUrlUseCase.create(
-            url = data.url,
-            data = ShortUrlProperties(
-                ip = geoLocation.ip,
-                sponsor = data.sponsor,
-                country = geoLocation.country
-            )
-        ).run {
-            val h = HttpHeaders()
-            val url = linkTo<UrlShortenerControllerImpl> { redirectTo(hash, request) }.toUri()
-            val qrUrl = if (data.qrRequested) {
-                linkTo<UrlShortenerControllerImpl> {
-                    redirectToQrCode(
-                        hash,
-                        request
-                    )
-                }.toUri()
-            } else {
-                null
+        val logger = LoggerFactory.getLogger(UrlShortenerControllerImpl::class.java)
+        return try {
+            createShortUrlUseCase.create(
+                url = data.url,
+                data = ShortUrlProperties(
+                    ip = geoLocation.ip,
+                    sponsor = data.sponsor,
+                    country = geoLocation.country
+                )
+            ).run {
+                val h = HttpHeaders()
+                val url = linkTo<UrlShortenerControllerImpl> { redirectTo(hash, request) }.toUri()
+                val qrUrl = if (data.qrRequested) {
+                    linkTo<UrlShortenerControllerImpl> {
+                        redirectToQrCode(
+                            hash,
+                            request
+                        )
+                    }.toUri()
+                } else {
+                    null
+                }
+                h.location = url
+                val response = ShortUrlDataOut(
+                    url = url,
+                    properties = mapOf(
+                        "safe" to properties.safe,
+                    ),
+                    qrCodeUrl = qrUrl
+                )
+                ResponseEntity<ShortUrlDataOut>(response, h, HttpStatus.CREATED)
             }
-            h.location = url
-            val response = ShortUrlDataOut(
-                url = url,
-                properties = mapOf(
-                    "safe" to properties.safe,
-                ),
-                qrCodeUrl = qrUrl
-            )
-            ResponseEntity<ShortUrlDataOut>(response, h, HttpStatus.CREATED)
+        } catch (e: InvalidUrlException) {
+            logger.error("Invalid URL provided: ${data.url}", e)
+            return ResponseEntity(ShortUrlDataOut(), HttpStatus.BAD_REQUEST)
+        } catch (e: UnsafeUrlException) {
+            logger.error("Invalid URL provided: ${data.url}", e)
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ShortUrlDataOut())
+        } catch (e: UrlUnreachableException) {
+            logger.error("URL unreachable: ${data.url}", e)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ShortUrlDataOut())
         }
+      
     }
 
     /**

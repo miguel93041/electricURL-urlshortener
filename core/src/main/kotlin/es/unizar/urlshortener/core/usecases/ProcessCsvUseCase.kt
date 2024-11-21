@@ -7,6 +7,10 @@ import es.unizar.urlshortener.core.ShortUrlProperties
 import es.unizar.urlshortener.core.UrlSafetyService
 import jakarta.servlet.http.HttpServletRequest
 import java.io.*
+import es.unizar.urlshortener.core.InvalidUrlException
+import es.unizar.urlshortener.core.UnsafeUrlException
+import es.unizar.urlshortener.core.UrlUnreachableException
+
 
 /**
  * Interface defining the contract for processing CSV files containing URLs.
@@ -40,9 +44,7 @@ interface ProcessCsvUseCase {
 class ProcessCsvUseCaseImpl (
     private val createShortUrlUseCase: CreateShortUrlUseCase,
     private val baseUrlProvider: BaseUrlProvider,
-    private val geoLocationService: GeoLocationService,
-    private val urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
-    private val urlSafetyService: UrlSafetyService
+    private val geoLocationService: GeoLocationService
 ) : ProcessCsvUseCase {
 
     /**
@@ -57,39 +59,42 @@ class ProcessCsvUseCaseImpl (
      */
     override fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest) {
         val geoLocation = geoLocationService.get(request.remoteAddr)
-        writer.append("original-url,shortened-url")
+        writer.append("original-url,shortened-url\n")
         val qrRequested = request.getParameter("qrRequested")?.toBoolean() ?: false
         if (qrRequested) {
             writer.append(",qr-code-url")
         }
         writer.append("\n")
-
         BufferedReader(reader).use { br ->
             br.forEachLine { line ->
                 val originalUrl = line.trim()
                 try {
-                    if (!urlAccessibilityCheckUseCase.isUrlReachable(originalUrl)) {
-                        writer.append("$originalUrl,ERROR: Not reachable")
-                        if (qrRequested) writer.append(",QR not generated")
-                        writer.append("\n")
+                    // Crea el URL corto utilizando el método create
+                    val shortUrl = createShortUrlUseCase.create(originalUrl, ShortUrlProperties(
+                        ip = geoLocation.ip,
+                        country = geoLocation.country
+                    ))
+
+                    // Construye el URL acortado y escribe la línea de resultado
+                    val shortenedUrl = buildShortenedUrl(shortUrl.hash)
+                    writer.append("$originalUrl,$shortenedUrl")
+                    if (qrRequested) {
+                        val qrCodeUrl = buildQrCodeUrl(shortUrl.hash)
+                        writer.append(",$qrCodeUrl")
                     }
-                    if (!urlSafetyService.isSafe(originalUrl)) {
-                        writer.append("$originalUrl,ERROR: Not safe")
-                        if (qrRequested) writer.append(",QR not generated")
-                        writer.append("\n")
-                    } else {
-                        val shortUrl = createShortUrlUseCase.create(originalUrl, ShortUrlProperties(
-                            ip = geoLocation.ip,
-                            country = geoLocation.country
-                        ))
-                        val shortenedUrl = buildShortenedUrl(shortUrl.hash)
-                        writer.append("$originalUrl,$shortenedUrl")
-                        if (qrRequested) {
-                            val qrCodeUrl = buildQrCodeUrl(shortUrl.hash)
-                            writer.append(",$qrCodeUrl")
-                        }
-                        writer.append("\n")
-                    }
+                    writer.append("\n")
+                } catch (e: InvalidUrlException) {
+                    writer.append("$originalUrl,ERROR: Invalid URL - ${e.message}\n")
+                    if (qrRequested) writer.append(",QR not generated")
+                    writer.append("\n")
+                } catch (e: UnsafeUrlException) {
+                    writer.append("$originalUrl,ERROR: Unsafe URL - ${e.message}\n")
+                    if (qrRequested) writer.append(",QR not generated")
+                    writer.append("\n")
+                } catch (e: UrlUnreachableException) {
+                    writer.append("$originalUrl,ERROR: URL unreachable - ${e.message}\n")
+                    if (qrRequested) writer.append(",QR not generated")
+                    writer.append("\n")
                 } catch (e: Exception) {
                     writer.append("$originalUrl,ERROR: ${e.message}\n")
                 }
