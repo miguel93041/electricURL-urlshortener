@@ -65,6 +65,9 @@ class UrlShortenerControllerTest {
     @MockBean
     private lateinit var getAnalyticsUseCase: GetAnalyticsUseCase
 
+    @MockBean
+    private lateinit var baseUrlProvider: BaseUrlProvider
+
     /**
      * Tests that `redirectTo` returns a redirect when the key exists.
      */
