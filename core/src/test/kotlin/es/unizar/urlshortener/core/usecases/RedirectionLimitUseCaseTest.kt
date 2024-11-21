@@ -43,11 +43,11 @@ class RedirectionLimitUseCaseTest {
 
         useCase.incrementRedirectionCount(url2)
 
-        assertFalse(useCase.isRedirectionLimit(url1))  // Límite no alcanzado para url1
-        assertFalse(useCase.isRedirectionLimit(url2))  // Límite no alcanzado para url2
+        assertFalse(useCase.isRedirectionLimit(url1))
+        assertFalse(useCase.isRedirectionLimit(url2))
 
         useCase.incrementRedirectionCount(url1)
-        assertTrue(useCase.isRedirectionLimit(url1))  // Límite alcanzado para url1
+        assertTrue(useCase.isRedirectionLimit(url1))
     }
 
     @Test
@@ -58,10 +58,9 @@ class RedirectionLimitUseCaseTest {
         useCase.incrementRedirectionCount(urlId)
         useCase.incrementRedirectionCount(urlId)
 
-        // Simular el paso del tiempo (este caso requiere una implementación más avanzada si necesitas forzar el tiempo)
-        Thread.sleep(61000) // Espera para que pase el marco de tiempo
+        Thread.sleep(61000)
 
-        assertFalse(useCase.isRedirectionLimit(urlId))  // Debería resetearse
+        assertFalse(useCase.isRedirectionLimit(urlId))
     }
 
     @Test
