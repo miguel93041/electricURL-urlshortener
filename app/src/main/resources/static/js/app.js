@@ -79,7 +79,7 @@ function handleUrlShorteningSuccess(msg, status, request) {
             <a target='_blank' href='${shortenedUrl}'>${shortenedUrl}</a>
     `;
 
-    if ($('#qrCheckbox').is(':checked') && msg.qrCodeUrl) {
+    if (msg.qrCodeUrl) {
         resultHtml += `
             <br><br>
             View QR Code at:

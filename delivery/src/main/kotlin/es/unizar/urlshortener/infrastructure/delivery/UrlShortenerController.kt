@@ -78,7 +78,6 @@ class UrlShortenerControllerImpl(
     val processCsvUseCase: ProcessCsvUseCase,
     val urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
     val urlValidationService: UrlSafetyService,
-    val baseUrlProvider: BaseUrlProvider,
 ) : UrlShortenerController {
 
     /**
@@ -114,21 +113,14 @@ class UrlShortenerControllerImpl(
 
     @GetMapping("/api/qr", produces = [MediaType.IMAGE_PNG_VALUE])
     fun redirectToQrCode(@RequestParam id: String, request: HttpServletRequest): ResponseEntity<ByteArray> {
-        if (redirectionLimitUseCase.isRedirectionLimit(id)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build()
-        }
-        val geoLocation = geoLocationService.get(request.remoteAddr)
-        val browserPlatform = browserPlatformIdentificationUseCase.parse(request.getHeader("User-Agent"))
-        val qrCode = qrUseCase.create("${baseUrlProvider.get()}/$id", QR_SIZE)
-
-        logClickUseCase.logClick(
-            id,
-            ClickProperties(
-                ip = geoLocation.ip,
-                country = geoLocation.country,
-                browser = browserPlatform.browser,
-                platform = browserPlatform.platform
-            )
+        val qrCode = qrUseCase.create(
+            linkTo<UrlShortenerControllerImpl> {
+                redirectTo(
+                    id,
+                    request
+                )
+            }.toUri().toString(),
+            QR_SIZE
         )
 
         return ResponseEntity.ok()
@@ -139,14 +131,13 @@ class UrlShortenerControllerImpl(
     @PostMapping("/api/upload-csv", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun shortenUrlsFromCsv(
         @RequestParam("file") file: MultipartFile,
-        @RequestParam("qrRequested") qrRequested: Boolean,
         request: HttpServletRequest
     ): ResponseEntity<StreamingResponseBody> {
         val reader = InputStreamReader(file.inputStream.buffered())
 
         val responseBody = StreamingResponseBody { outputStream ->
             BufferedWriter(OutputStreamWriter(outputStream)).use { writer ->
-                processCsvUseCase.processCsv(reader, writer, request, qrRequested)
+                processCsvUseCase.processCsv(reader, writer, request)
             }
         }
 
