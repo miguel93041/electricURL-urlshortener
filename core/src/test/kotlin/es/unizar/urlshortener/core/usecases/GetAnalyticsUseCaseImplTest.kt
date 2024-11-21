@@ -1,3 +1,4 @@
+@file:Suppress("WildcardImport")
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.*
@@ -106,6 +107,7 @@ class GetAnalyticsUseCaseImplTest {
     }
 
     companion object {
+        @Suppress("NestedBlockDepth")
         @JvmStatic
         fun parameterPermutations(): List<Array<Any>> {
             val booleans = listOf(true, false)
