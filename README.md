@@ -1,6 +1,6 @@
 # ElectricURL Shortener project
 
-2024-10-26
+2024-11-22
 
 ## System requirements
 
@@ -131,6 +131,7 @@ The project offers a set of functionalities:
 - **Google Safe Browsing Check**. URLs are checked for safety before shortening them.
 - **CSV Upload for Bulk URL Shortening**. Allows users to upload a CSV file containing URLs and download a new CSV with the shortened URLs.
 - **Redirection Limits**. Imposes a limit of 10 redirections per URL, preventing further redirects once the limit is reached.
+- **Analytics**. Retrieves aggregated analytics data for a given URL (total clicks, browser, platform, country and referrer).
 
 The objects in the domain are:
 
@@ -141,17 +142,115 @@ The objects in the domain are:
 - `ClickProperties`: a handy way to extend data about a click
 - `GeoLocation`: IP address and its country
 - `BrowserPlatform`: user`s browser and platform
+- `AnalyticsData`: total clicks, browser, platform, country and referrer of a shortened URL
 
 ## Delivery
 
-The above functionality is available through a simple API:
+The above functionality is available through the following API:
 
-- `POST /api/link` which creates a short URL from data send by a form.
-- `POST /api/upload-csv` for bulk processing of URLs through CSV uploads.
-- `GET /{id}` where `{id}` identifies the short URL, deals with
-  redirects, and logs use (i.e. clicks).
+### 1. **Landing Page**
 
-In addition, `GET /` returns the landing page of the system.
+`GET /`
+
+Returns the landing page of the URL shortener system. This is the main entry point for users to understand what the system offers.
+
+- **Responses:**
+    - `200 OK`: The landing page is successfully returned.
+    - `404 Not Found`: The `index.html` file is not found or incorrectly placed in the static resources.
+    - `500 Internal Server Error`: Unexpected server error.
+
+### 2. **Redirect to Shortened URL**
+
+`GET /{id}`
+
+Redirects a user to the target URL identified by the provided `id` (shortened URL hash). This also logs the click event, including geolocation and browser/platform information.
+
+- **Parameters:**
+    - `id` (Path Param): The identifier of the shortened URL.
+
+
+- **Responses:**
+    - `301 Moved Permanently`: Successfully redirects to the target URL.
+    - `400 Bad Request`: The `id` does not comply with the required format.
+    - `403 Forbidden`: The destination URL is no longer safe.
+    - `404 Not Found`: The provided `id` does not exist.
+    - `410 Gone`: The URL is no longer accessible.
+    - `429 TOO MANY REQUESTS`: Redirection limit reached for the given URL.
+    - `500 Internal Server Error`: Unexpected server error.
+
+### 3. **Generate QR Code**
+
+`GET /api/qr`
+
+Generates a QR code for the shortened URL identified by id.
+
+- **Parameters:**
+  - `id` (Query Param): The identifier of the shortened URL.
+
+
+- **Responses:**
+  - `200 OK`: The QR code image is successfully generated and returned.
+  - `400 Bad Request`: The `id` does not comply with the required format.
+  - `404 Not Found`: The provided `id` does not exist.
+  - `415 Unsupported Media Type`: The requested QR code type is not supported.
+  - `500 Internal Server Error`: Unexpected server error.
+
+### 4. **Get Analytics Data**
+
+`GET /api/analytics`
+
+Retrieves aggregated analytics data for a shortened URL. You can request breakdowns by browser, country, platform, and referrer.
+
+- **Parameters:**
+    - `id` (Required): The identifier of the shortened URL.
+    - `browser` (Optional, Default: `false`): Include breakdown by browser.
+    - `country` (Optional, Default: `false`): Include breakdown by country.
+    - `platform` (Optional, Default: `false`): Include breakdown by platform.
+    - `referrer` (Optional, Default: `false`): Include breakdown by referrer.
+
+
+- **Responses:**
+    - `200 OK`: The analytics data is successfully returned.
+    - `400 Bad Request`: The `id` does not comply with the required format.
+    - `404 Not Found`: The provided `id` does not exist.
+    - `415 Unsupported Media Type`: The requested format type is not supported.
+    - `500 Internal Server Error`: Unexpected server error.
+
+### 5. **Create Short URL**
+
+`POST /api/link`
+
+Creates a shortened URL from the data sent by a form.
+
+- **Parameters:**
+    - `url` (Required): The original URL to shorten.
+    - `sponsor` (Optional): A sponsor name (if applicable).
+    - `qrRequested` (Optional, Default: false): Whether to generate a QR code for the shortened URL.
+
+
+- **Responses:**
+    - `200 OK`: The CSV file was successfully processed, and the response contains the shortened URLs and its QR codes URLs if requested.
+    - `400 Bad Request`: The CSV does not meet the required format or is empty.
+    - `413 Payload Too Large`: The uploaded CSV file is too large.
+    - `415 Unsupported Media Type`: The uploaded file is not a CSV file.
+    - `500 Internal Server Error`: Unexpected server error.
+
+### 6. **Upload CSV and Shorten URLs**
+
+`POST /api/upload-csv`
+
+Uploads a CSV file containing URLs to be shortened. The processed CSV will be returned with shortened URLs and its QR codes URLs if requested.
+
+- **Parameters:**
+    - `file` (Required): The CSV file to upload.
+
+
+- **Responses:**
+    - `200 OK`: The CSV file was successfully processed, and the response contains the shortened URLs and its QR codes URLs if requested.
+    - `400 Bad Request`: The CSV does not meet the required format or is empty.
+    - `413 Payload Too Large`: The uploaded CSV file is too large.
+    - `415 Unsupported Media Type`: The uploaded file is not a CSV file.
+    - `500 Internal Server Error`: Unexpected server error.
 
 ## Repositories
 
@@ -287,3 +386,50 @@ Only one test has been implemented:
 
 3. **Integration tests failed in the GitHub Actions workflow**  
    The integration tests within the GitHub Actions workflow consistently failed. This issue suggests potential misconfigurations or environment mismatches between local and CI environments, or problems with dependency management during the testing phase. This failure impacted the overall CI process, preventing successful builds and deployments.
+
+# Second Project Report
+All HTTP status codes for the endpoints mentioned in the Delivery section have been reviewed and appropriately defined.
+
+## QR Code Generation
+The QR code generation feature has been implemented as optional, allowing users to choose whether to generate a QR code when shortening a URL or uploading a CSV file.
+
+When a user shortens a URL via `POST /api/link` requesting a QR code, the response includes the shortened URL and a link to the QR code image. Additionally, when a CSV file is uploaded via `POST /api/upload-csv` requesting a QR code, the processed response CSV includes both the shortened URLs and links to the corresponding QR codes. 
+
+### Tests
+New tests implemented
+
+## Browser and Platform Identification
+Analytics functionality has been added to provide insights into the usage of shortened URLs. A new endpoint `GET /api/analytics` allows users to retrieve aggregated analytics data based on specified parameters, including:
+
+- Total Clicks: The total number of times the shortened URL was accessed.
+- Detailed Breakdown: Click data categorized by browser, referrer, country, and platform.
+
+The endpoint supports flexible queries, enabling users to request analytics for specific categories (e.g., browser data, country data, or both simultaneously) based on their needs.
+
+### Tests
+New tests implemented
+
+## Geolocation Service
+The Geolocation Service has not been modified, as it was marked as 'outstanding' during the PoC review. Its current implementation fully meets the requirements and continues to perform efficiently, providing accurate location data as expected.
+
+Regarding the proposed configuration of the GitHub Actions to inject the secrets with the support of Spring Boot in ApplicationConfiguration.kt, these were not implemented because our workflow consists of a single job. In this setup, our environment variables are already accessible, and since jobs do not run across multiple runners, there is no need to configure GitHub Actions to inject secrets for separate jobs or runners.
+
+## URL Accessibility Check
+The URL Accessibility Check has not been modified, as it was marked as 'outstanding' during the PoC review. The current implementation uses a non-blocking and reactive web client, which is ideal for efficiently handling HTTP requests asynchronously and is well-suited for future scalability and performance scenarios.
+
+## Google Safe Browsing Check
+The Google Safe Browsing Check has not been modified, as it was marked as 'outstanding' during the PoC review. The implementation uses a non-blocking and reactive web client, making it highly efficient for handling HTTP requests asynchronously and well-prepared for future scalability and performance needs.
+
+## CSV Upload
+The CSV Upload feature has been updated to include the option for QR code generation, as discussed earlier for the URL shortening process. This means that the generated CSV response now contains both the shortened URLs and, if requested, links to the corresponding QR codes.
+
+Additionally, multiple CSV formats are now supported to ensure greater flexibility. The feature was also improved by creating a new use case that consolidates all the functionalities involved in link creation, allowing for code reuse and better maintainability.
+
+### Tests
+New tests implemented
+
+## Redirection Limits
+The Redirection Limits functionality has been completely reworked to meet the requirement of limiting redirections based on time frames. Instead of having an absolute limit, the redirection limit is now applied per time frame, such as 10 redirections per minute. This limit is also configurable, allowing flexibility in defining the thresholds. Additionally, when the redirection limit is reached within the specified time frame, the system now correctly returns a 429 status code, as expected.
+
+### Tests
+New tests implemented
