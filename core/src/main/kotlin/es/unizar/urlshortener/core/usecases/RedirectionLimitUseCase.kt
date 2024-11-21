@@ -1,73 +1,53 @@
-package es.unizar.urlshortener.core.usecases
+import es.unizar.urlshortener.core.ClickRepositoryService
+import es.unizar.urlshortener.core.TooManyRequestsException
+import es.unizar.urlshortener.core.safeCall
+import java.time.OffsetDateTime
 
 /**
  * Interface for handling redirection limits for shortened URLs.
  */
 interface RedirectionLimitUseCase {
+
     /**
      * Checks whether the redirection limit has been reached for a specific URL identifier.
      *
      * @param urlId The identifier of the shortened URL.
-     * @return True if the redirection limit is reached, false otherwise.
+     * @throws TooManyRequestsException if limit is reached
      */
-    fun isRedirectionLimit(urlId: String): Boolean
-
-    /**
-     * Increments the redirection count for a given URL identifier.
-     *
-     * @param urlId The identifier of the shortened URL.
-     */
-    fun incrementRedirectionCount(urlId: String)
-}
-
-/**
- * Interface for tracking redirection counts in a repository.
- */
-interface RedirectionCountRepository {
-    /**
-     * Retrieves the current redirection count for a given URL identifier.
-     *
-     * @param urlId The identifier of the shortened URL.
-     * @return The redirection count, or null if no count exists.
-     */
-    fun getCount(urlId: String): Int?
-
-    /**
-     * Increments the redirection count for a given URL identifier.
-     *
-     * @param urlId The identifier of the shortened URL.
-     */
-    fun incrementCount(urlId: String)
+    fun checkRedirectionLimit(urlId: String)
 }
 
 /**
  * Implementation of [RedirectionLimitUseCase] that checks and updates
- * the redirection count for shortened URLs with a set limit.
+ * the redirection count for shortened URLs within a time frame using the ClickRepositoryService.
  *
- * @param redirectionLimit The maximum number of allowed redirections (default is 10).
- * @param redirectionCountRepository The repository used to store and retrieve redirection counts.
+ * @param redirectionLimit The maximum number of allowed redirections within the time frame.
+ * @param timeFrameInSeconds The time frame in seconds for which the limit applies.
+ * @param clickRepositoryService The service used to count clicks.
  */
 class RedirectionLimitUseCaseImpl(
-    val redirectionLimit: Int = 10,
-    val redirectionCountRepository: RedirectionCountRepository
+    private val redirectionLimit: Int = 10,
+    private val timeFrameInSeconds: Long = 60,
+    private val clickRepositoryService: ClickRepositoryService
 ) : RedirectionLimitUseCase {
-    /**
-     * Checks if the current redirection count for a URL identifier has reached or exceeded the limit.
-     *
-     * @param urlId The identifier of the shortened URL.
-     * @return True if the redirection limit is reached, false otherwise.
-     */
-    override fun isRedirectionLimit(urlId: String): Boolean {
-        val currentCount = redirectionCountRepository.getCount(urlId) ?: 0
-        return currentCount >= redirectionLimit
-    }
 
     /**
-     * Increments the redirection count for the specified URL identifier.
+     * Checks if the current redirection count for a URL identifier has reached or exceeded the limit
+     * within the defined time frame.
      *
      * @param urlId The identifier of the shortened URL.
+     * @throws TooManyRequestsException if limit is reached
      */
-    override fun incrementRedirectionCount(urlId: String) {
-        redirectionCountRepository.incrementCount(urlId)
+    override fun checkRedirectionLimit(urlId: String) {
+        val count = safeCall {
+            val now = OffsetDateTime.now()
+            val startTime = now.minusSeconds(timeFrameInSeconds)
+
+            clickRepositoryService.countClicksByHashAfter(urlId, startTime)
+        }
+
+        if (count >= redirectionLimit) {
+            throw TooManyRequestsException(urlId)
+        }
     }
 }

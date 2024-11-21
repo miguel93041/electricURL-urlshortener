@@ -73,7 +73,6 @@ class UrlShortenerControllerImpl(
     val createShortUrlUseCase: CreateShortUrlUseCase,
     val qrUseCase: CreateQRUseCase,
     val geoLocationService: GeoLocationService,
-    val redirectionLimitUseCase: RedirectionLimitUseCase,
     val browserPlatformIdentificationUseCase: BrowserPlatformIdentificationUseCase,
     val processCsvUseCase: ProcessCsvUseCase,
     val urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
@@ -90,9 +89,6 @@ class UrlShortenerControllerImpl(
      */
     @GetMapping("/{id:(?!api|index|favicon\\.ico).*}")
     override fun redirectTo(@PathVariable id: String, request: HttpServletRequest): ResponseEntity<Unit> {
-        if (redirectionLimitUseCase.isRedirectionLimit(id)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build()
-        }
         val geoLocation = geoLocationService.get(request.remoteAddr)
         val browserPlatform = browserPlatformIdentificationUseCase.parse(request.getHeader("User-Agent"))
 

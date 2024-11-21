@@ -4,6 +4,7 @@ import es.unizar.urlshortener.core.Click
 import es.unizar.urlshortener.core.ClickRepositoryService
 import es.unizar.urlshortener.core.ShortUrl
 import es.unizar.urlshortener.core.ShortUrlRepositoryService
+import java.time.OffsetDateTime
 
 class ClickRepositoryServiceImpl(
     private val clickEntityRepository: ClickEntityRepository
@@ -31,6 +32,19 @@ class ClickRepositoryServiceImpl(
         val savedClick = clickEntityRepository.save(cl.toEntity()).toDomain()
         System.out.println("Saved Click entity: $savedClick")
         return savedClick
+    }
+
+    /**
+     * Counts the number of clicks associated with a specific hash created after a certain date and time.
+     *
+     * @param hash The hash associated with the shortened URL.
+     * @param createdAfter The date and time after which clicks are counted.
+     * @return The number of clicks for the specified hash created after the given date and time.
+     */
+    override fun countClicksByHashAfter(hash: String, createdAfter: OffsetDateTime): Long {
+        val count = clickEntityRepository.countByHashAndCreatedAfter(hash, createdAfter)
+        println("Counted $count clicks for hash $hash after $createdAfter")
+        return count
     }
 }
 

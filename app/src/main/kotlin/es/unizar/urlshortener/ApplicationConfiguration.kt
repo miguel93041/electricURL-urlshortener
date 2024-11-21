@@ -1,6 +1,8 @@
 @file:Suppress("WildcardImport")
 package es.unizar.urlshortener
 
+import RedirectionLimitUseCase
+import RedirectionLimitUseCaseImpl
 import com.google.zxing.qrcode.QRCodeWriter
 import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.usecases.*
@@ -60,11 +62,19 @@ class ApplicationConfiguration(
     fun hashService() = HashServiceImpl()
 
     /**
-     * Provides an implementation of the RedirectUseCase.
-     * @return an instance of RedirectUseCaseImpl.
-     */
+    * Provides an implementation of the RedirectUseCase.
+    * @return an instance of RedirectUseCaseImpl.
+    */
     @Bean
-    fun redirectUseCase() = RedirectUseCaseImpl(shortUrlRepositoryService())
+    fun redirectUseCase(
+        shortUrlRepositoryService: ShortUrlRepositoryServiceImpl,
+        redirectionLimitUseCase: RedirectionLimitUseCase
+    ): RedirectUseCase {
+    return RedirectUseCaseImpl(
+        shortUrlRepository = shortUrlRepositoryService,
+        redirectionLimitUseCase = redirectionLimitUseCase
+    )
+}
 
     /**
      * Provides an implementation of the LogClickUseCase.
@@ -116,21 +126,12 @@ class ApplicationConfiguration(
     }
 
     /**
-     * Provides a RedirectionCountRepository.
-     * @return an instance of InMemoryRedirectionCountRepository.
-     */
-    @Bean
-    fun redirectionCountRepository(): RedirectionCountRepository {
-        return InMemoryRedirectionCountRepository()
-    }
-
-    /**
      * Provides an implementation of the RedirectionLimitUseCase.
      * @return an instance of RedirectionLimitUseCaseImpl.
      */
     @Bean
-    fun redirectionLimitUseCase(redirectionCountRepository: RedirectionCountRepository): RedirectionLimitUseCase {
-        return RedirectionLimitUseCaseImpl(redirectionLimit = 10, redirectionCountRepository)
+    fun redirectionLimitUseCase(clickRepositoryService: ClickRepositoryService): RedirectionLimitUseCase {
+        return RedirectionLimitUseCaseImpl(redirectionLimit = 10, timeFrameInSeconds = 60, clickRepositoryService)
     }
 
     /**

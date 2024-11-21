@@ -1,6 +1,7 @@
 package es.unizar.urlshortener.infrastructure.repositories
 
 import org.springframework.data.jpa.repository.JpaRepository
+import java.time.OffsetDateTime
 
 /**
  * Specification of the repository of [ShortUrlEntity].
@@ -31,4 +32,13 @@ interface ClickEntityRepository : JpaRepository<ClickEntity, Long> {
      * @return A list of [ClickEntity] instances.
      */
     fun findAllByHash(hash: String): List<ClickEntity>
+
+    /**
+     * Counts the number of clicks associated with a specific hash created after a certain date and time.
+     *
+     * @param hash The hash associated with the shortened URL.
+     * @param createdAfter The date and time after which clicks are counted.
+     * @return The number of clicks for the specified hash created after the given date and time.
+     */
+    fun countByHashAndCreatedAfter(hash: String, createdAfter: OffsetDateTime): Long
 }
