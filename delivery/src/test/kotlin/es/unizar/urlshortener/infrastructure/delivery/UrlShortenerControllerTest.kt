@@ -47,9 +47,6 @@ class UrlShortenerControllerTest {
     @MockBean
     private lateinit var geoLocationService: GeoLocationService
 
-    @MockBean
-    private lateinit var redirectionLimitUseCase: RedirectionLimitUseCase
-
     @Suppress("UnusedPrivateProperty")
     @MockBean
     private lateinit var processCsvUseCase: ProcessCsvUseCase
@@ -72,7 +69,6 @@ class UrlShortenerControllerTest {
         given(urlAccessibilityCheckUseCase.isUrlReachable(Mockito.anyString())).willReturn(true)
         given(urlSafetyService.isSafe(Mockito.anyString())).willReturn(true)
         given(redirectUseCase.redirectTo("key")).willReturn(Redirection("http://example.com/"))
-        given(redirectionLimitUseCase.isRedirectionLimit(Mockito.anyString())).willReturn(false)
         given(geoLocationService.get(Mockito.anyString())).willReturn(GeoLocation("127.0.0.1", "Bogon"))
         given(browserPlatformIdentificationUseCase.parse(Mockito.anyString()))
             .willReturn(BrowserPlatform("Chrome", "Windows"))
@@ -98,7 +94,6 @@ class UrlShortenerControllerTest {
         given(urlSafetyService.isSafe(Mockito.anyString())).willReturn(true)
         given(redirectUseCase.redirectTo("key"))
             .willAnswer { throw RedirectionNotFound("key") }
-        given(redirectionLimitUseCase.isRedirectionLimit(Mockito.anyString())).willReturn(false)
         given(geoLocationService.get(Mockito.anyString())).willReturn(GeoLocation("127.0.0.1", "Bogon"))
         given(browserPlatformIdentificationUseCase.parse(Mockito.anyString()))
             .willReturn(BrowserPlatform("Chrome", "Windows"))

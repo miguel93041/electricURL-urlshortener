@@ -1,11 +1,10 @@
 @file:Suppress("WildcardImport")
 package es.unizar.urlshortener
 
+import RedirectionLimitUseCase
+import RedirectionLimitUseCaseImpl
 import com.google.zxing.qrcode.QRCodeWriter
-import es.unizar.urlshortener.core.BaseUrlProvider
-import es.unizar.urlshortener.core.BaseUrlProviderImpl
-import es.unizar.urlshortener.core.GeoLocationService
-import es.unizar.urlshortener.core.UrlSafetyService
+import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.usecases.*
 import es.unizar.urlshortener.infrastructure.delivery.HashServiceImpl
 import es.unizar.urlshortener.infrastructure.delivery.ValidatorServiceImpl
@@ -73,7 +72,7 @@ class ApplicationConfiguration(
     ): RedirectUseCase {
     return RedirectUseCaseImpl(
         shortUrlRepository = shortUrlRepositoryService,
-        redirectionLimitUseCase = redirectionLimitUseCase // Se pasa correctamente la instancia
+        redirectionLimitUseCase = redirectionLimitUseCase
     )
 }
 
@@ -127,21 +126,12 @@ class ApplicationConfiguration(
     }
 
     /**
-     * Provides a RedirectionCountRepository.
-     * @return an instance of InMemoryRedirectionCountRepository.
-     */
-    @Bean
-    fun redirectionCountRepository(): RedirectionCountRepository {
-        return InMemoryRedirectionCountRepository()
-    }
-
-    /**
      * Provides an implementation of the RedirectionLimitUseCase.
      * @return an instance of RedirectionLimitUseCaseImpl.
      */
     @Bean
-    fun redirectionLimitUseCase(redirectionCountRepository: RedirectionCountRepository): RedirectionLimitUseCase {
-        return RedirectionLimitUseCaseImpl(redirectionLimit = 10, timeFrameInSeconds = 60, redirectionCountRepository)
+    fun redirectionLimitUseCase(clickRepositoryService: ClickRepositoryService): RedirectionLimitUseCase {
+        return RedirectionLimitUseCaseImpl(redirectionLimit = 10, timeFrameInSeconds = 60, clickRepositoryService)
     }
 
     /**

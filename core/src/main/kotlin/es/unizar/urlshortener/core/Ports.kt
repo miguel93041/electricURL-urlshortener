@@ -1,5 +1,7 @@
 package es.unizar.urlshortener.core
 
+import java.time.OffsetDateTime
+
 /**
  * [ClickRepositoryService] is the port to the repository that provides persistence to [Clicks][Click].
  */
@@ -11,6 +13,15 @@ interface ClickRepositoryService {
      * @return The saved [Click] entity.
      */
     fun save(cl: Click): Click
+
+    /**
+     * Counts the number of clicks associated with a specific hash created after a certain date and time.
+     *
+     * @param hash The hash associated with the shortened URL.
+     * @param createdAfter The date and time after which clicks are counted.
+     * @return The number of clicks for the specified hash created after the given date and time.
+     */
+    fun countClicksByHashAfter(hash: String, createdAfter: OffsetDateTime): Long
 }
 
 /**

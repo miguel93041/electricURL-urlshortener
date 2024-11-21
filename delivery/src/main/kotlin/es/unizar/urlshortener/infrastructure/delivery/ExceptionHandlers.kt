@@ -2,6 +2,7 @@ package es.unizar.urlshortener.infrastructure.delivery
 
 import es.unizar.urlshortener.core.InvalidUrlException
 import es.unizar.urlshortener.core.RedirectionNotFound
+import es.unizar.urlshortener.core.TooManyRequestsException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -40,6 +41,18 @@ class RestResponseEntityExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(value = [RedirectionNotFound::class])
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun redirectionNotFound(ex: RedirectionNotFound) = ErrorMessage(HttpStatus.NOT_FOUND.value(), ex.message)
+
+    /**
+     * Handles TooManyRequestsException and returns a TOO_MANY_REQUESTS response.
+     *
+     * @param ex the TooManyRequestsException thrown
+     * @return an ErrorMessage containing the status code and exception message
+     */
+    @ResponseBody
+    @ExceptionHandler(value = [TooManyRequestsException::class])
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    fun tooManyRequests(ex: TooManyRequestsException) =
+        ErrorMessage(HttpStatus.TOO_MANY_REQUESTS.value(), ex.message)
 
     /**
      * Handles InternalError and returns an INTERNAL_SERVER_ERROR response.

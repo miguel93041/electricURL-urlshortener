@@ -39,6 +39,14 @@ class RedirectionNotFound(key: String) : DomainException("[$key] is not known")
  */
 class InternalError(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
+/**
+ * Exception thrown when the redirection limit is exceeded.
+ * This exception is mapped to HTTP 429 Too Many Requests.
+ *
+ * @param key The identifier of the shortened URL that exceeded the redirection limit.
+ */
+class TooManyRequestsException(key: String) : DomainException("Redirection limit reached for [$key]")
+
 inline fun <T> safeCall(
     onFailure: (Throwable) -> Throwable = { e -> InternalError("Unexpected error", e) },
     block: () -> T
