@@ -31,9 +31,11 @@ dependencies {
     // Include Google Guava as an implementation dependency
     implementation(libs.guava)
 
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    // Adds the Spring Boot starter WebFlux as an implementation dependency.
+    implementation(libs.spring.boot.starter.webflux)
 
-    implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+    // Adds dotenv Kotlin as an implementation dependency.
+    implementation(libs.dotenv.kotlin)
 
     // Include Kotlin Test as a test implementation dependency
     testImplementation(libs.kotlin.test)
