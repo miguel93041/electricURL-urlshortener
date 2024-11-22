@@ -4,12 +4,12 @@ package es.unizar.urlshortener.core.usecases
 import es.unizar.urlshortener.core.BaseUrlProvider
 import es.unizar.urlshortener.core.GeoLocationService
 import es.unizar.urlshortener.core.ShortUrlProperties
-import es.unizar.urlshortener.core.UrlSafetyService
 import jakarta.servlet.http.HttpServletRequest
 import java.io.*
 import es.unizar.urlshortener.core.InvalidUrlException
 import es.unizar.urlshortener.core.UnsafeUrlException
 import es.unizar.urlshortener.core.UrlUnreachableException
+import org.slf4j.LoggerFactory
 
 
 /**
@@ -58,8 +58,9 @@ class ProcessCsvUseCaseImpl (
      * @param writer The destination to write the results of URL shortening or error messages.
      */
     override fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest) {
+        val logger = LoggerFactory.getLogger(ProcessCsvUseCaseImpl::class.java)
         val geoLocation = geoLocationService.get(request.remoteAddr)
-        writer.append("original-url,shortened-url\n")
+        writer.append("original-url,shortened-url")
         val qrRequested = request.getParameter("qrRequested")?.toBoolean() ?: false
         if (qrRequested) {
             writer.append(",qr-code-url")
@@ -84,19 +85,17 @@ class ProcessCsvUseCaseImpl (
                     }
                     writer.append("\n")
                 } catch (e: InvalidUrlException) {
-                    writer.append("$originalUrl,ERROR: Invalid URL - ${e.message}\n")
-                    if (qrRequested) writer.append(",QR not generated")
-                    writer.append("\n")
+                    logger.warn("Failed to process URL: $originalUrl due to InvalidUrlException", e)
+                    writer.append("$originalUrl, ERROR: Invalid URL\n")
                 } catch (e: UnsafeUrlException) {
-                    writer.append("$originalUrl,ERROR: Unsafe URL - ${e.message}\n")
-                    if (qrRequested) writer.append(",QR not generated")
-                    writer.append("\n")
+                    logger.warn("Failed to process URL: $originalUrl due to InvalidUrlException", e)
+                    writer.append("$originalUrl,ERROR: Unsafe URL\n")
                 } catch (e: UrlUnreachableException) {
-                    writer.append("$originalUrl,ERROR: URL unreachable - ${e.message}\n")
-                    if (qrRequested) writer.append(",QR not generated")
-                    writer.append("\n")
-                } catch (e: Exception) {
-                    writer.append("$originalUrl,ERROR: ${e.message}\n")
+                    logger.warn("Failed to process URL: $originalUrl due to InvalidUrlException", e)
+                    writer.append("$originalUrl,ERROR: URL unreachable\n")
+                } catch (e: IllegalArgumentException) {
+                    logger.warn("Failed to process URL: $originalUrl due to InvalidUrlException", e)
+                    writer.append("$originalUrl,ERROR: Invalid URL\n")
                 }
             }
         }

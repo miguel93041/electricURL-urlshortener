@@ -21,7 +21,7 @@ import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.URI
-import org.slf4j.LoggerFactory
+import es.unizar.urlshortener.core.InternalError
 
 
 /**
@@ -162,9 +162,7 @@ class UrlShortenerControllerImpl(
     override fun shortener(data: ShortUrlDataIn, request: HttpServletRequest): ResponseEntity<ShortUrlDataOut> {
 
         val geoLocation = geoLocationService.get(request.remoteAddr)
-        val logger = LoggerFactory.getLogger(UrlShortenerControllerImpl::class.java)
-        return try {
-            createShortUrlUseCase.create(
+        return createShortUrlUseCase.create(
                 url = data.url,
                 data = ShortUrlProperties(
                     ip = geoLocation.ip,
@@ -194,17 +192,7 @@ class UrlShortenerControllerImpl(
                 )
                 ResponseEntity<ShortUrlDataOut>(response, h, HttpStatus.CREATED)
             }
-        } catch (e: InvalidUrlException) {
-            logger.error("Invalid URL provided: ${data.url}", e)
-            return ResponseEntity(ShortUrlDataOut(), HttpStatus.BAD_REQUEST)
-        } catch (e: UnsafeUrlException) {
-            logger.error("Invalid URL provided: ${data.url}", e)
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ShortUrlDataOut())
-        } catch (e: UrlUnreachableException) {
-            logger.error("URL unreachable: ${data.url}", e)
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ShortUrlDataOut())
-        }
-      
+
     }
 
     /**

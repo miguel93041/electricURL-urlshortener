@@ -17,14 +17,10 @@ class ProcessCsvUseCaseTest {
     private val createShortUrlUseCase = mock(CreateShortUrlUseCase::class.java)
     private val baseUrlProvider = mock(BaseUrlProvider::class.java)
     private val geoLocationService = mock(GeoLocationService::class.java)
-    private val urlAccessibilityCheckUseCase = mock(UrlAccessibilityCheckUseCase::class.java)
-    private val urlSafetyService = mock(UrlSafetyService::class.java)
     private val processCsvUseCase = ProcessCsvUseCaseImpl(
         createShortUrlUseCase,
         baseUrlProvider,
         geoLocationService,
-        urlAccessibilityCheckUseCase,
-        urlSafetyService,
     )
     private val baseUrl = "http://localhost:8080"
     private val request = mock(HttpServletRequest::class.java)
@@ -33,8 +29,6 @@ class ProcessCsvUseCaseTest {
     fun setUp() {
         `when`(baseUrlProvider.get()).thenReturn(baseUrl)
         `when`(request.remoteAddr).thenReturn("127.0.0.1")
-        given(urlAccessibilityCheckUseCase.isUrlReachable(anyString())).willReturn(true)
-        given(urlSafetyService.isSafe(anyString())).willReturn(true)
         given(geoLocationService.get(anyString())).willReturn(GeoLocation("127.0.0.1", "Bogon"))
     }
 

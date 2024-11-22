@@ -38,27 +38,24 @@ class CreateShortUrlUseCaseImpl(
      * @throws InvalidUrlException if the URL is not valid.
      */
     override fun create(url: String, data: ShortUrlProperties): ShortUrl {
-        if (validatorService.validate(url) != ValidatorResult.NOT_VALID_FORMAT) {
-            throw InvalidUrlException(url)
+        val validationResult = validatorService.validate(url)
+
+        when (validationResult) {
+            ValidatorResult.NOT_VALID_FORMAT -> throw InvalidUrlException(url)
+            ValidatorResult.NOT_SAFE -> throw UnsafeUrlException(url)
+            ValidatorResult.NOT_REACHABLE -> throw UrlUnreachableException(url)
+            ValidatorResult.VALID -> {
+                return safeCall{
+                    val id = hashService.hasUrl(url)
+                    val su = ShortUrl(
+                        hash = id,
+                        redirection = Redirection(target = url),
+                        properties = data
+                    )
+                    shortUrlRepository.save(su)
+                }
+            }
         }
-        else if (validatorService.validate(url) != ValidatorResult.NOT_SAFE) {
-            throw UnsafeUrlException(url)
-        }
-        else if (validatorService.validate(url) != ValidatorResult.NOT_REACHABLE) {
-            throw UrlUnreachableException(url)
-        }
-        val id = safeCall { hashService.hasUrl(url) }
-        val su = ShortUrl(
-            hash = id,
-            redirection = Redirection(target = url),
-            properties = ShortUrlProperties(
-                safe = data.safe,
-                ip = data.ip,
-                sponsor = data.sponsor,
-                country = data.country
-            )
-        )
-        safeCall { shortUrlRepository.save(su) }
-        return su
     }
+
 }

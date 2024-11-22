@@ -52,7 +52,8 @@ class ApplicationConfiguration(
      * @return an instance of ValidatorServiceImpl.
      */
     @Bean
-    fun validatorService(urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase, urlSafetyService: UrlSafetyService): ValidatorService =
+    fun validatorService(urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
+                         urlSafetyService: UrlSafetyService): ValidatorService =
         ValidatorServiceImpl(urlAccessibilityCheckUseCase, urlSafetyService)
     
     /**
