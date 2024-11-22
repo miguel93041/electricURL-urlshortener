@@ -20,10 +20,6 @@ dependencies {
     implementation(libs.zxing.core)
     // Adds ZXing JavaSE as an implementation dependency.
     implementation(libs.zxing.javase)
-    // Adds openCSV as an implementation dependency.
-    implementation(libs.opencsv)
-    // Adds Apache Commons CSV as an implementation dependency.
-    implementation(libs.commons.csv)
 
     // Add Kotlin test library for unit testing
     testImplementation(libs.kotlin.test)

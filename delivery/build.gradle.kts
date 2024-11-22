@@ -19,14 +19,8 @@ dependencies {
     // Include the core project as an implementation dependency
     implementation(project(":core"))
 
-    // Include Spring Boot Starter Web as an implementation dependency
-    implementation(libs.spring.boot.starter.web)
-
     // Include Spring Boot Starter HATEOAS as an implementation dependency
     implementation(libs.spring.boot.starter.hateoas)
-
-    // Include Jackson module Kotlin as an implementation dependency
-    implementation(libs.jackson.module.kotlin)
 
     // Include Apache Commons Validator as an implementation dependency
     implementation(libs.commons.validator)
