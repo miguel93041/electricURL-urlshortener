@@ -115,15 +115,8 @@ class ApplicationConfiguration(
      * @return an instance of ProcessCsvUseCaseImpl.
      */
     @Bean
-    fun processCsvUseCase(
-        baseUrlProvider: BaseUrlProvider,
-        generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCaseImpl
-
-    ): ProcessCsvUseCase {
-        return ProcessCsvUseCaseImpl(
-            baseUrlProvider,
-            generateEnhancedShortUrlUseCaseImpl,
-        )
+    fun processCsvUseCase(generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCaseImpl): ProcessCsvUseCase {
+        return ProcessCsvUseCaseImpl(generateEnhancedShortUrlUseCaseImpl)
     }
 
     /**

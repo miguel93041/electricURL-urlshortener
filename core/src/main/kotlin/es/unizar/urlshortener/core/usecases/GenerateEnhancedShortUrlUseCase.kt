@@ -7,23 +7,26 @@ import jakarta.servlet.http.HttpServletRequest
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 
-
 /**
- * The specification of the controller.
+ * Defines the specification for the use case responsible for generating
+ * enhanced short URLs with additional properties like geolocation data.
  */
 interface GenerateEnhancedShortUrlUseCase {
-
-    fun generate(url: String, data: ShortUrlProperties, qrRequested: Boolean, request: HttpServletRequest):
-            GeneratedShortUrlResult
-
+    /**
+     * Generates a short URL based on the input data and the HTTP request context.
+     *
+     * @param data The input data containing the original URL and optional settings.
+     * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
+     * @return A data object containing the generated short URL and optional QR code URL.
+     */
+    fun generate(data: ShortUrlDataIn, request: HttpServletRequest): ShortUrlDataOut
 }
 
 /**
- * The implementation of the controller.
+ * Implementation of the `GenerateEnhancedShortUrlUseCase` interface.
  *
- * **Note**: Spring Boot is able to discover this [RestController] without further configuration.
+ * This class acts as the controller to handle requests for generating enhanced short URLs.
  */
-@Suppress("LongParameterList")
 @RestController
 class GenerateEnhancedShortUrlUseCaseImpl(
     private val createShortUrlUseCase: CreateShortUrlUseCase,
@@ -31,33 +34,29 @@ class GenerateEnhancedShortUrlUseCaseImpl(
     private val baseUrlProvider: BaseUrlProvider
 ) : GenerateEnhancedShortUrlUseCase {
 
-    override fun generate(
-        url: String, data: ShortUrlProperties, qrRequested: Boolean,
-        request: HttpServletRequest
-    ): GeneratedShortUrlResult {
+    /**
+     * Generates an enhanced short URL using geolocation information and other properties.
+     *
+     * @param data The input data containing the original URL and a flag indicating whether a QR code is required.
+     * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
+     * @return A data object containing the short URL and optionally a QR code URL.
+     */
+    override fun generate(data: ShortUrlDataIn, request: HttpServletRequest): ShortUrlDataOut {
         val geoLocation = geoLocationService.get(request.remoteAddr)
 
         val enrichedData = ShortUrlProperties(
             ip = geoLocation.ip,
-            sponsor = data.sponsor,
             country = geoLocation.country
         )
 
-        val shortUrl = createShortUrlUseCase.create(url, enrichedData)
-        var url: URI?
-        url = URI.create("${baseUrlProvider.get()}/${shortUrl.hash}")
+        val shortUrlModel = createShortUrlUseCase.create(data.url!!, enrichedData)
+        val shortUrl = URI.create("${baseUrlProvider.get()}/${shortUrlModel.hash}")
+
         var qrCodeUrl: URI? = null
-
-
-        // Generate url of the qr
-        if (qrRequested) {
-            qrCodeUrl = URI.create("${baseUrlProvider.get()}/api/qr?id=${shortUrl.hash}")
+        if (data.qrRequested) {
+            qrCodeUrl = URI.create("${baseUrlProvider.get()}/api/qr?id=${shortUrlModel.hash}")
         }
 
-        return GeneratedShortUrlResult(shortUrl, qrCodeUrl, url)
-    }
-
-    companion object {
-        const val QR_SIZE = 256
+        return ShortUrlDataOut(shortUrl, qrCodeUrl)
     }
 }

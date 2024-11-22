@@ -43,3 +43,6 @@ README_files
 
 ### Keys ###
 .env
+
+### Ignore errors ###
+.kotlin

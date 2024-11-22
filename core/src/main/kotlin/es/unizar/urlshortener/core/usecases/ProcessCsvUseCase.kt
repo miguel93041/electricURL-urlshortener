@@ -1,16 +1,9 @@
-@file:Suppress("WildcardImport")
+@file:Suppress("WildcardImport", "SwallowedException")
 package es.unizar.urlshortener.core.usecases
 
-import es.unizar.urlshortener.core.BaseUrlProvider
-import es.unizar.urlshortener.core.ShortUrlProperties
+import es.unizar.urlshortener.core.*
 import jakarta.servlet.http.HttpServletRequest
 import java.io.*
-import es.unizar.urlshortener.core.InvalidUrlException
-import es.unizar.urlshortener.core.UnsafeUrlException
-import es.unizar.urlshortener.core.UrlUnreachableException
-import org.slf4j.LoggerFactory
-import org.springframework.hateoas.server.mvc.linkTo
-
 
 /**
  * Interface defining the contract for processing CSV files containing URLs.
@@ -29,7 +22,7 @@ interface ProcessCsvUseCase {
      * @param reader The source of CSV data containing URLs.
      * @param writer The destination to write the results of URL shortening or error messages.
      */
-    fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest)
+    fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest, data: ShortUrlDataIn)
 }
 
 /**
@@ -37,13 +30,11 @@ interface ProcessCsvUseCase {
  * Responsible for reading URLs from a CSV, creating short URLs,
  * and writing the results or errors to the provided Writer.
  *
- * @param createShortUrlUseCase A use case for creating short URLs.
- * @param baseUrlProvider The base URL used for generating shortened URLs.
+ * @param generateEnhancedShortUrlUseCaseImpl A use case for creating short URLs.
  */
 @Suppress("TooGenericExceptionCaught")
 class ProcessCsvUseCaseImpl (
-    private val baseUrlProvider: BaseUrlProvider,
-    private val generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCaseImpl
+    private val generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCase
 ) : ProcessCsvUseCase {
 
     /**
@@ -56,69 +47,38 @@ class ProcessCsvUseCaseImpl (
      * @param reader The source of CSV data containing URLs.
      * @param writer The destination to write the results of URL shortening or error messages.
      */
-    override fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest) {
-        val logger = LoggerFactory.getLogger(ProcessCsvUseCaseImpl::class.java)
-        //val geoLocation = geoLocationService.get(request.remoteAddr)
+    override fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest, data: ShortUrlDataIn) {
         writer.append("original-url,shortened-url")
-        val qrRequested = request.getParameter("qrRequested")?.toBoolean() ?: false
-        if (qrRequested) {
+        if (data.qrRequested) {
             writer.append(",qr-code-url")
         }
         writer.append("\n")
+
         BufferedReader(reader).use { br ->
             br.forEachLine { line ->
                 val originalUrl = line.trim()
                 try {
                     val result = generateEnhancedShortUrlUseCaseImpl.generate(
-                        url = originalUrl,
-                        data = ShortUrlProperties(
-                            ip = "",
-                            sponsor = "",
-                            country = ""
-                        ),
-                        qrRequested = qrRequested,
-                        request = request
+                        ShortUrlDataIn(originalUrl, data.qrRequested),
+                        request
                     )
-                    val shortenedUrl = result.url
-                    writer.append("$originalUrl,$shortenedUrl")
-                    if (qrRequested) {
-                        writer.append(", " + result.qrCodeUrl)
+
+                    writer.append("$originalUrl,${result.shortUrl}")
+                    if (data.qrRequested) {
+                        writer.append("," + result.qrCodeUrl)
                     }
                     writer.append("\n")
                 } catch (e: InvalidUrlException) {
-                    logger.warn("Failed to process URL: $originalUrl due to InvalidUrlException", e)
-                    writer.append("$originalUrl, ERROR: Invalid URL\n")
+                    writer.append("$originalUrl,ERROR: Invalid URL,ERROR: QR not generated\n")
                 } catch (e: UnsafeUrlException) {
-                    logger.warn("Failed to process URL: $originalUrl due to InvalidUrlException", e)
-                    writer.append("$originalUrl,ERROR: Unsafe URL\n")
+                    writer.append("$originalUrl,ERROR: Unsafe URL,ERROR: QR not generated\n")
                 } catch (e: UrlUnreachableException) {
-                    logger.warn("Failed to process URL: $originalUrl due to InvalidUrlException", e)
-                    writer.append("$originalUrl,ERROR: URL unreachable\n")
+                    writer.append("$originalUrl,ERROR: URL unreachable,ERROR: QR not generated\n")
                 } catch (e: IllegalArgumentException) {
-                    logger.warn("Failed to process URL: $originalUrl due to InvalidUrlException", e)
-                    writer.append("$originalUrl,ERROR: Invalid URL\n")
+                    writer.append("$originalUrl,ERROR: Invalid URL,ERROR: QR not generated\n")
                 }
             }
         }
     }
 
-    /**
-     * Builds the full shortened URL by appending the hash to the base URL of the servlet.
-     *
-     * @param hashUrl The hash generated for the short URL.
-     * @return The complete shortened URL.
-     */
-    fun buildShortenedUrl(hashUrl: String): String {
-        return "${baseUrlProvider.get()}/${hashUrl}"
-    }
-
-    /**
-     * Builds the URL for the QR code for a specific shortened URL hash.
-     *
-     * @param hashUrl The hash generated for the short URL.
-     * @return The complete URL for the QR code.
-     */
-    fun buildQrCodeUrl(hashUrl: String): String {
-        return "${baseUrlProvider.get()}/api/qr?id=${hashUrl}"
-    }
 }

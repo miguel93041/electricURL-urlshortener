@@ -20,8 +20,7 @@ dependencies {
 
     implementation("com.github.ua-parser:uap-java:1.6.1")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    // Include Spring Boot Starter HATEOAS as an implementation dependency
-    implementation(libs.spring.boot.starter.hateoas)
+
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     // Add Kotlin test library for unit testing

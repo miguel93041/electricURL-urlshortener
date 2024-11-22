@@ -1,11 +1,7 @@
+@file:Suppress("WildcardImport")
 package es.unizar.urlshortener.infrastructure.delivery
 
-import es.unizar.urlshortener.core.InvalidUrlException
-import es.unizar.urlshortener.core.UrlUnreachableException
-import es.unizar.urlshortener.core.UnsafeUrlException
-import es.unizar.urlshortener.core.RedirectionNotFound
-import es.unizar.urlshortener.core.TooManyRequestsException
-
+import es.unizar.urlshortener.core.*
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ControllerAdvice
