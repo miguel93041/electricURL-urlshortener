@@ -10,12 +10,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.multipart.MultipartFile
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
 import java.io.BufferedWriter
 import java.io.InputStreamReader
@@ -47,32 +42,6 @@ interface UrlShortenerController {
 }
 
 /**
- * Data required to create a short url.
- *
- * @property url The original URL to shorten.
- * @property sponsor Optional sponsor information for the short URL.
- * @property qrRequested Whether to generate a QR code for the short URL.
- */
-data class ShortUrlDataIn(
-    val url: String,
-    val sponsor: String? = null,
-    val qrRequested: Boolean = false
-)
-
-/**
- * Data returned after the creation of a short url.
- *
- * @property url The shortened URL as a [URI].
- * @property properties Additional properties or metadata for the shortened URL.
- * @property qrCodeUrl The [URI] of the QR code if requested.
- */
-data class ShortUrlDataOut(
-    val url: URI? = null,
-    val properties: Map<String, Any> = emptyMap(),
-    val qrCodeUrl: URI? = null
-)
-
-/**
  * The implementation of the controller.
  */
 @Suppress("LongParameterList")
@@ -80,14 +49,12 @@ data class ShortUrlDataOut(
 class UrlShortenerControllerImpl(
     val redirectUseCase: RedirectUseCase,
     val logClickUseCase: LogClickUseCase,
-    val createShortUrlUseCase: CreateShortUrlUseCase,
     val qrUseCase: CreateQRUseCase,
     val geoLocationService: GeoLocationService,
     val browserPlatformIdentificationUseCase: BrowserPlatformIdentificationUseCase,
     val processCsvUseCase: ProcessCsvUseCase,
-    val urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
-    val urlValidationService: UrlSafetyService,
     val getAnalyticsUseCase: GetAnalyticsUseCase,
+    val generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCase,
 ) : UrlShortenerController {
 
     /**
@@ -100,7 +67,11 @@ class UrlShortenerControllerImpl(
     @GetMapping("/{id:(?!api|index|favicon\\.ico).*}")
     override fun redirectTo(@PathVariable id: String, request: HttpServletRequest): ResponseEntity<Unit> {
         val geoLocation = geoLocationService.get(request.remoteAddr)
-        val browserPlatform = browserPlatformIdentificationUseCase.parse(request.getHeader("User-Agent"))
+        val userAgent = request.getHeader("User-Agent")
+        var browserPlatform: BrowserPlatform? = null
+        if (userAgent != null) {
+            browserPlatform = browserPlatformIdentificationUseCase.parse(userAgent)
+        }
 
         return redirectUseCase.redirectTo(id).run {
             logClickUseCase.logClick(
@@ -108,8 +79,8 @@ class UrlShortenerControllerImpl(
                 ClickProperties(
                     ip = geoLocation.ip,
                     country = geoLocation.country,
-                    browser = browserPlatform.browser,
-                    platform = browserPlatform.platform
+                    browser = browserPlatform?.browser,
+                    platform = browserPlatform?.platform
                 )
             )
             val h = HttpHeaders()
@@ -150,15 +121,22 @@ class UrlShortenerControllerImpl(
      * @return A [ResponseEntity] with the processed CSV file as a downloadable response.
      */
     @PostMapping("/api/upload-csv", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun shortenUrlsFromCsv(
-        @RequestParam("file") file: MultipartFile,
-        request: HttpServletRequest
-    ): ResponseEntity<StreamingResponseBody> {
-        val reader = InputStreamReader(file.inputStream.buffered())
+    fun shortenUrlsFromCsv(data: ShortUrlDataIn, request: HttpServletRequest): ResponseEntity<StreamingResponseBody> {
+        if (data.file == null || data.file!!.isEmpty) {
+            return ResponseEntity
+                .badRequest()
+                .body(StreamingResponseBody { outputStream ->
+                    outputStream.writer().use {
+                        it.write("Error: No file provided or file is empty.")
+                    }
+                })
+        }
+
+        val reader = InputStreamReader(data.file!!.inputStream.buffered())
 
         val responseBody = StreamingResponseBody { outputStream ->
             BufferedWriter(OutputStreamWriter(outputStream)).use { writer ->
-                processCsvUseCase.processCsv(reader, writer, request)
+                processCsvUseCase.processCsv(reader, writer, request, data)
             }
         }
 
@@ -182,46 +160,12 @@ class UrlShortenerControllerImpl(
     @Suppress("ReturnCount")
     @PostMapping("/api/link", consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE])
     override fun shortener(data: ShortUrlDataIn, request: HttpServletRequest): ResponseEntity<ShortUrlDataOut> {
-        if (!urlAccessibilityCheckUseCase.isUrlReachable(data.url)) {
-            return ResponseEntity(ShortUrlDataOut(), HttpStatus.BAD_REQUEST)
-        }
+        val response = generateEnhancedShortUrlUseCaseImpl.generate(data, request)
 
-        if (!urlValidationService.isSafe(data.url)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ShortUrlDataOut())
-        }
+        val h = HttpHeaders()
+        h.location = response.shortUrl
 
-        val geoLocation = geoLocationService.get(request.remoteAddr)
-
-        return createShortUrlUseCase.create(
-            url = data.url,
-            data = ShortUrlProperties(
-                ip = geoLocation.ip,
-                sponsor = data.sponsor,
-                country = geoLocation.country
-            )
-        ).run {
-            val h = HttpHeaders()
-            val url = linkTo<UrlShortenerControllerImpl> { redirectTo(hash, request) }.toUri()
-            val qrUrl = if (data.qrRequested) {
-                linkTo<UrlShortenerControllerImpl> {
-                    redirectToQrCode(
-                        hash,
-                        request
-                    )
-                }.toUri()
-            } else {
-                null
-            }
-            h.location = url
-            val response = ShortUrlDataOut(
-                url = url,
-                properties = mapOf(
-                    "safe" to properties.safe,
-                ),
-                qrCodeUrl = qrUrl
-            )
-            ResponseEntity<ShortUrlDataOut>(response, h, HttpStatus.CREATED)
-        }
+        return ResponseEntity(response, h, HttpStatus.CREATED)
     }
 
     /**

@@ -1,5 +1,7 @@
 package es.unizar.urlshortener.core
 
+import org.springframework.web.multipart.MultipartFile
+import java.net.URI
 import java.time.OffsetDateTime
 
 /**
@@ -36,7 +38,6 @@ data class Redirection(
  */
 data class ShortUrlProperties(
     val ip: String? = null,
-    val sponsor: String? = null,
     val safe: Boolean = true,
     val owner: String? = null,
     val country: String? = null
@@ -91,3 +92,21 @@ data class AnalyticsData(
     val byPlatform: Map<String, Int>? = null,
     val byReferrer: Map<String, Int>? = null
 )
+
+/**
+ * Data required to create a short url.
+ */
+data class ShortUrlDataIn(
+    val url: String? = null,
+    val qrRequested: Boolean = false,
+    val file: MultipartFile? = null
+)
+
+/**
+ * Data returned after the creation of a short url.
+ */
+data class ShortUrlDataOut(
+    val shortUrl: URI? = null,
+    val qrCodeUrl: URI? = null
+)
+

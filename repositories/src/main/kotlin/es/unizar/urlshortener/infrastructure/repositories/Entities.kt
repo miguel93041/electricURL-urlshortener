@@ -34,7 +34,6 @@ class ShortUrlEntity(
     @Id
     val hash: String,
     val target: String,
-    val sponsor: String?,
     val created: OffsetDateTime,
     val owner: String?,
     val mode: Int,

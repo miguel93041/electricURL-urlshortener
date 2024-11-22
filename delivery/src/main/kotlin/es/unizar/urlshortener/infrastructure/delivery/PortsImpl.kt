@@ -5,24 +5,43 @@ import es.unizar.urlshortener.core.HashService
 import es.unizar.urlshortener.core.ValidatorService
 import org.apache.commons.validator.routines.UrlValidator
 import java.nio.charset.StandardCharsets
+import es.unizar.urlshortener.core.usecases.UrlAccessibilityCheckUseCase
+import es.unizar.urlshortener.core.UrlSafetyService
+import es.unizar.urlshortener.core.ValidatorResult
 
 /**
- * Implementation of the port [ValidatorService].
+ * Implementation of the ValidatorService interface.
+ *
+ * Validates URLs to ensure they follow the correct format, are safe, and are reachable.
+ *
+ * @param urlAccessibilityCheckUseCase Use case to check if a URL is reachable.
+ * @param urlSafetyService Service to verify if a URL is safe.
  */
-class ValidatorServiceImpl : ValidatorService {
+class ValidatorServiceImpl(
+    private val urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
+    private val urlSafetyService: UrlSafetyService
+) : ValidatorService {
+
     /**
      * Validates the given URL.
      *
-     * @param url the URL to validate
-     * @return true if the URL is valid, false otherwise
+     * @param url The URL to validate.
+     * @return A [ValidatorResult] indicating the validation result.
      */
-    override fun isValid(url: String) = urlValidator.isValid(url)
+    override fun validate(url: String): ValidatorResult {
+        return when {
+            !urlValidator.isValid(url) -> ValidatorResult.NOT_VALID_FORMAT
+            !urlSafetyService.isSafe(url) -> ValidatorResult.NOT_SAFE
+            !urlAccessibilityCheckUseCase.isUrlReachable(url) -> ValidatorResult.NOT_REACHABLE
+            else -> ValidatorResult.VALID
+        }
+    }
 
     companion object {
         /**
          * A URL validator that supports HTTP and HTTPS schemes.
          */
-        val urlValidator = UrlValidator(arrayOf("http", "https"))
+        private val urlValidator = UrlValidator(arrayOf("http", "https"))
     }
 }
 

@@ -2,7 +2,7 @@
 
 package es.unizar.urlshortener
 
-import es.unizar.urlshortener.infrastructure.delivery.ShortUrlDataOut
+import es.unizar.urlshortener.core.ShortUrlDataOut
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.springframework.beans.factory.annotation.Autowired
@@ -65,7 +65,6 @@ class HttpRequestTest {
     fun `main page works`() {
         val response = restTemplate.getForEntity("http://localhost:$port/", String::class.java)
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        //assertThat(response.body).contains("A front-end example page for the project")
     }
 
     /**
@@ -102,7 +101,7 @@ class HttpRequestTest {
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.CREATED)
         assertThat(response.headers.location).isEqualTo(URI.create("http://localhost:$port/f684a3c4"))
-        assertThat(response.body?.url).isEqualTo(URI.create("http://localhost:$port/f684a3c4"))
+        assertThat(response.body?.shortUrl).isEqualTo(URI.create("http://localhost:$port/f684a3c4"))
 
         assertThat(JdbcTestUtils.countRowsInTable(jdbcTemplate, "shorturl")).isEqualTo(1)
         assertThat(JdbcTestUtils.countRowsInTable(jdbcTemplate, "click")).isEqualTo(0)

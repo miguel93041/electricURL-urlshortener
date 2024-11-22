@@ -39,8 +39,8 @@ function processFileUpload() {
             type: "POST",
             url: "/api/upload-csv",
             data: formData,
-            contentType: false,
             processData: false,
+            contentType: false,
             success: handleFileUploadSuccess,
             error: handleError
         });
@@ -53,7 +53,7 @@ function processUrlShortening() {
     $.ajax({
         type: "POST",
         url: "/api/link",
-        data: $("#shortener").serialize() + "&qrRequested=" + $('#qrCheckbox').is(':checked'),
+        data: $("#shortener").serialize(),
         success: handleUrlShorteningSuccess,
         error: handleError
     });

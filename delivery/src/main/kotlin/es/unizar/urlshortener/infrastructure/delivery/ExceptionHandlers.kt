@@ -1,8 +1,7 @@
+@file:Suppress("WildcardImport")
 package es.unizar.urlshortener.infrastructure.delivery
 
-import es.unizar.urlshortener.core.InvalidUrlException
-import es.unizar.urlshortener.core.RedirectionNotFound
-import es.unizar.urlshortener.core.TooManyRequestsException
+import es.unizar.urlshortener.core.*
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -11,8 +10,10 @@ import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
+import java.lang.InternalError
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+
 
 /**
  * A controller advice to handle exceptions globally and return appropriate HTTP responses.
@@ -30,6 +31,16 @@ class RestResponseEntityExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(value = [InvalidUrlException::class])
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun invalidUrls(ex: InvalidUrlException) = ErrorMessage(HttpStatus.BAD_REQUEST.value(), ex.message)
+
+    @ResponseBody
+    @ExceptionHandler(value = [UrlUnreachableException::class])
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun urlUnreachable(ex: UrlUnreachableException) = ErrorMessage(HttpStatus.BAD_REQUEST.value(), ex.message)
+
+    @ResponseBody
+    @ExceptionHandler(value = [UnsafeUrlException::class])
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun unsafeUrl(ex: UnsafeUrlException) = ErrorMessage(HttpStatus.FORBIDDEN.value(), ex.message)
 
     /**
      * Handles RedirectionNotFound exception and returns a NOT_FOUND response.

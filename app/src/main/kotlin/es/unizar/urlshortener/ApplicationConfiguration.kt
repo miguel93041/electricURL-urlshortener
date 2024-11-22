@@ -52,8 +52,10 @@ class ApplicationConfiguration(
      * @return an instance of ValidatorServiceImpl.
      */
     @Bean
-    fun validatorService() = ValidatorServiceImpl()
-
+    fun validatorService(urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
+                         urlSafetyService: UrlSafetyService): ValidatorService =
+        ValidatorServiceImpl(urlAccessibilityCheckUseCase, urlSafetyService)
+    
     /**
      * Provides an implementation of the HashService.
      * @return an instance of HashServiceImpl.
@@ -88,9 +90,12 @@ class ApplicationConfiguration(
      * @return an instance of CreateShortUrlUseCaseImpl.
      */
     @Bean
-    fun createShortUrlUseCase() =
-        CreateShortUrlUseCaseImpl(shortUrlRepositoryService(), validatorService(), hashService())
-
+    fun createShortUrlUseCase(
+        shortUrlRepositoryService: ShortUrlRepositoryServiceImpl,
+        validatorService: ValidatorService,
+        hashService: HashServiceImpl
+    ) = CreateShortUrlUseCaseImpl(shortUrlRepositoryService, validatorService, hashService)
+    
     /**
      * Provides a QRCodeWriter.
      * @return an instance of QRCodeWriter.
@@ -110,19 +115,8 @@ class ApplicationConfiguration(
      * @return an instance of ProcessCsvUseCaseImpl.
      */
     @Bean
-    fun processCsvUseCase(
-        createShortUrlUseCase: CreateShortUrlUseCase,
-        baseUrlProvider: BaseUrlProvider,
-        geoLocationService: GeoLocationService,
-        urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
-        urlSafetyService: UrlSafetyService
-    ): ProcessCsvUseCase {
-        return ProcessCsvUseCaseImpl(createShortUrlUseCase,
-            baseUrlProvider,
-            geoLocationService,
-            urlAccessibilityCheckUseCase,
-            urlSafetyService,
-        )
+    fun processCsvUseCase(generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCaseImpl): ProcessCsvUseCase {
+        return ProcessCsvUseCaseImpl(generateEnhancedShortUrlUseCaseImpl)
     }
 
     /**
@@ -204,4 +198,17 @@ class ApplicationConfiguration(
 
     @Bean
     fun baseUrlProvider(): BaseUrlProvider = BaseUrlProviderImpl()
+
+    @Bean
+    fun generateEnhancedShortUrlUseCase(
+        createShortUrlUseCase: CreateShortUrlUseCase,
+        geoLocationService: GeoLocationService,
+        baseUrlProvider: BaseUrlProvider
+    ): GenerateEnhancedShortUrlUseCase {
+        return GenerateEnhancedShortUrlUseCaseImpl(
+            createShortUrlUseCase = createShortUrlUseCase,
+            geoLocationService = geoLocationService,
+            baseUrlProvider = baseUrlProvider
+        )
+    }
 }
