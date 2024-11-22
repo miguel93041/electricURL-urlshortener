@@ -10,6 +10,11 @@ detekt = "1.23.6"  # Detekt version
 jquery = "3.6.1"  # jQuery version
 commonsValidator = "1.6"  # Apache Commons Validator version
 guava = "31.1-jre"  # Google Guava version
+uapJava = "1.6.1"  # UA-Parser version
+zxing = "3.5.2"  # ZXing version
+dotenvKotlin = "6.4.1"  # dotenv-kotlin version
+openCsv = "5.5.2" # openCSV version
+commonsCsv = "1.9.0" # Apache Commons CSV version
 
 # Define plugins with their respective IDs and version references
 [plugins]
@@ -35,10 +40,12 @@ spring-boot-starter-hateoas = { module = "org.springframework.boot:spring-boot-s
 spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }  # Spring Boot Starter JDBC
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }  # Spring Boot Starter Data JPA
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }  # Spring Boot Starter Test
+spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" } # Spring Boot Starter WebFlux
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }  # JUnit Jupiter
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }  # JUnit Platform Launcher
 httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5" }  # Apache HttpClient 5
 hsqldb = { module = "org.hsqldb:hsqldb"}  # HSQLDB
+jackson-module-kotlin  = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" } # Jackson module Kotlin
 
 # Other dependencies
 bootstrap = { module = "org.webjars:bootstrap", version.ref = "bootstrap" }  # Bootstrap
@@ -46,3 +53,9 @@ jquery = { module = "org.webjars:jquery", version.ref = "jquery" }  # jQuery
 commons-validator = { module = "commons-validator:commons-validator", version.ref = "commonsValidator" }  # Apache Commons Validator
 guava = { module = "com.google.guava:guava", version.ref = "guava" }  # Google Guava
 mockito-kotlin =  { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }  # Mockito Kotlin
+uap-java = { module = "com.github.ua-parser:uap-java", version.ref = "uapJava" }  # UA-Parser
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }  # ZXing Core
+zxing-javase = { module = "com.google.zxing:javase", version.ref = "zxing" }  # ZXing JavaSE
+dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenvKotlin" }  # dotenv Kotlin
+opencsv = { module = "com.opencsv:opencsv", version.ref = "openCsv" }  # openCSV
+commons-csv = { module = "org.apache.commons:commons-csv", version.ref = "commonsCsv" }  # Apache Commons CSV

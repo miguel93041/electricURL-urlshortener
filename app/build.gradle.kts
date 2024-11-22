@@ -16,20 +16,17 @@ dependencies {
     implementation(project(":delivery"))
     // Adds the repositories project as an implementation dependency.
     implementation(project(":repositories"))
+    // Adds the gateway project as an implementation dependency.
     implementation(project(":gateway"))
 
-    // Adds the Spring Boot starter as an implementation dependency.
-    implementation(libs.spring.boot.starter)
-    // Adds Bootstrap as an implementation dependency.
-    implementation(libs.bootstrap)
-    // Adds jQuery as an implementation dependency.
-    implementation(libs.jquery)
-
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("com.github.ua-parser:uap-java:1.6.1")
-    implementation("com.google.zxing:core:3.5.2")
-    implementation("com.google.zxing:javase:3.5.2")
-    implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+    // Adds the Spring Boot starter WebFlux as an implementation dependency.
+    implementation(libs.spring.boot.starter.webflux)
+    // Adds UA-Parser as an implementation dependency.
+    implementation(libs.uap.java)
+    // Adds ZXing Core as an implementation dependency.
+    implementation(libs.zxing.core)
+    // Adds dotenv Kotlin as an implementation dependency.
+    implementation(libs.dotenv.kotlin)
 
     // Adds HSQLDB as a runtime-only dependency.
     runtimeOnly(libs.hsqldb)
