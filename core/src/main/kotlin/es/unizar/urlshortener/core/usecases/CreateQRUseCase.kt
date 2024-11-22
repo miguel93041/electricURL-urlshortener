@@ -20,12 +20,17 @@ interface CreateQRUseCase {
      * @param url The shortened URL to encode in the QR code.
      * @param size The width and height (in pixels) of the QR code.
      * @return A base64-encoded [ByteArray] representation of the QR code.
+     * @throws InvalidUrlException if the URL is invalid or empty.
      */
     fun create(url: String, size: Int): ByteArray
 }
 
 /**
  * Implementation of [CreateQRUseCase].
+ *
+ * Generate QR codes created as PNG images and returned as byte arrays for easy transmission or storage.
+ *
+ * @property qrCodeWriter An instance of [QRCodeWriter] used for encoding URLs into QR codes.
  */
 class CreateQRUseCaseImpl(
     private val qrCodeWriter: QRCodeWriter

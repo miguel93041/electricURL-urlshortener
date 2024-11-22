@@ -10,6 +10,9 @@ import org.springframework.web.reactive.function.client.WebClient
  * [GeoLocationServiceImpl] is an implementation of the [GeoLocationService] interface.
  * It provides functionality to retrieve geographical information based on an IP address
  * using the IPInfo API. This class utilizes a [WebClient] for making HTTP requests.
+ *
+ * @property webClient The WebClient instance used for HTTP communication.
+ * @param dotenv The dotenv library instance for loading API keys and other configurations.
  */
 class GeoLocationServiceImpl(
     private val webClient: WebClient,

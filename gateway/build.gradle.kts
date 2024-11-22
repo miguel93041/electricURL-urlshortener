@@ -19,21 +19,11 @@ dependencies {
     // Include the core project as an implementation dependency
     implementation(project(":core"))
 
-    // Include Spring Boot Starter Web as an implementation dependency
-    implementation(libs.spring.boot.starter.web)
+    // Adds the Spring Boot starter WebFlux as an implementation dependency.
+    implementation(libs.spring.boot.starter.webflux)
 
-    // Include Spring Boot Starter HATEOAS as an implementation dependency
-    implementation(libs.spring.boot.starter.hateoas)
-
-    // Include Apache Commons Validator as an implementation dependency
-    implementation(libs.commons.validator)
-
-    // Include Google Guava as an implementation dependency
-    implementation(libs.guava)
-
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-
-    implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+    // Adds dotenv Kotlin as an implementation dependency.
+    implementation(libs.dotenv.kotlin)
 
     // Include Kotlin Test as a test implementation dependency
     testImplementation(libs.kotlin.test)

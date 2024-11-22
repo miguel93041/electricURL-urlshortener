@@ -14,12 +14,17 @@ interface BrowserPlatformIdentificationUseCase {
      *
      * @param userAgent The user agent header from the request.
      * @return A BrowserPlatform object containing the identified browser and platform.
+     * @throws InvalidUrlException if the provided user agent string is empty or invalid.
      */
     fun parse(userAgent: String): BrowserPlatform
 }
 
 /**
  * Implementation of [BrowserPlatformIdentificationUseCase].
+ *
+ * Parses user agent strings and extracts browser and platform details.
+ *
+ * @property parser An instance of [Parser] used to process user agent strings.
  */
 class BrowserPlatformIdentificationUseCaseImpl(
     private val parser: Parser
@@ -28,7 +33,8 @@ class BrowserPlatformIdentificationUseCaseImpl(
      * Parses the user agent string to identify the browser and platform.
      *
      * @param userAgent The user agent header from the request.
-     * @return A BrowserPlatform object containing the identified browser and platform.
+     * @return A BrowserPlatform object containing the identified browser and platform or "Unknown Browser" as
+     * the identified browser name and "Unknown Browser" as the identified platform name if not found.
      * @throws InvalidUrlException if the provided user agent string is empty or invalid.
      */
     override fun parse(userAgent: String): BrowserPlatform {

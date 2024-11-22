@@ -10,18 +10,16 @@ plugins {
 }
 
 dependencies {
-    implementation("com.google.zxing:core:3.5.2")
-
-    implementation("com.google.zxing:javase:3.5.2")
-
-    implementation ("com.opencsv:opencsv:5.5.2")
-
-    implementation ("org.apache.commons:commons-csv:1.9.0")
-
-    implementation("com.github.ua-parser:uap-java:1.6.1")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    // Adds the Spring Boot starter Web as an implementation dependency.
+    implementation(libs.spring.boot.starter.web)
+    // Adds the Spring Boot starter WebFlux as an implementation dependency.
+    implementation(libs.spring.boot.starter.webflux)
+    // Adds UA-Parser as an implementation dependency.
+    implementation(libs.uap.java)
+    // Adds ZXing Core as an implementation dependency.
+    implementation(libs.zxing.core)
+    // Adds ZXing JavaSE as an implementation dependency.
+    implementation(libs.zxing.javase)
 
     // Add Kotlin test library for unit testing
     testImplementation(libs.kotlin.test)

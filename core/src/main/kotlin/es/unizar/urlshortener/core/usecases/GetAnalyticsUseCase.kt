@@ -12,8 +12,6 @@ interface GetAnalyticsUseCase {
     /**
      * Retrieves aggregated analytics data for a given URL identified by its [id].
      *
-     * If the specified [id] does not correspond to an existing ShortUrl, a [RedirectionNotFound] exception is thrown.
-     *
      * @param id The hash of the shortened URL to analyze.
      * @param includeBrowser Whether to include analytics data grouped by browser. Default is false.
      * @param includeCountry Whether to include analytics data grouped by country. Default is false.
@@ -39,6 +37,7 @@ interface GetAnalyticsUseCase {
  * for a shortened URL.
  *
  * @property clickRepository The repository used to fetch click data for the URL.
+ * @property shortUrlRepository The repository used to verify the existence of the shortened URL by its hash.
  */
 class GetAnalyticsUseCaseImpl(
     private val clickRepository: ClickRepositoryService,
@@ -46,8 +45,6 @@ class GetAnalyticsUseCaseImpl(
 ) : GetAnalyticsUseCase {
     /**
      * Retrieves aggregated analytics data for a given URL identified by its [id].
-     *
-     * If the specified [id] does not correspond to an existing ShortUrl, a [RedirectionNotFound] exception is thrown.
      *
      * @param id The hash of the shortened URL to analyze.
      * @param includeBrowser Whether to include analytics data grouped by browser. Default is false.
