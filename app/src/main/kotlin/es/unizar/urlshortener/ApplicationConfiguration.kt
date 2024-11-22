@@ -116,14 +116,13 @@ class ApplicationConfiguration(
      */
     @Bean
     fun processCsvUseCase(
-        createShortUrlUseCase: CreateShortUrlUseCase,
         baseUrlProvider: BaseUrlProvider,
-        geoLocationService: GeoLocationService
+        generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCaseImpl
+
     ): ProcessCsvUseCase {
         return ProcessCsvUseCaseImpl(
-            createShortUrlUseCase,
             baseUrlProvider,
-            geoLocationService,
+            generateEnhancedShortUrlUseCaseImpl,
         )
     }
 

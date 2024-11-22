@@ -64,7 +64,9 @@ data class GeoLocation(
 
 data class GeneratedShortUrlResult(
     val shortUrl: ShortUrl,
-    val qrCodeUrl: URI?
+    val qrCodeUrl: URI?,
+    val url: URI?
+
 )
 
 /**

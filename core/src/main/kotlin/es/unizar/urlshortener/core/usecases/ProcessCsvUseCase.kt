@@ -2,7 +2,6 @@
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.BaseUrlProvider
-import es.unizar.urlshortener.core.GeoLocationService
 import es.unizar.urlshortener.core.ShortUrlProperties
 import jakarta.servlet.http.HttpServletRequest
 import java.io.*
@@ -10,6 +9,7 @@ import es.unizar.urlshortener.core.InvalidUrlException
 import es.unizar.urlshortener.core.UnsafeUrlException
 import es.unizar.urlshortener.core.UrlUnreachableException
 import org.slf4j.LoggerFactory
+import org.springframework.hateoas.server.mvc.linkTo
 
 
 /**
@@ -42,9 +42,8 @@ interface ProcessCsvUseCase {
  */
 @Suppress("TooGenericExceptionCaught")
 class ProcessCsvUseCaseImpl (
-    private val createShortUrlUseCase: CreateShortUrlUseCase,
     private val baseUrlProvider: BaseUrlProvider,
-    private val geoLocationService: GeoLocationService
+    private val generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCaseImpl
 ) : ProcessCsvUseCase {
 
     /**
@@ -59,7 +58,7 @@ class ProcessCsvUseCaseImpl (
      */
     override fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest) {
         val logger = LoggerFactory.getLogger(ProcessCsvUseCaseImpl::class.java)
-        val geoLocation = geoLocationService.get(request.remoteAddr)
+        //val geoLocation = geoLocationService.get(request.remoteAddr)
         writer.append("original-url,shortened-url")
         val qrRequested = request.getParameter("qrRequested")?.toBoolean() ?: false
         if (qrRequested) {
@@ -70,16 +69,20 @@ class ProcessCsvUseCaseImpl (
             br.forEachLine { line ->
                 val originalUrl = line.trim()
                 try {
-                    val shortUrl = createShortUrlUseCase.create(originalUrl, ShortUrlProperties(
-                        ip = geoLocation.ip,
-                        country = geoLocation.country
-                    ))
-
-                    val shortenedUrl = buildShortenedUrl(shortUrl.hash)
+                    val result = generateEnhancedShortUrlUseCaseImpl.generate(
+                        url = originalUrl,
+                        data = ShortUrlProperties(
+                            ip = "",
+                            sponsor = "",
+                            country = ""
+                        ),
+                        qrRequested = qrRequested,
+                        request = request
+                    )
+                    val shortenedUrl = result.url
                     writer.append("$originalUrl,$shortenedUrl")
                     if (qrRequested) {
-                        val qrCodeUrl = buildQrCodeUrl(shortUrl.hash)
-                        writer.append(",$qrCodeUrl")
+                        writer.append(", " + result.qrCodeUrl)
                     }
                     writer.append("\n")
                 } catch (e: InvalidUrlException) {

@@ -158,6 +158,7 @@ class UrlShortenerControllerImpl(
     @Suppress("ReturnCount")
     @PostMapping("/api/link", consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE])
     override fun shortener(data: ShortUrlDataIn, request: HttpServletRequest): ResponseEntity<ShortUrlDataOut> {
+        
         val result = generateEnhancedShortUrlUseCaseImpl.generate(
             url = data.url,
             data = ShortUrlProperties(

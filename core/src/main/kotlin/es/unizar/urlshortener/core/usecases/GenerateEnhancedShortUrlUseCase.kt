@@ -44,6 +44,8 @@ class GenerateEnhancedShortUrlUseCaseImpl(
         )
 
         val shortUrl = createShortUrlUseCase.create(url, enrichedData)
+        var url: URI?
+        url = URI.create("${baseUrlProvider.get()}/${shortUrl.hash}")
         var qrCodeUrl: URI? = null
 
 
@@ -52,7 +54,7 @@ class GenerateEnhancedShortUrlUseCaseImpl(
             qrCodeUrl = URI.create("${baseUrlProvider.get()}/api/qr?id=${shortUrl.hash}")
         }
 
-        return GeneratedShortUrlResult(shortUrl, qrCodeUrl)
+        return GeneratedShortUrlResult(shortUrl, qrCodeUrl, url)
     }
 
     companion object {
