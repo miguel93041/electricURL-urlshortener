@@ -11,12 +11,19 @@ interface UrlAccessibilityCheckUseCase {
      *
      * @param url The URL to check.
      * @return True if the URL is reachable, false otherwise.
+     * @throws Exception If an error occurs during the request, the method will catch it and return false.
      */
     fun isUrlReachable(url: String): Boolean
 }
 
 /**
- * Implementation of [UrlAccessibilityCheckUseCase]
+ * Implementation of [UrlAccessibilityCheckUseCase].
+ *
+ * Attempts to access a URL using an HTTP GET request through the provided [WebClient] instance.
+ * If the request is successful, it returns `true`. If the URL is unreachable or an error occurs during the request,
+ * it returns `false`.
+ *
+ * @property webClient The [WebClient] used to send the HTTP request.
  */
 @Suppress("TooGenericExceptionCaught", "SwallowedException")
 class UrlAccessibilityCheckUseCaseImpl(

@@ -18,12 +18,13 @@ interface RedirectionLimitUseCase {
 }
 
 /**
- * Implementation of [RedirectionLimitUseCase] that checks and updates
- * the redirection count for shortened URLs within a time frame using the ClickRepositoryService.
+ * Implementation of [RedirectionLimitUseCase].
  *
- * @param redirectionLimit The maximum number of allowed redirections within the time frame.
- * @param timeFrameInSeconds The time frame in seconds for which the limit applies.
- * @param clickRepositoryService The service used to count clicks.
+ * Checks and updates the redirection count for shortened URLs within a time frame using the ClickRepositoryService.
+ *
+ * @property redirectionLimit The maximum number of allowed redirections within the time frame.
+ * @property timeFrameInSeconds The time frame in seconds for which the limit applies.
+ * @property clickRepositoryService The service used to count clicks.
  */
 class RedirectionLimitUseCaseImpl(
     private val redirectionLimit: Int = 10,

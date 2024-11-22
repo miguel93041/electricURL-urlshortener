@@ -9,8 +9,6 @@ import es.unizar.urlshortener.core.safeCall
 /**
  * Given a key returns a [Redirection] that contains a [URI target][Redirection.target]
  * and an [HTTP redirection mode][Redirection.mode].
- *
- * **Note**: This is an example of functionality.
  */
 interface RedirectUseCase {
     /**
@@ -25,6 +23,12 @@ interface RedirectUseCase {
 
 /**
  * Implementation of [RedirectUseCase].
+ *
+ * Retrieves redirection details from a [ShortUrlRepositoryService], while ensuring compliance with
+ * redirection limits defined by the [RedirectionLimitUseCase].
+ *
+ * @property shortUrlRepository The repository used to retrieve redirection details.
+ * @property redirectionLimitUseCase The use case that enforces limits on redirections.
  */
 class RedirectUseCaseImpl(
     private val shortUrlRepository: ShortUrlRepositoryService,
@@ -38,7 +42,7 @@ class RedirectUseCaseImpl(
      * @throws RedirectionNotFound if no redirection is found for the given key.
      */
     override fun redirectTo(key: String): Redirection {
-        redirectionLimitUseCase.checkRedirectionLimit(key);
+        redirectionLimitUseCase.checkRedirectionLimit(key)
 
         val redirection = safeCall {
             shortUrlRepository.findByKey(key)

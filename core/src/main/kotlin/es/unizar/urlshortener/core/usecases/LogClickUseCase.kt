@@ -6,8 +6,6 @@ import es.unizar.urlshortener.core.ClickRepositoryService
 
 /**
  * Log that somebody has requested the redirection identified by a key.
- *
- * **Note**: This is an example of functionality.
  */
 interface LogClickUseCase {
     /**
@@ -21,6 +19,10 @@ interface LogClickUseCase {
 
 /**
  * Implementation of [LogClickUseCase].
+ *
+ * Saves click events into a repository using [ClickRepositoryService].
+ *
+ * @property clickRepository The repository service used for saving click events.
  */
 class LogClickUseCaseImpl(
     private val clickRepository: ClickRepositoryService
