@@ -27,11 +27,11 @@ interface RedirectUseCase {
  * Retrieves redirection details from a [ShortUrlRepositoryService], while ensuring compliance with
  * redirection limits defined by the [RedirectionLimitUseCase].
  *
- * @property shortUrlRepository The repository used to retrieve redirection details.
+ * @property shortUrlService The repository used to retrieve redirection details.
  * @property redirectionLimitUseCase The use case that enforces limits on redirections.
  */
 class RedirectUseCaseImpl(
-    private val shortUrlRepository: ShortUrlRepositoryService,
+    private val shortUrlService: ShortUrlRepositoryService,
     private val redirectionLimitUseCase: RedirectionLimitUseCase
 ) : RedirectUseCase {
     /**
@@ -45,7 +45,7 @@ class RedirectUseCaseImpl(
         redirectionLimitUseCase.checkRedirectionLimit(key)
 
         val redirection = safeCall {
-            shortUrlRepository.findByKey(key)
+            shortUrlService.findByKey(key)
         }?.redirection
 
         if (redirection == null) {

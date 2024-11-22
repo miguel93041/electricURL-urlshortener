@@ -108,21 +108,40 @@ class HttpRequestTest {
     }
 
     /**
+     * Tests that a basic redirect with QR requested is created if a hash can be computed.
+     */
+    @Test
+    fun `creates returns a basic redirect with QR requested if it can compute a hash`() {
+        val response = shortUrl("http://example.com/", true)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.CREATED)
+        assertThat(response.headers.location).isEqualTo(URI.create("http://localhost:$port/f684a3c4"))
+        assertThat(response.body?.shortUrl).isEqualTo(URI.create("http://localhost:$port/f684a3c4"))
+        assertThat(response.body?.qrCodeUrl).isEqualTo(URI.create("http://localhost:$port/api/qr?id=f684a3c4"))
+
+        assertThat(JdbcTestUtils.countRowsInTable(jdbcTemplate, "shorturl")).isEqualTo(1)
+        assertThat(JdbcTestUtils.countRowsInTable(jdbcTemplate, "click")).isEqualTo(0)
+    }
+
+    /**
      * Tests that a bad request status is returned if a hash cannot be computed.
      */
     @Test
     fun `creates returns bad request if it can't compute a hash`() {
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
+        val response = shortUrl("ftp://example.com/")
 
-        val data: MultiValueMap<String, String> = LinkedMultiValueMap()
-        data["url"] = "ftp://example.com/"
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
 
-        val response = restTemplate.postForEntity(
-            "http://localhost:$port/api/link",
-            HttpEntity(data, headers),
-            ShortUrlDataOut::class.java
-        )
+        assertThat(JdbcTestUtils.countRowsInTable(jdbcTemplate, "shorturl")).isEqualTo(0)
+        assertThat(JdbcTestUtils.countRowsInTable(jdbcTemplate, "click")).isEqualTo(0)
+    }
+
+    /**
+     * Tests that a bad request status is returned if a hash cannot be computed with QR requested.
+     */
+    @Test
+    fun `creates with QR requested returns bad request if it can't compute a hash`() {
+        val response = shortUrl("ftp://example.com/", true)
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
 
@@ -135,12 +154,13 @@ class HttpRequestTest {
      * @param url The URL to shorten.
      * @return The response entity containing the short URL data.
      */
-    private fun shortUrl(url: String): ResponseEntity<ShortUrlDataOut> {
+    private fun shortUrl(url: String, qrRequested: Boolean = false): ResponseEntity<ShortUrlDataOut> {
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
 
         val data: MultiValueMap<String, String> = LinkedMultiValueMap()
         data["url"] = url
+        data["qrRequested"] = qrRequested.toString()
 
         return restTemplate.postForEntity(
             "http://localhost:$port/api/link",
