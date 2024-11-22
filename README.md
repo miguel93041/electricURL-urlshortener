@@ -155,9 +155,7 @@ The above functionality is available through the following API:
 Returns the landing page of the URL shortener system. This is the main entry point for users to understand what the system offers.
 
 - **Responses:**
-    - `200 OK`: The landing page is successfully returned.
-    - `404 Not Found`: The `index.html` file is not found or incorrectly placed in the static resources.
-    - `500 Internal Server Error`: Unexpected server error.
+    - `200 OK`: The landing page is successfully returned.  
 
 ### 2. **Redirect to Shortened URL**
 
@@ -171,10 +169,7 @@ Redirects a user to the target URL identified by the provided `id` (shortened UR
 
 - **Responses:**
     - `301 Moved Permanently`: Successfully redirects to the target URL.
-    - `400 Bad Request`: The `id` does not comply with the required format.
-    - `403 Forbidden`: The destination URL is no longer safe.
     - `404 Not Found`: The provided `id` does not exist.
-    - `410 Gone`: The URL is no longer accessible.
     - `429 TOO MANY REQUESTS`: Redirection limit reached for the given URL.
     - `500 Internal Server Error`: Unexpected server error.
 
@@ -190,9 +185,8 @@ Generates a QR code for the shortened URL identified by id.
 
 - **Responses:**
   - `200 OK`: The QR code image is successfully generated and returned.
-  - `400 Bad Request`: The `id` does not comply with the required format.
   - `404 Not Found`: The provided `id` does not exist.
-  - `415 Unsupported Media Type`: The requested QR code type is not supported.
+  - `406 Not Acceptable`: The client requested an invalid format for the QR.
   - `500 Internal Server Error`: Unexpected server error.
 
 ### 4. **Get Analytics Data**
@@ -211,9 +205,8 @@ Retrieves aggregated analytics data for a shortened URL. You can request breakdo
 
 - **Responses:**
     - `200 OK`: The analytics data is successfully returned.
-    - `400 Bad Request`: The `id` does not comply with the required format.
     - `404 Not Found`: The provided `id` does not exist.
-    - `415 Unsupported Media Type`: The requested format type is not supported.
+    - `406 Not Acceptable`: The client requested an invalid format for the analytics.
     - `500 Internal Server Error`: Unexpected server error.
 
 ### 5. **Create Short URL**
@@ -224,15 +217,13 @@ Creates a shortened URL from the data sent by a form.
 
 - **Parameters:**
     - `url` (Required): The original URL to shorten.
-    - `sponsor` (Optional): A sponsor name (if applicable).
     - `qrRequested` (Optional, Default: false): Whether to generate a QR code for the shortened URL.
 
 
 - **Responses:**
-    - `200 OK`: The CSV file was successfully processed, and the response contains the shortened URLs and its QR codes URLs if requested.
-    - `400 Bad Request`: The CSV does not meet the required format or is empty.
-    - `413 Payload Too Large`: The uploaded CSV file is too large.
-    - `415 Unsupported Media Type`: The uploaded file is not a CSV file.
+    - `200 OK`: The `url` was successfully processed.
+    - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
+    - `403 Forbidden`: The `url` is unsafe.
     - `500 Internal Server Error`: Unexpected server error.
 
 ### 6. **Upload CSV and Shorten URLs**
@@ -248,8 +239,6 @@ Uploads a CSV file containing URLs to be shortened. The processed CSV will be re
 - **Responses:**
     - `200 OK`: The CSV file was successfully processed, and the response contains the shortened URLs and its QR codes URLs if requested.
     - `400 Bad Request`: The CSV does not meet the required format or is empty.
-    - `413 Payload Too Large`: The uploaded CSV file is too large.
-    - `415 Unsupported Media Type`: The uploaded file is not a CSV file.
     - `500 Internal Server Error`: Unexpected server error.
 
 ## Repositories
@@ -393,10 +382,21 @@ All HTTP status codes for the endpoints mentioned in the Delivery section have b
 ## QR Code Generation
 The QR code generation feature has been implemented as optional, allowing users to choose whether to generate a QR code when shortening a URL or uploading a CSV file.
 
-When a user shortens a URL via `POST /api/link` requesting a QR code, the response includes the shortened URL and a link to the QR code image. Additionally, when a CSV file is uploaded via `POST /api/upload-csv` requesting a QR code, the processed response CSV includes both the shortened URLs and links to the corresponding QR codes. 
+The behaviour is:
+1. The user creates a short URL with POST /api/link and receives a response with the shortened URL and the link to the QR code image if the user requested it.
+2. The user can access the QR code image using the provided link.
+3. The QR code image must contain the shortened URL.
 
 ### Tests
-New tests implemented
+The existing tests have been readjusted to pass.
+
+New tests implemented:
+- UrlShortenerControllerTest
+  - creates returns bad request if the URL is invalid with QR request
+  - creates returns a basic redirect with QR requested if it can compute a hash
+- IntegrationTests 
+  - creates with QR requested returns bad request if it can't compute a hash 
+  - creates returns a basic redirect with QR requested if it can compute a hash
 
 ## Browser and Platform Identification
 Analytics functionality has been added to provide insights into the usage of shortened URLs. A new endpoint `GET /api/analytics` allows users to retrieve aggregated analytics data based on specified parameters, including:
@@ -407,7 +407,11 @@ Analytics functionality has been added to provide insights into the usage of sho
 The endpoint supports flexible queries, enabling users to request analytics for specific categories (e.g., browser data, country data, or both simultaneously) based on their needs.
 
 ### Tests
-New tests implemented
+The existing tests have been readjusted to pass.
+
+New tests implemented:
+- should throw RedirectionNotFound when ShortUrl does not exist 
+- should return correct analytics data for all parameter permutations
 
 ## Geolocation Service
 The Geolocation Service has not been modified, as it was marked as 'outstanding' during the PoC review. Its current implementation fully meets the requirements and continues to perform efficiently, providing accurate location data as expected.
@@ -425,11 +429,24 @@ The CSV Upload feature has been updated to include the option for QR code genera
 
 Additionally, multiple CSV formats are now supported to ensure greater flexibility. The feature was also improved by creating a new use case that consolidates all the functionalities involved in link creation, allowing for code reuse and better maintainability.
 
+Finally, a GenerateEnhancedShortUrlUseCase has been created, which encapsulates the CreateShortUrlUseCase and the GeoLocationService.
+The ValidatorService has been modified to integrate the urlAccessibilityCheckUseCase and the urlSafetyService to ensure a comprehensive approach to link creation and validation.
+This structure promotes code reusability and simplifies feature integration.
+
 ### Tests
-New tests implemented
+The existing tests have been readjusted to pass.
+
+New tests implemented:
+- should generate QR code URLs if requested
 
 ## Redirection Limits
 The Redirection Limits functionality has been completely reworked to meet the requirement of limiting redirections based on time frames. Instead of having an absolute limit, the redirection limit is now applied per time frame, such as 10 redirections per minute. This limit is also configurable, allowing flexibility in defining the thresholds. Additionally, when the redirection limit is reached within the specified time frame, the system now correctly returns a 429 status code, as expected.
 
 ### Tests
-New tests implemented
+The existing tests have been readjusted to pass.
+
+New tests implemented:
+- checkRedirectionLimit does not throw when count is below limit
+- checkRedirectionLimit throws when count equals limit 
+- checkRedirectionLimit throws when count exceeds limit 
+- checkRedirectionLimit throws InternalError when an exception occurs inside the service

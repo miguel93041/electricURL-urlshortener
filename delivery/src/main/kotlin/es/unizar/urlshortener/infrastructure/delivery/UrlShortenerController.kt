@@ -55,6 +55,7 @@ class UrlShortenerControllerImpl(
     val processCsvUseCase: ProcessCsvUseCase,
     val getAnalyticsUseCase: GetAnalyticsUseCase,
     val generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCase,
+    val shortUrlRepositoryService: ShortUrlRepositoryService,
 ) : UrlShortenerController {
 
     /**
@@ -98,6 +99,14 @@ class UrlShortenerControllerImpl(
      */
     @GetMapping("/api/qr", produces = [MediaType.IMAGE_PNG_VALUE])
     fun redirectToQrCode(@RequestParam id: String, request: HttpServletRequest): ResponseEntity<ByteArray> {
+        val redirection = safeCall {
+            shortUrlRepositoryService.findByKey(id)
+        }?.redirection
+
+        if (redirection == null) {
+            throw RedirectionNotFound(id)
+        }
+
         val qrCode = qrUseCase.create(
             linkTo<UrlShortenerControllerImpl> {
                 redirectTo(
@@ -182,7 +191,7 @@ class UrlShortenerControllerImpl(
      * @return A ResponseEntity containing the analytics data. Returns 200 OK with the data on success,
      *         or 404 NOT FOUND if hash is invalid.
      */
-    @GetMapping("/api/analytics")
+    @GetMapping("/api/analytics", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getAnalytics(
         @RequestParam id: String,
         @RequestParam(required = false, defaultValue = "false") browser: Boolean,
