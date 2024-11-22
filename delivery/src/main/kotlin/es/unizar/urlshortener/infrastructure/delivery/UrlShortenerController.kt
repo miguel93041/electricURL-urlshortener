@@ -99,11 +99,11 @@ class UrlShortenerControllerImpl(
      */
     @GetMapping("/api/qr", produces = [MediaType.IMAGE_PNG_VALUE])
     fun redirectToQrCode(@RequestParam id: String, request: HttpServletRequest): ResponseEntity<ByteArray> {
-        val redirection = safeCall {
+        val shortUrl: ShortUrl? = safeCall {
             shortUrlRepositoryService.findByKey(id)
-        }?.redirection
+        }
 
-        if (redirection == null) {
+        if (shortUrl == null) {
             throw RedirectionNotFound(id)
         }
 
