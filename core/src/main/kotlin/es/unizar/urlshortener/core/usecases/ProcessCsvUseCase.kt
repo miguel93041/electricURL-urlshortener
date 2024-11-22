@@ -70,13 +70,11 @@ class ProcessCsvUseCaseImpl (
             br.forEachLine { line ->
                 val originalUrl = line.trim()
                 try {
-                    // Crea el URL corto utilizando el método create
                     val shortUrl = createShortUrlUseCase.create(originalUrl, ShortUrlProperties(
                         ip = geoLocation.ip,
                         country = geoLocation.country
                     ))
 
-                    // Construye el URL acortado y escribe la línea de resultado
                     val shortenedUrl = buildShortenedUrl(shortUrl.hash)
                     writer.append("$originalUrl,$shortenedUrl")
                     if (qrRequested) {

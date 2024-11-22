@@ -1,5 +1,6 @@
 package es.unizar.urlshortener.core
 
+import java.net.URI
 import java.time.OffsetDateTime
 
 /**
@@ -59,6 +60,11 @@ data class ClickProperties(
 data class GeoLocation(
     val ip: String,
     val country: String
+)
+
+data class GeneratedShortUrlResult(
+    val shortUrl: ShortUrl,
+    val qrCodeUrl: URI?
 )
 
 /**

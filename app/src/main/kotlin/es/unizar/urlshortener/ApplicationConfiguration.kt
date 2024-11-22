@@ -206,4 +206,17 @@ class ApplicationConfiguration(
 
     @Bean
     fun baseUrlProvider(): BaseUrlProvider = BaseUrlProviderImpl()
+
+    @Bean
+    fun generateEnhancedShortUrlUseCase(
+        createShortUrlUseCase: CreateShortUrlUseCase,
+        geoLocationService: GeoLocationService,
+        baseUrlProvider: BaseUrlProvider
+    ): GenerateEnhancedShortUrlUseCase {
+        return GenerateEnhancedShortUrlUseCaseImpl(
+            createShortUrlUseCase = createShortUrlUseCase,
+            geoLocationService = geoLocationService,
+            baseUrlProvider = baseUrlProvider
+        )
+    }
 }
