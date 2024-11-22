@@ -73,7 +73,7 @@ class ApplicationConfiguration(
         redirectionLimitUseCase: RedirectionLimitUseCase
     ): RedirectUseCase {
     return RedirectUseCaseImpl(
-        shortUrlRepository = shortUrlRepositoryService,
+        shortUrlService = shortUrlRepositoryService,
         redirectionLimitUseCase = redirectionLimitUseCase
     )
 }

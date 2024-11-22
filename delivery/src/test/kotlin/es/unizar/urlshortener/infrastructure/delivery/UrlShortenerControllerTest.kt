@@ -123,6 +123,31 @@ class UrlShortenerControllerTest {
     }
 
     /**
+     * Tests that `creates` returns a basic redirect with QR requested if it can compute a hash.
+     */
+    @Test
+    fun `creates returns a basic redirect with QR requested if it can compute a hash`() {
+        // Mock the behavior of generateEnhancedShortUrlUseCaseImpl to return a ShortUrlDataOut
+        given(generateEnhancedShortUrlUseCaseImpl.generate(any(), any())).willReturn(
+            ShortUrlDataOut(
+                shortUrl = URI.create("http://localhost/f684a3c4"),
+                qrCodeUrl = URI.create("http://localhost/api/qr?id=f684a3c4")
+            )
+        )
+        given(geoLocationService.get(Mockito.anyString())).willReturn(GeoLocation("127.0.0.1", "Bogon"))
+
+        // Perform a POST request and verify the response status, redirection URL, and JSON response
+        mockMvc.perform(
+            post("/api/link")
+                .param("url", "http://example.com/")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.shortUrl").value("http://localhost/f684a3c4"))
+            .andExpect(jsonPath("$.qrCodeUrl").value("http://localhost/api/qr?id=f684a3c4"))
+    }
+
+    /**
      * Tests that `creates` returns a bad request status if it cannot compute a hash.
      */
     @Test
@@ -137,6 +162,29 @@ class UrlShortenerControllerTest {
         mockMvc.perform(
             post("/api/link")
                 .param("url", "ftp://example.com/")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.statusCode").value(400))
+            .andExpect(jsonPath("$.message").value("[ftp://example.com/] does not follow a supported schema"))
+    }
+
+    /**
+     * Tests that `creates` returns a bad request status if it cannot compute a hash with QR request.
+     */
+    @Test
+    fun `creates returns bad request if the URL is invalid with QR request`() {
+        // Mock the behavior of generateEnhancedShortUrlUseCaseImpl to throw an InvalidUrlException
+        given(generateEnhancedShortUrlUseCaseImpl.generate(any(), any())).willAnswer {
+            throw InvalidUrlException("ftp://example.com/")
+        }
+        given(geoLocationService.get(Mockito.anyString())).willReturn(GeoLocation("127.0.0.1", "Bogon"))
+
+        // Perform a POST request and verify the response status and error message
+        mockMvc.perform(
+            post("/api/link")
+                .param("url", "ftp://example.com/")
+                .param("qrRequested", true.toString())
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
         )
             .andExpect(status().isBadRequest)
