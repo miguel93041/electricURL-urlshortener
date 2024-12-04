@@ -19,6 +19,12 @@ dependencies {
     // Adds the gateway project as an implementation dependency.
     implementation(project(":gateway"))
 
+    // Adds the Spring Boot starter as an implementation dependency.
+    implementation(libs.spring.boot.starter)
+    // Adds Bootstrap as an implementation dependency.
+    implementation(libs.bootstrap)
+    // Adds jQuery as an implementation dependency.
+    implementation(libs.jquery)
     // Adds the Spring Boot starter WebFlux as an implementation dependency.
     implementation(libs.spring.boot.starter.webflux)
     // Adds UA-Parser as an implementation dependency.
