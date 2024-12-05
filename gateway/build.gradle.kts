@@ -19,6 +19,8 @@ dependencies {
     // Include the core project as an implementation dependency
     implementation(project(":core"))
 
+    // Validate ipv6 o ipv4
+    implementation("commons-validator:commons-validator:1.7")
     // Adds the Spring Boot starter WebFlux as an implementation dependency.
     implementation(libs.spring.boot.starter.webflux)
 

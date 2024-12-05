@@ -38,13 +38,26 @@ class GeoLocationServiceTest {
     }
 
     @Test
-    fun `should return GeoLocation with country Bogon when API returns bogon response`() {
-        val response = mapOf("ip" to "10.0.0.1", "bogon" to true)
-        mockWebClientResponse(response)
-
-        val result = geoLocationService.get("10.0.0.1")
-        assertEquals("10.0.0.1", result.ip)
+    fun `should return GeoLocation with country Bogon for bogon IPv4 address`() {
+        val result = geoLocationService.get("127.0.0.1")
+        assertEquals("127.0.0.1", result.ip)
         assertEquals("Bogon", result.country)
+    }
+
+    @Test
+    fun `should return GeoLocation with country Bogon for bogon IPv6 address`() {
+        val result = geoLocationService.get("::1")
+        assertEquals("::1", result.ip)
+        assertEquals("Bogon", result.country)
+    }
+
+    @Test
+    fun `should throw exception when IP is invalid`() {
+        val invalidIp = "999.999.999.999" // IP incorrect
+
+        assertThrows<IllegalArgumentException> {
+            geoLocationService.get(invalidIp)
+        }
     }
 
     @Test

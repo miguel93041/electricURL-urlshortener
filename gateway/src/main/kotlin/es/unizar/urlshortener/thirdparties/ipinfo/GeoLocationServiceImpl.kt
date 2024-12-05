@@ -30,24 +30,23 @@ class GeoLocationServiceImpl(
      * **TODO**: Implement a custom IP class that validates and checks for IPv4 or IPv6 format.
      */
     override fun get(ip: String): GeoLocation {
-        val url = buildRequestUrl(ip)
+        val ipAddress = IpAddress(ip)
 
-        // TODO: In the custom IP class auto-detect if ip is Bogon and return
+        if (ipAddress.isBogon) {
+            return GeoLocation(ipAddress.ip, "Bogon")
+        }
+
+        val url = buildRequestUrl(ipAddress)
         val response = webClient.get()
             .uri(url)
             .retrieve()
             .bodyToMono(Map::class.java)
             .block()
 
-        val ipAddress = response?.get("ip") as String
-        val country = if (response.containsKey("bogon")) {
-            "Bogon"
-        } else {
-            response["country"] as String
-        }
-
-        return GeoLocation(ipAddress, country)
+        val country = response?.get("country") as String? ?: "Unknown"
+        return GeoLocation(ipAddress.ip, country)
     }
+
 
     /**
      * Builds the request URL for the IPInfo API using the provided IP address.
@@ -58,8 +57,9 @@ class GeoLocationServiceImpl(
      * **TODO**: Adapt request URL to handle different formats for IPv4 and IPv6,
      * as the IPInfo endpoint may differ based on the format.
      */
-    private fun buildRequestUrl(ip: String): String {
-        return "${IPINFO_BASE_URL}${ip}?token=${accessToken}"
+    private fun buildRequestUrl(ip: IpAddress): String {
+        val formattedIp = if (ip.isIPv6) "[${ip.ip}]" else if (ip.isIPv4) ip.ip else ip.ip
+        return "${IPINFO_BASE_URL}${formattedIp}?token=${accessToken}"
     }
 
     companion object {
