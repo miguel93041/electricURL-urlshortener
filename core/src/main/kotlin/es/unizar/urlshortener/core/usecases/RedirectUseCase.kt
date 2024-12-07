@@ -1,10 +1,10 @@
 package es.unizar.urlshortener.core.usecases
 
 import RedirectionLimitUseCase
-import es.unizar.urlshortener.core.Redirection
-import es.unizar.urlshortener.core.RedirectionNotFound
-import es.unizar.urlshortener.core.ShortUrlRepositoryService
-import es.unizar.urlshortener.core.safeCall
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
+import es.unizar.urlshortener.core.*
 
 /**
  * Given a key returns a [Redirection] that contains a [URI target][Redirection.target]
@@ -18,7 +18,7 @@ interface RedirectUseCase {
      * @return The [Redirection] containing the target URL and redirection mode.
      * @throws RedirectionNotFound if no redirection is found for the given key.
      */
-    fun redirectTo(key: String): Redirection
+    fun redirectTo(key: String): Result<Redirection, HashError>
 }
 
 /**
@@ -41,17 +41,16 @@ class RedirectUseCaseImpl(
      * @return The [Redirection] containing the target URL and redirection mode.
      * @throws RedirectionNotFound if no redirection is found for the given key.
      */
-    override fun redirectTo(key: String): Redirection {
-        redirectionLimitUseCase.checkRedirectionLimit(key)
+    override fun redirectTo(key: String): Result<Redirection, HashError> {
+        val isRedirectionLimit = redirectionLimitUseCase.isRedirectionLimit(key)
+        if (isRedirectionLimit) {
+            return Err(HashError.TooManyRequests)
+        }
 
         val redirection = safeCall {
             shortUrlService.findByKey(key)
-        }?.redirection
+        }!!.redirection
 
-        if (redirection == null) {
-            throw RedirectionNotFound(key)
-        }
-
-        return redirection
+        return Ok(redirection)
     }
 }

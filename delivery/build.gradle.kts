@@ -28,6 +28,9 @@ dependencies {
     // Include Google Guava as an implementation dependency
     implementation(libs.guava)
 
+    // Include kotlin-result as an implementation dependency.
+
+    implementation(libs.kotlin.result)
     // Include Kotlin Test as a test implementation dependency
     testImplementation(libs.kotlin.test)
 

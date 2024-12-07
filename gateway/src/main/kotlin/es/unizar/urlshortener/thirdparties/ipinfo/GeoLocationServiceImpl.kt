@@ -39,6 +39,7 @@ class GeoLocationServiceImpl(
             .bodyToMono(Map::class.java)
             .block()
 
+        // TODO: Check 200's code or Unknown
         val ipAddress = response?.get("ip") as String
         val country = if (response.containsKey("bogon")) {
             "Bogon"

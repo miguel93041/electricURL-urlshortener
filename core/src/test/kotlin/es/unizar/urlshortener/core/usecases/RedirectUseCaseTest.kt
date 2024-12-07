@@ -18,13 +18,13 @@ class RedirectUseCaseTest {
         val redlimit = mock<RedirectionLimitUseCase>()
         val shortUrl = ShortUrl("key", redirection)
         whenever(repository.findByKey("key")).thenReturn(shortUrl)
-        doNothing().whenever(redlimit).checkRedirectionLimit("key")
+        doNothing().whenever(redlimit).isRedirectionLimit("key")
         val useCase = RedirectUseCaseImpl(repository, redlimit)
 
         val result = useCase.redirectTo("key")
 
         assertEquals(redirection, result)
-        verify(redlimit, times(1)).checkRedirectionLimit("key")
+        verify(redlimit, times(1)).isRedirectionLimit("key")
         verify(repository, times(1)).findByKey("key")
     }
 
@@ -32,14 +32,14 @@ class RedirectUseCaseTest {
     fun `redirectTo throws TooManyRequestsException when redirection limit is exceeded`() {
         val repository = mock<ShortUrlRepositoryService>()
         val redlimit = mock<RedirectionLimitUseCase>()
-        doThrow(TooManyRequestsException("key")).whenever(redlimit).checkRedirectionLimit("key")
+        doThrow(TooManyRequestsException("key")).whenever(redlimit).isRedirectionLimit("key")
         val useCase = RedirectUseCaseImpl(repository, redlimit)
 
         assertThrows<TooManyRequestsException> {
             useCase.redirectTo("key")
         }
 
-        verify(redlimit, times(1)).checkRedirectionLimit("key")
+        verify(redlimit, times(1)).isRedirectionLimit("key")
         verify(repository, never()).findByKey(any())
     }
 
@@ -47,7 +47,7 @@ class RedirectUseCaseTest {
     fun `redirectTo throws RedirectionNotFound when the key does not exist`() {
         val repository = mock<ShortUrlRepositoryService>()
         val redlimit = mock<RedirectionLimitUseCase>()
-        doNothing().whenever(redlimit).checkRedirectionLimit("key")
+        doNothing().whenever(redlimit).isRedirectionLimit("key")
         whenever(repository.findByKey("key")).thenReturn(null)
         val useCase = RedirectUseCaseImpl(repository, redlimit)
 
@@ -55,7 +55,7 @@ class RedirectUseCaseTest {
             useCase.redirectTo("key")
         }
 
-        verify(redlimit, times(1)).checkRedirectionLimit("key")
+        verify(redlimit, times(1)).isRedirectionLimit("key")
         verify(repository, times(1)).findByKey("key")
     }
 
@@ -63,7 +63,7 @@ class RedirectUseCaseTest {
     fun `redirectTo throws InternalError when repository throws an exception`() {
         val repository = mock<ShortUrlRepositoryService>()
         val redlimit = mock<RedirectionLimitUseCase>()
-        doNothing().whenever(redlimit).checkRedirectionLimit("key")
+        doNothing().whenever(redlimit).isRedirectionLimit("key")
         whenever(repository.findByKey("key")).thenThrow(RuntimeException())
         val useCase = RedirectUseCaseImpl(repository, redlimit)
 
@@ -71,7 +71,7 @@ class RedirectUseCaseTest {
             useCase.redirectTo("key")
         }
 
-        verify(redlimit, times(1)).checkRedirectionLimit("key")
+        verify(redlimit, times(1)).isRedirectionLimit("key")
         verify(repository, times(1)).findByKey("key")
     }
 }

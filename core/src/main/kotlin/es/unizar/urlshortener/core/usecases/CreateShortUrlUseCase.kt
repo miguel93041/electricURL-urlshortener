@@ -27,12 +27,10 @@ interface CreateShortUrlUseCase {
  * and saves the resulting short URL along with any provided metadata in the repository.
  *
  * @property shortUrlRepository The repository service responsible for saving and retrieving short URLs.
- * @property validatorService The service responsible for validating the correctness of the target URL.
  * @property hashService The service responsible for generating a unique hash for the URL.
  */
 class CreateShortUrlUseCaseImpl(
     private val shortUrlRepository: ShortUrlRepositoryService,
-    private val validatorService: ValidatorService,
     private val hashService: HashService
 ) : CreateShortUrlUseCase {
     /**
@@ -44,24 +42,13 @@ class CreateShortUrlUseCaseImpl(
      * @throws InvalidUrlException if the URL is not valid.
      */
     override fun create(url: String, data: ShortUrlProperties): ShortUrl {
-        val validationResult = validatorService.validate(url)
+        val id = hashService.hashUrl(url)
+        val su = ShortUrl(
+            hash = id,
+            redirection = Redirection(target = url),
+            properties = data
+        )
 
-        when (validationResult) {
-            ValidatorResult.NOT_VALID_FORMAT -> throw InvalidUrlException(url)
-            ValidatorResult.NOT_SAFE -> throw UnsafeUrlException(url)
-            ValidatorResult.NOT_REACHABLE -> throw UrlUnreachableException(url)
-            ValidatorResult.VALID -> {
-                return safeCall{
-                    val id = hashService.hasUrl(url)
-                    val su = ShortUrl(
-                        hash = id,
-                        redirection = Redirection(target = url),
-                        properties = data
-                    )
-                    shortUrlRepository.save(su)
-                }
-            }
-        }
+        return safeCall{ shortUrlRepository.save(su) }
     }
-
 }

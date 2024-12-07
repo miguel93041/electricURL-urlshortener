@@ -7,7 +7,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.usecases.*
 import es.unizar.urlshortener.infrastructure.delivery.HashServiceImpl
-import es.unizar.urlshortener.infrastructure.delivery.ValidatorServiceImpl
+import es.unizar.urlshortener.infrastructure.delivery.UrlValidatorServiceImpl
 import es.unizar.urlshortener.infrastructure.repositories.ClickEntityRepository
 import es.unizar.urlshortener.infrastructure.repositories.ClickRepositoryServiceImpl
 import es.unizar.urlshortener.infrastructure.repositories.ShortUrlEntityRepository
@@ -53,8 +53,8 @@ class ApplicationConfiguration(
      */
     @Bean
     fun validatorService(urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
-                         urlSafetyService: UrlSafetyService): ValidatorService =
-        ValidatorServiceImpl(urlAccessibilityCheckUseCase, urlSafetyService)
+                         urlSafetyService: UrlSafetyService): UrlValidatorService =
+        UrlValidatorServiceImpl(urlAccessibilityCheckUseCase, urlSafetyService)
     
     /**
      * Provides an implementation of the HashService.
@@ -92,9 +92,9 @@ class ApplicationConfiguration(
     @Bean
     fun createShortUrlUseCase(
         shortUrlRepositoryService: ShortUrlRepositoryServiceImpl,
-        validatorService: ValidatorService,
+        urlValidatorService: UrlValidatorService,
         hashService: HashServiceImpl
-    ) = CreateShortUrlUseCaseImpl(shortUrlRepositoryService, validatorService, hashService)
+    ) = CreateShortUrlUseCaseImpl(shortUrlRepositoryService, urlValidatorService, hashService)
     
     /**
      * Provides a QRCodeWriter.

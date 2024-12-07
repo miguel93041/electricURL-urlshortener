@@ -20,6 +20,8 @@ dependencies {
     implementation(libs.zxing.core)
     // Adds ZXing JavaSE as an implementation dependency.
     implementation(libs.zxing.javase)
+    // Adds kotlin-result as an implementation dependency.
+    implementation(libs.kotlin.result)
 
     // Add Kotlin test library for unit testing
     testImplementation(libs.kotlin.test)

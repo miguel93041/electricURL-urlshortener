@@ -221,7 +221,7 @@ Creates a shortened URL from the data sent by a form.
 
 
 - **Responses:**
-    - `200 OK`: The `url` was successfully processed.
+    - `201 CREATED`: The `url` was successfully processed.
     - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
     - `403 Forbidden`: The `url` is unsafe.
     - `500 Internal Server Error`: Unexpected server error.

@@ -1,5 +1,6 @@
 package es.unizar.urlshortener.core
 
+import com.github.michaelbull.result.Result
 import java.time.OffsetDateTime
 
 /**
@@ -54,18 +55,31 @@ interface ShortUrlRepositoryService {
 }
 
 /**
- * [ValidatorService] is the port to the service that validates if an url can be shortened.
+ * [UrlValidatorService] is the port to the service that validates if an url can be shortened.
  *
- * **Note**: It is a design decision to create this port. It could be part of the core.
  */
-interface ValidatorService {
+interface UrlValidatorService {
     /**
      * Validates if the given URL can be shortened.
      *
      * @param url The URL to be validated.
-     * @return True if the URL is valid, false otherwise.
+     * @return The result of the validation.
      */
-    fun validate(url: String): ValidatorResult
+    fun validate(url: String): Result<Unit, UrlError>
+}
+
+/**
+ * [UrlValidatorService] is the port to the service that validates if an url can be shortened.
+ *
+ */
+interface HashValidatorService {
+    /**
+     * Validates if the given hash is valid.
+     *
+     * @param hash The hash to be validated.
+     * @return The result of the validation.
+     */
+    fun validate(hash: String): Result<Unit, HashError>
 }
 
 /**
@@ -80,7 +94,7 @@ interface HashService {
      * @param url The URL to be hashed.
      * @return The hash of the URL.
      */
-    fun hasUrl(url: String): String
+    fun hashUrl(url: String): String
 }
 
 /**

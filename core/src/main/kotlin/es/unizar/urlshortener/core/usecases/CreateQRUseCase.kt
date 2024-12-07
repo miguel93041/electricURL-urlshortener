@@ -44,10 +44,6 @@ class CreateQRUseCaseImpl(
      * @throws InvalidUrlException if the URL is invalid or empty.
      */
     override fun create(url: String, size: Int): ByteArray {
-        if (url.isEmpty()) {
-            throw InvalidUrlException("URL is invalid")
-        }
-
         val bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, size, size)
         val bufferedImage: BufferedImage = MatrixToImageWriter.toBufferedImage(bitMatrix)
         val outputByteArray = ByteArrayOutputStream()

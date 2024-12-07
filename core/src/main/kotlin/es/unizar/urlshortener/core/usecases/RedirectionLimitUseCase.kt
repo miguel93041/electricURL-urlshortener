@@ -14,7 +14,7 @@ interface RedirectionLimitUseCase {
      * @param urlId The identifier of the shortened URL.
      * @throws TooManyRequestsException if limit is reached
      */
-    fun checkRedirectionLimit(urlId: String)
+    fun isRedirectionLimit(urlId: String): Boolean
 }
 
 /**
@@ -39,7 +39,7 @@ class RedirectionLimitUseCaseImpl(
      * @param urlId The identifier of the shortened URL.
      * @throws TooManyRequestsException if limit is reached
      */
-    override fun checkRedirectionLimit(urlId: String) {
+    override fun isRedirectionLimit(urlId: String): Boolean {
         val count = safeCall {
             val now = OffsetDateTime.now()
             val startTime = now.minusSeconds(timeFrameInSeconds)
@@ -47,8 +47,6 @@ class RedirectionLimitUseCaseImpl(
             clickRepositoryService.countClicksByHashAfter(urlId, startTime)
         }
 
-        if (count >= redirectionLimit) {
-            throw TooManyRequestsException(urlId)
-        }
+        return count >= redirectionLimit
     }
 }

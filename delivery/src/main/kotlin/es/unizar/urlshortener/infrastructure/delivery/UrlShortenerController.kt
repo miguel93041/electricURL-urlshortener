@@ -2,7 +2,10 @@
 
 package es.unizar.urlshortener.infrastructure.delivery
 
+import com.github.michaelbull.result.fold
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.services.QrService
+import es.unizar.urlshortener.core.services.RedirectService
 import es.unizar.urlshortener.core.usecases.*
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.hateoas.server.mvc.linkTo
@@ -29,7 +32,7 @@ interface UrlShortenerController {
      * @param request The HTTP request containing client details.
      * @return A [ResponseEntity] with redirection information.
      */
-    fun redirectTo(id: String, request: HttpServletRequest): ResponseEntity<Unit>
+    fun redirectTo(id: String, request: HttpServletRequest)
 
     /**
      * Creates a short url from details provided in [data].
@@ -38,7 +41,7 @@ interface UrlShortenerController {
      * @param request The HTTP request for capturing client context.
      * @return A [ResponseEntity] with the details of the created short URL.
      */
-    fun shortener(data: ShortUrlDataIn, request: HttpServletRequest): ResponseEntity<ShortUrlDataOut>
+    fun shortener(data: ShortUrlDataIn, request: HttpServletRequest)
 }
 
 /**
@@ -56,6 +59,8 @@ class UrlShortenerControllerImpl(
     val getAnalyticsUseCase: GetAnalyticsUseCase,
     val generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCase,
     val shortUrlRepositoryService: ShortUrlRepositoryService,
+    val redirectService: RedirectService,
+    val qrService: QrService,
 ) : UrlShortenerController {
 
     /**
@@ -66,28 +71,24 @@ class UrlShortenerControllerImpl(
      * @return a ResponseEntity with the redirection details
      */
     @GetMapping("/{id:(?!api|index|favicon\\.ico).*}")
-    override fun redirectTo(@PathVariable id: String, request: HttpServletRequest): ResponseEntity<Unit> {
-        val geoLocation = geoLocationService.get(request.remoteAddr)
-        val userAgent = request.getHeader("User-Agent")
-        var browserPlatform: BrowserPlatform? = null
-        if (userAgent != null) {
-            browserPlatform = browserPlatformIdentificationUseCase.parse(userAgent)
-        }
+    override fun redirectTo(@PathVariable id: String, request: HttpServletRequest) {
+        val redirectionResult = redirectService.getRedirectionAndLogClick(id, request)
 
-        return redirectUseCase.redirectTo(id).run {
-            logClickUseCase.logClick(
-                id,
-                ClickProperties(
-                    ip = geoLocation.ip,
-                    country = geoLocation.country,
-                    browser = browserPlatform?.browser,
-                    platform = browserPlatform?.platform
-                )
-            )
-            val h = HttpHeaders()
-            h.location = URI.create(target)
-            ResponseEntity<Unit>(h, HttpStatus.valueOf(mode))
-        }
+        return redirectionResult.fold(
+            success = { redirection ->
+                val headers = HttpHeaders()
+                headers.location = safeCall { URI.create(redirection.target) }
+                ResponseEntity<Unit>(headers, HttpStatus.valueOf(redirection.mode))
+            },
+            failure = { error ->
+                val (status, message) = when (error) {
+                    HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
+                    HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                    HashError.TooManyRequests -> HttpStatus.TOO_MANY_REQUESTS to "This shortened hash is under load"
+                }
+                ResponseEntity.status(status).body(message)
+            }
+        )
     }
 
     /**
@@ -98,28 +99,23 @@ class UrlShortenerControllerImpl(
      * @return A [ResponseEntity] with the QR code image as a PNG image in a byte array format.
      */
     @GetMapping("/api/qr", produces = [MediaType.IMAGE_PNG_VALUE])
-    fun redirectToQrCode(@RequestParam id: String, request: HttpServletRequest): ResponseEntity<ByteArray> {
-        val shortUrl: ShortUrl? = safeCall {
-            shortUrlRepositoryService.findByKey(id)
-        }
+    fun redirectToQrCode(@RequestParam id: String, request: HttpServletRequest) {
+        val qrResult = qrService.getQrImage(id)
 
-        if (shortUrl == null) {
-            throw RedirectionNotFound(id)
-        }
-
-        val qrCode = qrUseCase.create(
-            linkTo<UrlShortenerControllerImpl> {
-                redirectTo(
-                    id,
-                    request
-                )
-            }.toUri().toString(),
-            QR_SIZE
+        return qrResult.fold(
+            success = { qr ->
+                ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_PNG)
+                    .body(qr)
+            },
+            failure = { error ->
+                val (status, message) = when (error) {
+                    HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
+                    HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                }
+                ResponseEntity.status(status).body(message)
+            }
         )
-
-        return ResponseEntity.ok()
-            .contentType(MediaType.IMAGE_PNG)
-            .body(qrCode)
     }
 
     /**
@@ -168,13 +164,24 @@ class UrlShortenerControllerImpl(
      */
     @Suppress("ReturnCount")
     @PostMapping("/api/link", consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE])
-    override fun shortener(data: ShortUrlDataIn, request: HttpServletRequest): ResponseEntity<ShortUrlDataOut> {
-        val response = generateEnhancedShortUrlUseCaseImpl.generate(data, request)
+    override fun shortener(data: ShortUrlDataIn, request: HttpServletRequest) {
+        val generationResult = generateEnhancedShortUrlUseCaseImpl.generate(data, request)
 
-        val h = HttpHeaders()
-        h.location = response.shortUrl
-
-        return ResponseEntity(response, h, HttpStatus.CREATED)
+        return generationResult.fold(
+            success = { shortUrlDataOut ->
+                val headers = HttpHeaders()
+                headers.location = shortUrlDataOut.shortUrl
+                ResponseEntity(shortUrlDataOut, headers, HttpStatus.CREATED)
+            },
+            failure = { error ->
+                val (status, message) = when (error) {
+                    UrlError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid URL format"
+                    UrlError.Unreachable -> HttpStatus.BAD_REQUEST to "URL is unreachable"
+                    UrlError.Unsafe -> HttpStatus.FORBIDDEN to "URL is flagged as unsafe"
+                }
+                ResponseEntity.status(status).body(message)
+            }
+        )
     }
 
     /**
@@ -207,9 +214,5 @@ class UrlShortenerControllerImpl(
             includeReferrer = referrer
         )
         return ResponseEntity.ok(analyticsData)
-    }
-
-    companion object {
-        const val QR_SIZE = 256
     }
 }

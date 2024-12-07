@@ -2,9 +2,11 @@
 
 package es.unizar.urlshortener.core.usecases
 
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
 import es.unizar.urlshortener.core.*
 import jakarta.servlet.http.HttpServletRequest
-import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 
 /**
@@ -19,7 +21,7 @@ interface GenerateEnhancedShortUrlUseCase {
      * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
      * @return A data object containing the generated short URL and optional QR code URL.
      */
-    fun generate(data: ShortUrlDataIn, request: HttpServletRequest): ShortUrlDataOut
+    fun generate(data: ShortUrlDataIn, request: HttpServletRequest): Result<ShortUrlDataOut, UrlError>
 }
 
 /**
@@ -27,8 +29,8 @@ interface GenerateEnhancedShortUrlUseCase {
  *
  * This class acts as the controller to handle requests for generating enhanced short URLs.
  */
-@RestController
 class GenerateEnhancedShortUrlUseCaseImpl(
+    private val urlValidatorService: UrlValidatorService,
     private val createShortUrlUseCase: CreateShortUrlUseCase,
     private val geoLocationService: GeoLocationService,
     private val baseUrlProvider: BaseUrlProvider
@@ -41,22 +43,30 @@ class GenerateEnhancedShortUrlUseCaseImpl(
      * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
      * @return A data object containing the short URL and optionally a QR code URL.
      */
-    override fun generate(data: ShortUrlDataIn, request: HttpServletRequest): ShortUrlDataOut {
-        val geoLocation = geoLocationService.get(request.remoteAddr)
+    override fun generate(data: ShortUrlDataIn, request: HttpServletRequest): Result<ShortUrlDataOut, UrlError> {
+        // Validate URL
+        val validationResult = urlValidatorService.validate(data.url);
+        if (validationResult.isErr) {
+            return Err(validationResult.error)
+        }
 
+        // Enhancement data
+        val geoLocation = geoLocationService.get(request.remoteAddr)
         val enrichedData = ShortUrlProperties(
             ip = geoLocation.ip,
             country = geoLocation.country
         )
 
-        val shortUrlModel = createShortUrlUseCase.create(data.url!!, enrichedData)
-        val shortUrl = URI.create("${baseUrlProvider.get()}/${shortUrlModel.hash}")
+        // Generate a new short-URL in the system
+        val shortUrlModel = createShortUrlUseCase.create(data.url, enrichedData)
 
+        // Create links
+        val shortUrl = safeCall { URI.create("${baseUrlProvider.get()}/${shortUrlModel.hash}") }
         var qrCodeUrl: URI? = null
         if (data.qrRequested) {
-            qrCodeUrl = URI.create("${baseUrlProvider.get()}/api/qr?id=${shortUrlModel.hash}")
+            qrCodeUrl = safeCall { URI.create("${baseUrlProvider.get()}/api/qr?id=${shortUrlModel.hash}") }
         }
 
-        return ShortUrlDataOut(shortUrl, qrCodeUrl)
+        return Ok(ShortUrlDataOut(shortUrl, qrCodeUrl))
     }
 }
