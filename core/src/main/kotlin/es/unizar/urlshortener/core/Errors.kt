@@ -10,5 +10,14 @@ sealed class UrlError {
 sealed class HashError {
     object InvalidFormat : HashError()
     object NotFound : HashError()
-    object TooManyRequests: HashError()
+}
+
+sealed class CsvError {
+    object InvalidFormat : CsvError()
+}
+
+sealed class RedirectionError {
+    object TooManyRequests: RedirectionError()
+    object InvalidFormat : RedirectionError()
+    object NotFound : RedirectionError()
 }

@@ -4,20 +4,17 @@ package es.unizar.urlshortener.infrastructure.delivery
 
 import com.github.michaelbull.result.fold
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.services.AnalyticsService
+import es.unizar.urlshortener.core.services.CsvService
 import es.unizar.urlshortener.core.services.QrService
 import es.unizar.urlshortener.core.services.RedirectService
 import es.unizar.urlshortener.core.usecases.*
 import jakarta.servlet.http.HttpServletRequest
-import org.springframework.hateoas.server.mvc.linkTo
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
-import java.io.BufferedWriter
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 import java.net.URI
 
 /**
@@ -42,6 +39,8 @@ interface UrlShortenerController {
      * @return A [ResponseEntity] with the details of the created short URL.
      */
     fun shortener(data: ShortUrlDataIn, request: HttpServletRequest)
+
+    fun redirectToQrCode(id: String, request: HttpServletRequest)
 }
 
 /**
@@ -50,15 +49,9 @@ interface UrlShortenerController {
 @Suppress("LongParameterList")
 @RestController
 class UrlShortenerControllerImpl(
-    val redirectUseCase: RedirectUseCase,
-    val logClickUseCase: LogClickUseCase,
-    val qrUseCase: CreateQRUseCase,
-    val geoLocationService: GeoLocationService,
-    val browserPlatformIdentificationUseCase: BrowserPlatformIdentificationUseCase,
-    val processCsvUseCase: ProcessCsvUseCase,
-    val getAnalyticsUseCase: GetAnalyticsUseCase,
+    val csvService: CsvService,
+    val analyticsService: AnalyticsService,
     val generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCase,
-    val shortUrlRepositoryService: ShortUrlRepositoryService,
     val redirectService: RedirectService,
     val qrService: QrService,
 ) : UrlShortenerController {
@@ -82,9 +75,9 @@ class UrlShortenerControllerImpl(
             },
             failure = { error ->
                 val (status, message) = when (error) {
-                    HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
-                    HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
-                    HashError.TooManyRequests -> HttpStatus.TOO_MANY_REQUESTS to "This shortened hash is under load"
+                    RedirectionError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
+                    RedirectionError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                    RedirectionError.TooManyRequests -> HttpStatus.TOO_MANY_REQUESTS to "This shortened hash is under load"
                 }
                 ResponseEntity.status(status).body(message)
             }
@@ -99,7 +92,7 @@ class UrlShortenerControllerImpl(
      * @return A [ResponseEntity] with the QR code image as a PNG image in a byte array format.
      */
     @GetMapping("/api/qr", produces = [MediaType.IMAGE_PNG_VALUE])
-    fun redirectToQrCode(@RequestParam id: String, request: HttpServletRequest) {
+    override fun redirectToQrCode(@RequestParam id: String, request: HttpServletRequest) {
         val qrResult = qrService.getQrImage(id)
 
         return qrResult.fold(
@@ -126,33 +119,27 @@ class UrlShortenerControllerImpl(
      * @return A [ResponseEntity] with the processed CSV file as a downloadable response.
      */
     @PostMapping("/api/upload-csv", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun shortenUrlsFromCsv(data: ShortUrlDataIn, request: HttpServletRequest): ResponseEntity<StreamingResponseBody> {
-        if (data.file == null || data.file!!.isEmpty) {
-            return ResponseEntity
-                .badRequest()
-                .body(StreamingResponseBody { outputStream ->
-                    outputStream.writer().use {
-                        it.write("Error: No file provided or file is empty.")
-                    }
-                })
-        }
+    fun shortenUrlsFromCsv(data: CsvDataIn, request: HttpServletRequest) {
+        val processCsvResult = csvService.process(data, request)
 
-        val reader = InputStreamReader(data.file!!.inputStream.buffered())
+        return processCsvResult.fold(
+            success = { stream ->
+                val headers = HttpHeaders().apply {
+                    add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=shortened_urls.csv")
+                    contentType = MediaType.parseMediaType("text/csv")
+                }
 
-        val responseBody = StreamingResponseBody { outputStream ->
-            BufferedWriter(OutputStreamWriter(outputStream)).use { writer ->
-                processCsvUseCase.processCsv(reader, writer, request, data)
+                ResponseEntity.ok()
+                    .headers(headers)
+                    .body(stream)
+            },
+            failure = { error ->
+                val (status, message) = when (error) {
+                    CsvError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid CSV format"
+                }
+                ResponseEntity.status(status).body(message)
             }
-        }
-
-        val headers = HttpHeaders().apply {
-            add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=shortened_urls.csv")
-            contentType = MediaType.parseMediaType("text/csv")
-        }
-
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(responseBody)
+        )
     }
 
     /**
@@ -205,14 +192,18 @@ class UrlShortenerControllerImpl(
         @RequestParam(required = false, defaultValue = "false") country: Boolean,
         @RequestParam(required = false, defaultValue = "false") platform: Boolean,
         @RequestParam(required = false, defaultValue = "false") referrer: Boolean
-    ): ResponseEntity<AnalyticsData> {
-        val analyticsData = getAnalyticsUseCase.getAnalytics(
-            id = id,
-            includeBrowser = browser,
-            includeCountry = country,
-            includePlatform = platform,
-            includeReferrer = referrer
+    ) {
+        val analyticsResult = analyticsService.get(id, browser, country, platform, referrer)
+
+        return analyticsResult.fold(
+            success = { analytics -> ResponseEntity.ok(analytics) },
+            failure = { error ->
+                val (status, message) = when (error) {
+                    HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
+                    HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                }
+                ResponseEntity.status(status).body(message)
+            }
         )
-        return ResponseEntity.ok(analyticsData)
     }
 }

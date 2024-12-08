@@ -1,6 +1,7 @@
 @file:Suppress("WildcardImport", "SwallowedException")
 package es.unizar.urlshortener.core.usecases
 
+import com.github.michaelbull.result.fold
 import es.unizar.urlshortener.core.*
 import jakarta.servlet.http.HttpServletRequest
 import java.io.*
@@ -21,7 +22,7 @@ interface ProcessCsvUseCase {
      * @param request The HTTP request providing client context
      * @param data Data of the HTTP request
      */
-    fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest, data: ShortUrlDataIn)
+    fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest, data: CsvDataIn)
 }
 
 /**
@@ -48,7 +49,7 @@ class ProcessCsvUseCaseImpl (
      * @param request The HTTP request providing client context
      * @param data Data of the HTTP request
      */
-    override fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest, data: ShortUrlDataIn) {
+    override fun processCsv(reader: Reader, writer: Writer, request: HttpServletRequest, data: CsvDataIn) {
         writer.append("original-url,shortened-url")
         if (data.qrRequested) {
             writer.append(",qr-code-url")
@@ -58,26 +59,33 @@ class ProcessCsvUseCaseImpl (
         BufferedReader(reader).use { br ->
             br.forEachLine { line ->
                 val originalUrl = line.trim()
-                try {
-                    val result = generateEnhancedShortUrlUseCaseImpl.generate(
-                        ShortUrlDataIn(originalUrl, data.qrRequested),
-                        request
-                    )
 
-                    writer.append("$originalUrl,${result.shortUrl}")
-                    if (data.qrRequested) {
-                        writer.append("," + result.qrCodeUrl)
+                val result = generateEnhancedShortUrlUseCaseImpl.generate(
+                    ShortUrlDataIn(originalUrl, data.qrRequested),
+                    request
+                )
+
+                result.fold(
+                    success = { shortUrlData ->
+                        writer.append("$originalUrl,${shortUrlData.shortUrl}")
+                        if (data.qrRequested) {
+                            writer.append(",${shortUrlData.qrCodeUrl ?: "QR not generated"}")
+                        }
+                        writer.append("\n")
+                    },
+                    failure = { error ->
+                        val errorMessage = when (error) {
+                            UrlError.InvalidFormat -> "ERROR: Invalid URL"
+                            UrlError.Unreachable -> "ERROR: URL unreachable"
+                            UrlError.Unsafe -> "ERROR: Unsafe URL"
+                        }
+                        writer.append("$originalUrl,$errorMessage")
+                        if (data.qrRequested) {
+                            writer.append(",ERROR: QR not generated")
+                        }
+                        writer.append("\n")
                     }
-                    writer.append("\n")
-                } catch (e: InvalidUrlException) {
-                    writer.append("$originalUrl,ERROR: Invalid URL,ERROR: QR not generated\n")
-                } catch (e: UnsafeUrlException) {
-                    writer.append("$originalUrl,ERROR: Unsafe URL,ERROR: QR not generated\n")
-                } catch (e: UrlUnreachableException) {
-                    writer.append("$originalUrl,ERROR: URL unreachable,ERROR: QR not generated\n")
-                } catch (e: IllegalArgumentException) {
-                    writer.append("$originalUrl,ERROR: Invalid URL,ERROR: QR not generated\n")
-                }
+                )
             }
         }
     }

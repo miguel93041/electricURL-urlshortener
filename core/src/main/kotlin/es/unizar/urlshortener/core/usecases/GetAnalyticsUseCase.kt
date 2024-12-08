@@ -1,9 +1,6 @@
 package es.unizar.urlshortener.core.usecases
 
-import es.unizar.urlshortener.core.AnalyticsData
-import es.unizar.urlshortener.core.ClickRepositoryService
-import es.unizar.urlshortener.core.RedirectionNotFound
-import es.unizar.urlshortener.core.ShortUrlRepositoryService
+import es.unizar.urlshortener.core.*
 
 /**
  * Interface defining the contract for fetching analytics data for a shortened URL.
@@ -37,12 +34,8 @@ interface GetAnalyticsUseCase {
  * for a shortened URL.
  *
  * @property clickRepository The repository used to fetch click data for the URL.
- * @property shortUrlRepository The repository used to verify the existence of the shortened URL by its hash.
  */
-class GetAnalyticsUseCaseImpl(
-    private val clickRepository: ClickRepositoryService,
-    private val shortUrlRepository: ShortUrlRepositoryService
-) : GetAnalyticsUseCase {
+class GetAnalyticsUseCaseImpl(private val clickRepository: ClickRepositoryService) : GetAnalyticsUseCase {
     /**
      * Retrieves aggregated analytics data for a given URL identified by its [id].
      *
@@ -61,38 +54,26 @@ class GetAnalyticsUseCaseImpl(
         includePlatform: Boolean,
         includeReferrer: Boolean
     ): AnalyticsData {
-        shortUrlRepository.findByKey(id) ?: throw RedirectionNotFound(id)
-
-        val clicks = clickRepository.findAllByHash(id)
+        val clicks = safeCall { clickRepository.findAllByHash(id) }
 
         val totalClicks = clicks.size
 
         val byBrowser = if (includeBrowser) {
-            clicks.groupingBy { it.properties.browser ?: "Unknown" }
-                .eachCount()
+            clicks.groupingBy { it.properties.browser ?: "Unknown" }.eachCount()
         } else null
 
         val byCountry = if (includeCountry) {
-            clicks.groupingBy { it.properties.country ?: "Unknown" }
-                .eachCount()
+            clicks.groupingBy { it.properties.country ?: "Unknown" }.eachCount()
         } else null
 
         val byPlatform = if (includePlatform) {
-            clicks.groupingBy { it.properties.platform ?: "Unknown" }
-                .eachCount()
+            clicks.groupingBy { it.properties.platform ?: "Unknown" }.eachCount()
         } else null
 
         val byReferrer = if (includeReferrer) {
-            clicks.groupingBy { it.properties.referrer ?: "Unknown" }
-                .eachCount()
+            clicks.groupingBy { it.properties.referrer ?: "Unknown" }.eachCount()
         } else null
 
-        return AnalyticsData(
-            totalClicks = totalClicks,
-            byBrowser = byBrowser,
-            byCountry = byCountry,
-            byPlatform = byPlatform,
-            byReferrer = byReferrer
-        )
+        return AnalyticsData(totalClicks, byBrowser, byCountry, byPlatform, byReferrer)
     }
 }

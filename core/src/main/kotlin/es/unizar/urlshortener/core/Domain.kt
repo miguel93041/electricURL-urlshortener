@@ -102,6 +102,14 @@ data class ShortUrlDataIn(
 )
 
 /**
+ * Data required to create a short url.
+ */
+data class CsvDataIn(
+    val file: MultipartFile,
+    val qrRequested: Boolean = false
+)
+
+/**
  * Data returned after the creation of a short url.
  */
 data class ShortUrlDataOut(
