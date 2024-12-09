@@ -6,13 +6,9 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import es.unizar.urlshortener.core.*
-import es.unizar.urlshortener.core.usecases.BrowserPlatformIdentificationUseCase
 import es.unizar.urlshortener.core.usecases.CreateQRUseCase
-import es.unizar.urlshortener.core.usecases.LogClickUseCase
-import es.unizar.urlshortener.core.usecases.RedirectUseCase
-import jakarta.servlet.http.HttpServletRequest
-import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
+import org.springframework.http.server.reactive.ServerHttpRequest
+import reactor.core.publisher.Mono
 import java.net.URI
 
 /**
@@ -27,7 +23,7 @@ interface QrService {
      * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
      * @return A data object containing the generated short URL and optional QR code URL.
      */
-    fun getQrImage(hash: String): Result<ByteArray, HashError>
+    fun getQrImage(hash: String, request: ServerHttpRequest): Mono<Result<ByteArray, HashError>>
 }
 
 /**
@@ -48,18 +44,17 @@ class QrServiceImpl(
      * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
      * @return A data object containing the short URL and optionally a QR code URL.
      */
-    override fun getQrImage(hash: String): Result<ByteArray, HashError> {
-        // Validate hash
-        val validationResult = hashValidatorService.validate(hash);
-        if (validationResult.isErr) {
-            return Err(validationResult.error)
-        }
-
-        // Generate the QR image
-        val shortUrl = safeCall { URI.create("${baseUrlProvider.get()}/${hash}").toString() }
-        val qrCode = safeCall { qrUseCase.create(shortUrl, QR_SIZE) }
-
-        return Ok(qrCode)
+    override fun getQrImage(hash: String, request: ServerHttpRequest): Mono<Result<ByteArray, HashError>> {
+        return hashValidatorService.validate(hash)
+            .flatMap { validationResult ->
+                if (validationResult.isErr) {
+                    Mono.just(Err(validationResult.error))
+                } else {
+                    val shortUrl = URI.create("${baseUrlProvider.get(request)}/${hash}").toString()
+                    val qrCode = qrUseCase.create(shortUrl, QR_SIZE)
+                    Mono.just(Ok(qrCode))
+                }
+            }
     }
 
     companion object {

@@ -3,6 +3,7 @@
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.*
+import reactor.core.publisher.Mono
 
 /**
  * Given an url returns the key that is used to create a short URL.
@@ -17,7 +18,7 @@ interface CreateShortUrlUseCase {
      * @return The created [ShortUrl] entity.
      * @throws InvalidUrlException if the URL is not valid.
      */
-    fun create(url: String, data: ShortUrlProperties): ShortUrl
+    fun create(url: String, data: ShortUrlProperties): Mono<ShortUrl>
 }
 
 /**
@@ -41,7 +42,7 @@ class CreateShortUrlUseCaseImpl(
      * @return The created [ShortUrl] entity.
      * @throws InvalidUrlException if the URL is not valid.
      */
-    override fun create(url: String, data: ShortUrlProperties): ShortUrl {
+    override fun create(url: String, data: ShortUrlProperties): Mono<ShortUrl> {
         val id = hashService.hashUrl(url)
         val su = ShortUrl(
             hash = id,
@@ -49,6 +50,9 @@ class CreateShortUrlUseCaseImpl(
             properties = data
         )
 
-        return safeCall{ shortUrlRepository.save(su) }
+        val shortUrl = shortUrlRepository.save(su)
+            .doOnNext { println("Saved ShortUrl: $it") }
+            .doOnError { println("Error saving ShortUrl: ${it.message}") }
+        return shortUrl
     }
 }

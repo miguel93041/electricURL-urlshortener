@@ -2,14 +2,11 @@ plugins {
     // Apply the common conventions plugin for the project
     id("urlshortener-common-conventions")
 
-    // Apply the Kotlin JPA plugin
-    alias(libs.plugins.kotlin.jpa)
-
     // Apply the Kotlin Spring plugin
     alias(libs.plugins.kotlin.spring)
 
-    // Apply the Spring Boot plugin but do not apply it immediately
-    alias(libs.plugins.spring.boot) apply false
+    // Apply the Spring Boot plugin
+    alias(libs.plugins.spring.boot)
 
     // Apply the Spring Dependency Management plugin
     alias(libs.plugins.spring.dependency.management)
@@ -19,26 +16,19 @@ dependencies {
     // Include the core project as an implementation dependency
     implementation(project(":core"))
 
-    // Adds the Spring Boot starter WebFlux as an implementation dependency.
+    // Adds WebFlux for handling reactive HTTP calls
     implementation(libs.spring.boot.starter.webflux)
 
-    // Adds dotenv Kotlin as an implementation dependency.
+    // Adds dotenv Kotlin for managing environment variables
     implementation(libs.dotenv.kotlin)
 
-    // Include Kotlin Test as a test implementation dependency
-    testImplementation(libs.kotlin.test)
-
-    // Include Mockito Kotlin as a test implementation dependency
-    testImplementation(libs.mockito.kotlin)
-
-    // Include JUnit Jupiter as a test implementation dependency
-    testImplementation(libs.junit.jupiter)
-
-    // Include JUnit Platform Launcher as a test runtime-only dependency
-    testRuntimeOnly(libs.junit.platform.launcher)
-
-    // Include Spring Boot Starter Test as a test implementation dependency
-    testImplementation(libs.spring.boot.starter.test)
+    // Test dependencies
+    testImplementation(libs.kotlin.test)               // Kotlin test utilities
+    testImplementation(libs.mockito.kotlin)            // Mockito Kotlin
+    testImplementation(libs.junit.jupiter)             // JUnit Jupiter
+    testRuntimeOnly(libs.junit.platform.launcher)       // JUnit platform launcher
+    testImplementation(libs.spring.boot.starter.test)  // Spring Boot testing utilities
+    testImplementation(libs.spring.boot.starter.webflux) // WebFlux testing
 }
 
 dependencyManagement {

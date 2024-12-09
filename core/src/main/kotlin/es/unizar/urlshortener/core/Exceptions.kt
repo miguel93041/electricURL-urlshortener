@@ -1,5 +1,6 @@
 package es.unizar.urlshortener.core
 
+import reactor.core.publisher.Mono
 import java.lang.RuntimeException
 
 /**
@@ -58,3 +59,12 @@ inline fun <T> safeCall(
     onSuccess = { it },
     onFailure = { throw onFailure(it) }
 )
+
+inline fun <T> safeCallReactive(
+    onFailure: (Throwable) -> Throwable = { e -> InternalError("Unexpected error", e) },
+    block: () -> Mono<T>
+): Mono<T> = try {
+    block()
+} catch (e: Throwable) {
+    Mono.error(onFailure(e))
+}

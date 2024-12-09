@@ -3,6 +3,7 @@
 package es.unizar.urlshortener.infrastructure.delivery
 
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.services.GenerateShortUrlService
 import es.unizar.urlshortener.core.usecases.*
 import org.mockito.BDDMockito.given
 import org.mockito.BDDMockito.never
@@ -41,7 +42,7 @@ class UrlShortenerControllerTest {
     private lateinit var logClickUseCase: LogClickUseCase
 
     @MockBean
-    private lateinit var generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCase
+    private lateinit var generateShortUrlServiceImpl: GenerateShortUrlService
 
     @MockBean
     private lateinit var createQRUseCase: CreateQRUseCase
@@ -107,7 +108,7 @@ class UrlShortenerControllerTest {
     @Test
     fun `creates returns a basic redirect if it can compute a hash`() {
         // Mock the behavior of generateEnhancedShortUrlUseCaseImpl to return a ShortUrlDataOut
-        given(generateEnhancedShortUrlUseCaseImpl.generate(any(), any())).willReturn(
+        given(generateShortUrlServiceImpl.generate(any(), any())).willReturn(
             ShortUrlDataOut(
                 shortUrl = URI.create("http://localhost/f684a3c4"),
                 qrCodeUrl = null
@@ -131,7 +132,7 @@ class UrlShortenerControllerTest {
     @Test
     fun `creates returns a basic redirect with QR requested if it can compute a hash`() {
         // Mock the behavior of generateEnhancedShortUrlUseCaseImpl to return a ShortUrlDataOut
-        given(generateEnhancedShortUrlUseCaseImpl.generate(any(), any())).willReturn(
+        given(generateShortUrlServiceImpl.generate(any(), any())).willReturn(
             ShortUrlDataOut(
                 shortUrl = URI.create("http://localhost/f684a3c4"),
                 qrCodeUrl = URI.create("http://localhost/api/qr?id=f684a3c4")
@@ -156,7 +157,7 @@ class UrlShortenerControllerTest {
     @Test
     fun `creates returns bad request if the URL is invalid`() {
         // Mock the behavior of generateEnhancedShortUrlUseCaseImpl to throw an InvalidUrlException
-        given(generateEnhancedShortUrlUseCaseImpl.generate(any(), any())).willAnswer {
+        given(generateShortUrlServiceImpl.generate(any(), any())).willAnswer {
             throw InvalidUrlException("ftp://example.com/")
         }
         given(geoLocationService.get(Mockito.anyString())).willReturn(GeoLocation("127.0.0.1", "Bogon"))
@@ -178,7 +179,7 @@ class UrlShortenerControllerTest {
     @Test
     fun `creates returns bad request if the URL is invalid with QR request`() {
         // Mock the behavior of generateEnhancedShortUrlUseCaseImpl to throw an InvalidUrlException
-        given(generateEnhancedShortUrlUseCaseImpl.generate(any(), any())).willAnswer {
+        given(generateShortUrlServiceImpl.generate(any(), any())).willAnswer {
             throw InvalidUrlException("ftp://example.com/")
         }
         given(geoLocationService.get(Mockito.anyString())).willReturn(GeoLocation("127.0.0.1", "Bogon"))

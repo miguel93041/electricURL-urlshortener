@@ -6,13 +6,11 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import es.unizar.urlshortener.core.*
-import es.unizar.urlshortener.core.usecases.GetAnalyticsUseCase
 import es.unizar.urlshortener.core.usecases.ProcessCsvUseCase
-import jakarta.servlet.http.HttpServletRequest
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
+import org.springframework.core.io.buffer.DataBuffer
+import org.springframework.http.server.reactive.ServerHttpRequest
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import java.io.*
 
 /**
@@ -27,7 +25,7 @@ interface CsvService {
      * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
      * @return A data object containing the generated short URL and optional QR code URL.
      */
-    fun process(data: CsvDataIn, request: HttpServletRequest): Result<StreamingResponseBody, CsvError>
+    fun process(data: CsvDataIn, request: ServerHttpRequest): Mono<Result<Flux<DataBuffer>, CsvError>>
 }
 
 /**
@@ -43,20 +41,19 @@ class CsvServiceImpl (private val processCsvUseCase: ProcessCsvUseCase) : CsvSer
      * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
      * @return A data object containing the short URL and optionally a QR code URL.
      */
-    override fun process(data: CsvDataIn, request: HttpServletRequest): Result<StreamingResponseBody, CsvError> {
-        // Validate hash
-        if (data.file.isEmpty) {
-            return Err(CsvError.InvalidFormat)
+    override fun process(data: CsvDataIn, request: ServerHttpRequest): Mono<Result<Flux<DataBuffer>, CsvError>> {
+        if (data.file.filename().isBlank() || !data.file.filename().endsWith(".csv")) {
+            return Mono.just(Err(CsvError.InvalidFormat))
         }
 
-        val reader = InputStreamReader(data.file.inputStream.buffered())
-
-        val responseBody = StreamingResponseBody { outputStream ->
-            BufferedWriter(OutputStreamWriter(outputStream)).use { writer ->
-                processCsvUseCase.processCsv(reader, writer, request, data)
+        return data.file.content()
+            .next()
+            .flatMap { firstBuffer ->
+                if (firstBuffer.readableByteCount() == 0) {
+                    Mono.just(Err(CsvError.InvalidFormat))
+                } else {
+                    Mono.just(Ok(processCsvUseCase.processCsv(data.file.content(), request, data.qrRequested)))
+                }
             }
-        }
-
-        return Ok(responseBody)
     }
 }

@@ -1,6 +1,6 @@
 package es.unizar.urlshortener.core
 
-import org.springframework.web.multipart.MultipartFile
+import org.springframework.http.codec.multipart.FilePart
 import java.net.URI
 import java.time.OffsetDateTime
 
@@ -105,7 +105,7 @@ data class ShortUrlDataIn(
  * Data required to create a short url.
  */
 data class CsvDataIn(
-    val file: MultipartFile,
+    val file: FilePart,
     val qrRequested: Boolean = false
 )
 

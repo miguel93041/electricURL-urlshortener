@@ -5,6 +5,7 @@ import es.unizar.urlshortener.core.GeoLocation
 import es.unizar.urlshortener.core.GeoLocationService
 import io.github.cdimascio.dotenv.Dotenv
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
 
 /**
  * [GeoLocationServiceImpl] is an implementation of the [GeoLocationService] interface.
@@ -29,25 +30,25 @@ class GeoLocationServiceImpl(
      *
      * **TODO**: Implement a custom IP class that validates and checks for IPv4 or IPv6 format.
      */
-    override fun get(ip: String): GeoLocation {
+    override fun get(ip: String): Mono<GeoLocation> {
         val url = buildRequestUrl(ip)
 
-        // TODO: In the custom IP class auto-detect if ip is Bogon and return
-        val response = webClient.get()
+        return webClient.get()
             .uri(url)
             .retrieve()
             .bodyToMono(Map::class.java)
-            .block()
-
-        // TODO: Check 200's code or Unknown
-        val ipAddress = response?.get("ip") as String
-        val country = if (response.containsKey("bogon")) {
-            "Bogon"
-        } else {
-            response["country"] as String
-        }
-
-        return GeoLocation(ipAddress, country)
+            .map { response ->
+                val ipAddress = response["ip"] as? String ?: ip
+                val country = if (response.containsKey("bogon")) {
+                    "Bogon"
+                } else {
+                    response["country"] as? String ?: "Unknown"
+                }
+                GeoLocation(ipAddress, country)
+            }
+            .onErrorResume { throwable ->
+                Mono.just(GeoLocation(ip, "Unknown"))
+            }
     }
 
     /**

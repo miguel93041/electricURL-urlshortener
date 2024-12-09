@@ -1,6 +1,6 @@
 import es.unizar.urlshortener.core.ClickRepositoryService
 import es.unizar.urlshortener.core.TooManyRequestsException
-import es.unizar.urlshortener.core.safeCall
+import reactor.core.publisher.Mono
 import java.time.OffsetDateTime
 
 /**
@@ -14,7 +14,7 @@ interface RedirectionLimitUseCase {
      * @param urlId The identifier of the shortened URL.
      * @throws TooManyRequestsException if limit is reached
      */
-    fun isRedirectionLimit(urlId: String): Boolean
+    fun isRedirectionLimit(urlId: String): Mono<Boolean>
 }
 
 /**
@@ -37,16 +37,13 @@ class RedirectionLimitUseCaseImpl(
      * within the defined time frame.
      *
      * @param urlId The identifier of the shortened URL.
-     * @throws TooManyRequestsException if limit is reached
+     * @return A Mono emitting true if the limit is reached, or false otherwise.
      */
-    override fun isRedirectionLimit(urlId: String): Boolean {
-        val count = safeCall {
-            val now = OffsetDateTime.now()
-            val startTime = now.minusSeconds(timeFrameInSeconds)
+    override fun isRedirectionLimit(urlId: String): Mono<Boolean> {
+        val now = OffsetDateTime.now()
+        val startTime = now.minusSeconds(timeFrameInSeconds)
 
-            clickRepositoryService.countClicksByHashAfter(urlId, startTime)
-        }
-
-        return count >= redirectionLimit
+        return clickRepositoryService.countClicksByHashAfter(urlId, startTime)
+            .map { count -> count >= redirectionLimit }
     }
 }

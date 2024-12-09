@@ -8,7 +8,8 @@ import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.usecases.BrowserPlatformIdentificationUseCase
 import es.unizar.urlshortener.core.usecases.LogClickUseCase
 import es.unizar.urlshortener.core.usecases.RedirectUseCase
-import jakarta.servlet.http.HttpServletRequest
+import org.springframework.http.server.reactive.ServerHttpRequest
+import reactor.core.publisher.Mono
 
 /**
  * Defines the specification for the use case responsible for generating
@@ -22,7 +23,7 @@ interface RedirectService {
      * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
      * @return A data object containing the generated short URL and optional QR code URL.
      */
-    fun getRedirectionAndLogClick(hash: String, request: HttpServletRequest): Result<Redirection, RedirectionError>
+    fun getRedirectionAndLogClick(hash: String, request: ServerHttpRequest): Mono<Result<Redirection, RedirectionError>>
 }
 
 /**
@@ -39,48 +40,59 @@ class RedirectServiceImpl(
     private val redirectionLimitUseCase: RedirectionLimitUseCase,
 ) : RedirectService {
 
+
     /**
-     * Generates an enhanced short URL using geolocation information and other properties.
+     * Handles the redirection and logs the click with enhanced data.
      *
-     * @param hash The identifier of the short url.
+     * @param hash The identifier of the short URL.
      * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
-     * @return A data object containing the short URL and optionally a QR code URL.
+     * @return A Mono emitting a Result containing the Redirection or a RedirectionError.
      */
-    override fun getRedirectionAndLogClick(hash: String, request: HttpServletRequest): Result<Redirection, RedirectionError> {
-        // Validate hash
-        val validationResult = hashValidatorService.validate(hash);
-        if (validationResult.isErr) {
-            val error = validationResult.unwrapError()
-            val mappedError = when (error) {
-                is HashError.InvalidFormat -> RedirectionError.InvalidFormat
-                is HashError.NotFound -> RedirectionError.NotFound
+    override fun getRedirectionAndLogClick(
+        hash: String,
+        request: ServerHttpRequest
+    ): Mono<Result<Redirection, RedirectionError>> {
+        return hashValidatorService.validate(hash)
+            .flatMap { validationResult ->
+                if (validationResult.isErr) {
+                    val error = validationResult.unwrapError()
+                    val mappedError = when (error) {
+                        is HashError.InvalidFormat -> RedirectionError.InvalidFormat
+                        is HashError.NotFound -> RedirectionError.NotFound
+                    }
+                    Mono.just(Err(mappedError))
+                } else {
+                    redirectionLimitUseCase.isRedirectionLimit(hash)
+                        .flatMap { isLimitReached ->
+                            if (isLimitReached) {
+                                Mono.just(Err(RedirectionError.TooManyRequests))
+                            } else {
+                                geoLocationService.get(request.remoteAddress.toString())
+                                    .zipWith(
+                                        Mono.defer {
+                                            Mono.just(browserPlatformIdentificationUseCase.parse(request.headers.getFirst("User-Agent")))
+                                        }
+                                    )
+                                    .flatMap { tuple ->
+                                        val geoLocation = tuple.t1
+                                        val browserPlatform = tuple.t2
+
+                                        val enrichedData = ClickProperties(
+                                            ip = geoLocation.ip,
+                                            country = geoLocation.country,
+                                            browser = browserPlatform.browser,
+                                            platform = browserPlatform.platform
+                                        )
+
+                                        redirectUseCase.redirectTo(hash)
+                                            .flatMap { redirection ->
+                                                logClickUseCase.logClick(hash, enrichedData)
+                                                    .then(Mono.just(Ok(redirection)))
+                                            }
+                                    }
+                            }
+                        }
+                }
             }
-            return Err(mappedError)
-        }
-
-        // Check for redirection limit
-        val isRedirectionLimit = redirectionLimitUseCase.isRedirectionLimit(hash)
-        if (isRedirectionLimit) {
-            return Err(RedirectionError.TooManyRequests)
-        }
-
-        // Enhancement data
-        val geoLocation = geoLocationService.get(request.remoteAddr)
-        val browserPlatform = browserPlatformIdentificationUseCase.parse(request.getHeader("User-Agent"))
-
-        val enrichedData = ClickProperties(
-            ip = geoLocation.ip,
-            country = geoLocation.country,
-            browser = browserPlatform.browser,
-            platform = browserPlatform.platform
-        )
-
-        // Obtain the redirection with the original URL
-        val redirection = redirectUseCase.redirectTo(hash)
-
-        // Log the click in the system
-        logClickUseCase.logClick(hash, enrichedData)
-
-        return Ok(redirection)
     }
 }

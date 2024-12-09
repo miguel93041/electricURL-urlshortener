@@ -1,6 +1,7 @@
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.*
+import reactor.core.publisher.Mono
 
 /**
  * Given a key returns a [Redirection] that contains a [URI target][Redirection.target]
@@ -14,7 +15,7 @@ interface RedirectUseCase {
      * @return The [Redirection] containing the target URL and redirection mode.
      * @throws RedirectionNotFound if no redirection is found for the given key.
      */
-    fun redirectTo(key: String): Redirection
+    fun redirectTo(key: String): Mono<Redirection>
 }
 
 /**
@@ -31,14 +32,16 @@ class RedirectUseCaseImpl(
      * Redirects to the target URL associated with the given key.
      *
      * @param key The key associated with the target URL.
-     * @return The [Redirection] containing the target URL and redirection mode.
-     * @throws RedirectionNotFound if no redirection is found for the given key.
+     * @return A [Mono] emitting the [Redirection] containing the target URL and redirection mode.
+     *         Emits an error if no redirection is found for the given key.
      */
-    override fun redirectTo(key: String): Redirection {
-        val redirection = safeCall {
-            shortUrlService.findByKey(key)
-        }!!.redirection
-
-        return redirection
+    override fun redirectTo(key: String): Mono<Redirection> {
+        return shortUrlService.findByKey(key)
+            .flatMap { shortUrl ->
+                Mono.just(shortUrl.redirection)
+            }
+            .switchIfEmpty(
+                Mono.error(RedirectionNotFound("No redirection found for key: $key"))
+            )
     }
 }

@@ -8,6 +8,7 @@ import es.unizar.urlshortener.core.*
 import org.apache.commons.validator.routines.UrlValidator
 import java.nio.charset.StandardCharsets
 import es.unizar.urlshortener.core.usecases.UrlAccessibilityCheckUseCase
+import reactor.core.publisher.Mono
 
 /**
  * Implementation of the ValidatorService interface.
@@ -28,13 +29,22 @@ class UrlValidatorServiceImpl(
      * @param url The URL to validate.
      * @return A [Result] indicating the validation result.
      */
-    override fun validate(url: String): Result<Unit, UrlError> {
-        return when {
-            !urlValidator.isValid(url) -> Err(UrlError.InvalidFormat)
-            !urlSafetyService.isSafe(url) -> Err(UrlError.Unsafe)
-            !urlAccessibilityCheckUseCase.isUrlReachable(url) -> Err(UrlError.Unreachable)
-            else -> Ok(Unit)
+    override fun validate(url: String): Mono<Result<Unit, UrlError>> {
+        if (!urlValidator.isValid(url)) {
+            return Mono.just(Err(UrlError.InvalidFormat))
         }
+
+        return urlSafetyService.isSafe(url)
+            .flatMap { isSafe ->
+                if (!isSafe) {
+                    Mono.just(Err(UrlError.Unsafe))
+                } else {
+                    urlAccessibilityCheckUseCase.isUrlReachable(url)
+                        .map { isReachable ->
+                            if (isReachable) Ok(Unit) else Err(UrlError.Unreachable)
+                        }
+                }
+            }
     }
 
     companion object {
@@ -60,14 +70,16 @@ class HashValidatorServiceImpl(
      * Validates if the given hash is valid.
      *
      * @param hash The hash to be validated.
-     * @return The result of the validation.
+     * @return A Mono emitting the result of the validation.
      */
-    override fun validate(hash: String): Result<Unit, HashError> {
-        return when {
-            !isValidHash(hash) -> Err(HashError.InvalidFormat)
-            safeCall { shortUrlRepositoryService.findByKey(hash) } == null -> Err(HashError.NotFound)
-            else -> Ok(Unit)
+    override fun validate(hash: String): Mono<Result<Unit, HashError>> {
+        if (!isValidHash(hash)) {
+            Mono.just(Err(HashError.InvalidFormat))
         }
+
+        return shortUrlRepositoryService.findByKey(hash)
+                .map<Result<Unit, HashError>> { Ok(Unit) }
+                .switchIfEmpty(Mono.just(Err(HashError.NotFound)))
     }
 
     /**

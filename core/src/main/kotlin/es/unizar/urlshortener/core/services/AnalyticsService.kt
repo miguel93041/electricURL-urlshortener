@@ -7,6 +7,7 @@ import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.usecases.GetAnalyticsUseCase
+import reactor.core.publisher.Mono
 
 /**
  * Defines the specification for the use case responsible for generating
@@ -26,7 +27,7 @@ interface AnalyticsService {
         includeCountry: Boolean,
         includePlatform: Boolean,
         includeReferrer: Boolean
-    ): Result<AnalyticsData, HashError>
+    ): Mono<Result<AnalyticsData, HashError>>
 }
 
 /**
@@ -40,11 +41,14 @@ class AnalyticsServiceImpl(
 ) : AnalyticsService {
 
     /**
-     * Generates an enhanced short URL using geolocation information and other properties.
+     * Retrieves analytics data for a given short URL.
      *
-     * @param hash The identifier of the short url.
-     * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
-     * @return A data object containing the short URL and optionally a QR code URL.
+     * @param hash The identifier of the short URL.
+     * @param includeBrowser Whether to include analytics data grouped by browser.
+     * @param includeCountry Whether to include analytics data grouped by country.
+     * @param includePlatform Whether to include analytics data grouped by platform.
+     * @param includeReferrer Whether to include analytics data grouped by referrer.
+     * @return A Mono emitting a Result containing either the analytics data or a HashError.
      */
     override fun get(
         hash: String,
@@ -52,22 +56,22 @@ class AnalyticsServiceImpl(
         includeCountry: Boolean,
         includePlatform: Boolean,
         includeReferrer: Boolean
-    ): Result<AnalyticsData, HashError> {
-        // Validate hash
-        val validationResult = hashValidatorService.validate(hash);
-        if (validationResult.isErr) {
-            return Err(validationResult.error)
-        }
+    ): Mono<Result<AnalyticsData, HashError>> {
+        return hashValidatorService.validate(hash)
+            .flatMap { validationResult ->
+                if (validationResult.isErr) {
+                    return@flatMap Mono.just(Err(validationResult.error))
+                }
 
-        // Get the analytics data
-        val analyticsData = analyticsUseCase.getAnalytics(
-            hash,
-            includeBrowser,
-            includeCountry,
-            includePlatform,
-            includeReferrer
-        )
-
-        return Ok(analyticsData)
+                analyticsUseCase.getAnalytics(
+                    hash,
+                    includeBrowser,
+                    includeCountry,
+                    includePlatform,
+                    includeReferrer
+                ).map { analyticsData ->
+                    Ok(analyticsData)
+                }
+            }
     }
 }

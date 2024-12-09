@@ -5,8 +5,10 @@ import RedirectionLimitUseCase
 import RedirectionLimitUseCaseImpl
 import com.google.zxing.qrcode.QRCodeWriter
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.services.*
 import es.unizar.urlshortener.core.usecases.*
 import es.unizar.urlshortener.infrastructure.delivery.HashServiceImpl
+import es.unizar.urlshortener.infrastructure.delivery.HashValidatorServiceImpl
 import es.unizar.urlshortener.infrastructure.delivery.UrlValidatorServiceImpl
 import es.unizar.urlshortener.infrastructure.repositories.ClickEntityRepository
 import es.unizar.urlshortener.infrastructure.repositories.ClickRepositoryServiceImpl
@@ -15,9 +17,12 @@ import es.unizar.urlshortener.infrastructure.repositories.ShortUrlRepositoryServ
 import es.unizar.urlshortener.thirdparties.ipinfo.GeoLocationServiceImpl
 import es.unizar.urlshortener.thirdparties.ipinfo.UrlSafetyServiceImpl
 import io.github.cdimascio.dotenv.Dotenv
+import io.r2dbc.spi.ConnectionFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
+import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.web.reactive.function.client.WebClient
 import ua_parser.Parser
 
@@ -30,7 +35,8 @@ import ua_parser.Parser
 @Configuration
 class ApplicationConfiguration(
     @Autowired val shortUrlEntityRepository: ShortUrlEntityRepository,
-    @Autowired val clickEntityRepository: ClickEntityRepository
+    @Autowired val clickEntityRepository: ClickEntityRepository,
+    @Autowired val r2dbcEntityTemplate: R2dbcEntityTemplate
 ) {
     /**
      * Provides an implementation of the ClickRepositoryService.
@@ -44,7 +50,7 @@ class ApplicationConfiguration(
      * @return an instance of ShortUrlRepositoryServiceImpl.
      */
     @Bean
-    fun shortUrlRepositoryService() = ShortUrlRepositoryServiceImpl(shortUrlEntityRepository)
+    fun shortUrlRepositoryService() = ShortUrlRepositoryServiceImpl(shortUrlEntityRepository, r2dbcEntityTemplate)
 
 
     /**
@@ -69,14 +75,12 @@ class ApplicationConfiguration(
     */
     @Bean
     fun redirectUseCase(
-        shortUrlRepositoryService: ShortUrlRepositoryServiceImpl,
-        redirectionLimitUseCase: RedirectionLimitUseCase
+        shortUrlRepositoryService: ShortUrlRepositoryServiceImpl
     ): RedirectUseCase {
-    return RedirectUseCaseImpl(
-        shortUrlService = shortUrlRepositoryService,
-        redirectionLimitUseCase = redirectionLimitUseCase
-    )
-}
+        return RedirectUseCaseImpl(
+            shortUrlService = shortUrlRepositoryService
+        )
+    }
 
     /**
      * Provides an implementation of the LogClickUseCase.
@@ -92,9 +96,8 @@ class ApplicationConfiguration(
     @Bean
     fun createShortUrlUseCase(
         shortUrlRepositoryService: ShortUrlRepositoryServiceImpl,
-        urlValidatorService: UrlValidatorService,
         hashService: HashServiceImpl
-    ) = CreateShortUrlUseCaseImpl(shortUrlRepositoryService, urlValidatorService, hashService)
+    ) = CreateShortUrlUseCaseImpl(shortUrlRepositoryService, hashService)
     
     /**
      * Provides a QRCodeWriter.
@@ -115,8 +118,8 @@ class ApplicationConfiguration(
      * @return an instance of ProcessCsvUseCaseImpl.
      */
     @Bean
-    fun processCsvUseCase(generateEnhancedShortUrlUseCaseImpl: GenerateEnhancedShortUrlUseCaseImpl): ProcessCsvUseCase {
-        return ProcessCsvUseCaseImpl(generateEnhancedShortUrlUseCaseImpl)
+    fun processCsvUseCase(generateShortUrlService: GenerateShortUrlService): ProcessCsvUseCase {
+        return ProcessCsvUseCaseImpl(generateShortUrlService)
     }
 
     /**
@@ -191,24 +194,75 @@ class ApplicationConfiguration(
      */
     @Bean
     fun getAnalyticsUseCase(
-        clickRepository: ClickRepositoryService,
-        shortUrlRepository: ShortUrlRepositoryService
+        clickRepository: ClickRepositoryService
     ): GetAnalyticsUseCase =
-        GetAnalyticsUseCaseImpl(clickRepository, shortUrlRepository);
+        GetAnalyticsUseCaseImpl(clickRepository);
 
     @Bean
     fun baseUrlProvider(): BaseUrlProvider = BaseUrlProviderImpl()
 
     @Bean
-    fun generateEnhancedShortUrlUseCase(
+    fun generateShortUrlService(
+        urlValidatorService: UrlValidatorService,
         createShortUrlUseCase: CreateShortUrlUseCase,
         geoLocationService: GeoLocationService,
         baseUrlProvider: BaseUrlProvider
-    ): GenerateEnhancedShortUrlUseCase {
-        return GenerateEnhancedShortUrlUseCaseImpl(
-            createShortUrlUseCase = createShortUrlUseCase,
-            geoLocationService = geoLocationService,
-            baseUrlProvider = baseUrlProvider
+    ): GenerateShortUrlService {
+        return GenerateShortUrlServiceImpl(
+            urlValidatorService,
+            createShortUrlUseCase,
+            geoLocationService,
+            baseUrlProvider
         )
+    }
+
+    @Bean
+    fun csvService(
+        processCsvUseCase: ProcessCsvUseCase
+    ): CsvService {
+        return CsvServiceImpl(processCsvUseCase)
+    }
+
+    @Bean
+    fun analyticsService(
+        hashValidatorService: HashValidatorService,
+        analyticsUseCase: GetAnalyticsUseCase
+    ): AnalyticsService {
+        return AnalyticsServiceImpl(hashValidatorService, analyticsUseCase)
+    }
+
+    @Bean
+    fun qrService(
+        hashValidatorService: HashValidatorService,
+        qrUseCase: CreateQRUseCase,
+        baseUrlProvider: BaseUrlProvider
+    ): QrService {
+        return QrServiceImpl(hashValidatorService, qrUseCase, baseUrlProvider)
+    }
+
+    @Bean
+    fun redirectService(
+        hashValidatorService: HashValidatorService,
+        redirectUseCase: RedirectUseCase,
+        logClickUseCase: LogClickUseCase,
+        geoLocationService: GeoLocationService,
+        browserPlatformIdentificationUseCase: BrowserPlatformIdentificationUseCase,
+        redirectionLimitUseCase: RedirectionLimitUseCase,
+    ): RedirectService {
+        return RedirectServiceImpl(
+            hashValidatorService,
+            redirectUseCase,
+            logClickUseCase,
+            geoLocationService,
+            browserPlatformIdentificationUseCase,
+            redirectionLimitUseCase
+        )
+    }
+
+    @Bean
+    fun hashValidatorService(
+        shortUrlRepositoryService: ShortUrlRepositoryService
+    ): HashValidatorService {
+        return HashValidatorServiceImpl(shortUrlRepositoryService)
     }
 }

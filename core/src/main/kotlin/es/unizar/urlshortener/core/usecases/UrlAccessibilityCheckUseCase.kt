@@ -1,6 +1,7 @@
 package es.unizar.urlshortener.core.usecases
 
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
 
 /**
  * Interface for checking the accessibility of a given URL.
@@ -10,10 +11,9 @@ interface UrlAccessibilityCheckUseCase {
      * Verifies if a URL is reachable.
      *
      * @param url The URL to check.
-     * @return True if the URL is reachable, false otherwise.
-     * @throws Exception If an error occurs during the request, the method will catch it and return false.
+     * @return A [Mono] emitting true if the URL is reachable, false otherwise.
      */
-    fun isUrlReachable(url: String): Boolean
+    fun isUrlReachable(url: String): Mono<Boolean>
 }
 
 /**
@@ -33,20 +33,16 @@ class UrlAccessibilityCheckUseCaseImpl(
      * Verifies if a URL is reachable by making a GET request to the URL.
      *
      * @param url The URL to check.
-     * @return True if the URL is reachable, false otherwise.
-     * @throws Exception If an error occurs during the request, the method will catch it and return false.
+     * @return A [Mono] emitting true if the URL is reachable, false otherwise.
      */
-    override fun isUrlReachable(url: String): Boolean {
-        return try {
-            webClient.get()
-                .uri(url)
-                .retrieve()
-                .toBodilessEntity()
-                .block()
-
-            true
-        } catch (e: Exception) {
-            false
-        }
+    override fun isUrlReachable(url: String): Mono<Boolean> {
+        return webClient.get()
+            .uri(url)
+            .retrieve()
+            .toBodilessEntity()
+            .map { true }
+            .onErrorResume {
+                Mono.just(false)
+            }
     }
 }

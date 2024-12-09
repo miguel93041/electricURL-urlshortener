@@ -4,6 +4,7 @@ package es.unizar.urlshortener.thirdparties.ipinfo
 import es.unizar.urlshortener.core.UrlSafetyService
 import io.github.cdimascio.dotenv.Dotenv
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
 
 /**
  * Implementation of [UrlSafetyService] that uses Google's Safe Browsing API to
@@ -27,23 +28,21 @@ class UrlSafetyServiceImpl (
      * @throws RuntimeException if there is an error response from the API.
      */
     @Suppress("TooGenericExceptionThrown")
-    override fun isSafe(url: String): Boolean {
+    override fun isSafe(url: String): Mono<Boolean> {
         val requestUrl = buildRequestUrl()
 
-        val response = webClient.post()
+        return webClient.post()
             .uri(requestUrl)
             .bodyValue(createRequestBody(url))
             .retrieve()
             .onStatus({ status -> status.isError }) { response ->
                 response.bodyToMono(String::class.java).flatMap { errorResponse ->
-                    throw RuntimeException("Error from API: $errorResponse")
+                    Mono.error(RuntimeException("Error from API: $errorResponse"))
                 }
             }
             .bodyToMono(Map::class.java)
-            .block()
-
-        // Returns true if response is empty ({}) which means URL is safe or does not exist
-        return response.isNullOrEmpty()
+            .map { response -> response.isNullOrEmpty() } // Returns true if response is empty (URL is safe)
+            .onErrorResume { Mono.just(false) } // In case of an error, assume URL is unsafe
     }
 
     /**
