@@ -91,12 +91,11 @@ interface HashValidatorService {
  */
 interface HashService {
     /**
-     * Creates a hash from the given URL.
+     * Generates a random hash using a UUID and the Murmur3 32-bit hashing algorithm.
      *
-     * @param url The URL to be hashed.
-     * @return The hash of the URL.
+     * @return a randomly generated hash as a string
      */
-    fun hashUrl(url: String): String
+    fun generateRandomHash(): String
 }
 
 /**

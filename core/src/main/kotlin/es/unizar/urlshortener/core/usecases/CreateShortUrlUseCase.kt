@@ -43,7 +43,7 @@ class CreateShortUrlUseCaseImpl(
      * @throws InvalidUrlException if the URL is not valid.
      */
     override fun create(url: String, data: ShortUrlProperties): Mono<ShortUrl> {
-        val id = hashService.hashUrl(url)
+        val id = hashService.generateRandomHash()
         val su = ShortUrl(
             hash = id,
             redirection = Redirection(target = url),

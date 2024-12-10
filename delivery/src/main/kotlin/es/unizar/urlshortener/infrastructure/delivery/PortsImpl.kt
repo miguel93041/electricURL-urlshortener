@@ -9,6 +9,7 @@ import org.apache.commons.validator.routines.UrlValidator
 import java.nio.charset.StandardCharsets
 import es.unizar.urlshortener.core.usecases.UrlAccessibilityCheckUseCase
 import reactor.core.publisher.Mono
+import java.util.*
 
 /**
  * Implementation of the ValidatorService interface.
@@ -99,10 +100,12 @@ class HashValidatorServiceImpl(
  */
 class HashServiceImpl : HashService {
     /**
-     * Generates a hash for the given URL using the Murmur3 32-bit hashing algorithm.
+     * Generates a random hash using a UUID and the Murmur3 32-bit hashing algorithm.
      *
-     * @param url the URL to hash
-     * @return the hash of the URL as a string
+     * @return a randomly generated hash as a string
      */
-    override fun hashUrl(url: String) = Hashing.murmur3_32_fixed().hashString(url, StandardCharsets.UTF_8).toString()
+    override fun generateRandomHash(): String {
+        val randomUUID = UUID.randomUUID().toString()
+        return Hashing.murmur3_32_fixed().hashString(randomUUID, StandardCharsets.UTF_8).toString()
+    }
 }

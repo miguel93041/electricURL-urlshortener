@@ -5,6 +5,8 @@ package es.unizar.urlshortener.infrastructure.delivery
 import com.github.michaelbull.result.fold
 import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.services.*
+import org.springframework.core.io.buffer.DataBuffer
+import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -12,6 +14,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.web.bind.annotation.*
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.net.URI
 
@@ -120,25 +123,24 @@ class UrlShortenerControllerImpl(
      * @return A [ResponseEntity] with the processed CSV file as a downloadable response.
      */
     @PostMapping("/api/upload-csv", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun shortenUrlsFromCsv(data: CsvDataIn, request: ServerHttpRequest): Mono<ResponseEntity<Any>> {
+    fun shortenUrlsFromCsv(data: CsvDataIn, request: ServerHttpRequest): Mono<ResponseEntity<Flux<DataBuffer>>> {
         return csvService.process(data, request)
             .map { result ->
                 result.fold(
-                    success = { stream ->
+                    success = { csvFlux ->
                         val headers = HttpHeaders().apply {
                             add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=shortened_urls.csv")
                             contentType = MediaType.parseMediaType("text/csv")
                         }
-
                         ResponseEntity.ok()
                             .headers(headers)
-                            .body(stream)
+                            .body(csvFlux)
                     },
                     failure = { error ->
                         val (status, message) = when (error) {
                             CsvError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid CSV format"
                         }
-                        ResponseEntity.status(status).body(message)
+                        ResponseEntity.status(status).body(Flux.just(DefaultDataBufferFactory().wrap(message.toByteArray())))
                     }
                 )
             }
