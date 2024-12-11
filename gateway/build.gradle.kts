@@ -22,6 +22,9 @@ dependencies {
     // Adds dotenv Kotlin for managing environment variables
     implementation(libs.dotenv.kotlin)
 
+    // Adds caffeine cache
+    implementation(libs.caffeine)
+
     // Test dependencies
     testImplementation(libs.kotlin.test)               // Kotlin test utilities
     testImplementation(libs.mockito.kotlin)            // Mockito Kotlin

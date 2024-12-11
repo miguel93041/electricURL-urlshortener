@@ -19,6 +19,9 @@ dependencies {
     // Add the R2DBC driver for H2 (in-memory database)
     implementation(libs.r2dbc.h2)
 
+    // Cache
+    implementation(libs.caffeine)
+
     // Add WebFlux for reactive web capabilities
     implementation(libs.spring.boot.starter.webflux)
 }

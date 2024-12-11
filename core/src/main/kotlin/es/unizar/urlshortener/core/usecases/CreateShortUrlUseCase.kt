@@ -51,8 +51,6 @@ class CreateShortUrlUseCaseImpl(
         )
 
         val shortUrl = shortUrlRepository.save(su)
-            .doOnNext { println("Saved ShortUrl: $it") }
-            .doOnError { println("Error saving ShortUrl: ${it.message}") }
         return shortUrl
     }
 }

@@ -1,11 +1,13 @@
 @file:Suppress("ForbiddenComment")
 package es.unizar.urlshortener.thirdparties.ipinfo
 
+import com.github.benmanes.caffeine.cache.AsyncCache
 import es.unizar.urlshortener.core.GeoLocation
 import es.unizar.urlshortener.core.GeoLocationService
 import io.github.cdimascio.dotenv.Dotenv
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
+import java.util.concurrent.CompletableFuture
 
 /**
  * [GeoLocationServiceImpl] is an implementation of the [GeoLocationService] interface.
@@ -17,7 +19,8 @@ import reactor.core.publisher.Mono
  */
 class GeoLocationServiceImpl(
     private val webClient: WebClient,
-    dotenv: Dotenv
+    dotenv: Dotenv,
+    private val cache: AsyncCache<String, GeoLocation>
 ) : GeoLocationService {
 
     private val accessToken = System.getenv(DOTENV_IPINFO_KEY) ?: dotenv[DOTENV_IPINFO_KEY]
@@ -26,11 +29,27 @@ class GeoLocationServiceImpl(
      * Retrieves geographical information for the specified IP address.
      *
      * @param ip The IP address for which to obtain geographical data.
-     * @return A [GeoLocation] object containing the IP address and associated country.
-     *
-     * **TODO**: Implement a custom IP class that validates and checks for IPv4 or IPv6 format.
+     * @return A [Mono] emitting a [GeoLocation] object containing the IP address and associated country.
      */
     override fun get(ip: String): Mono<GeoLocation> {
+        val cachedValue = cache.getIfPresent(ip)
+
+        return if (cachedValue != null) {
+            Mono.fromFuture(cachedValue)
+        } else {
+            fetchGeoLocation(ip).doOnSuccess { result ->
+                cache.put(ip, CompletableFuture.completedFuture(result))
+            }
+        }
+    }
+
+    /**
+     * Fetches geographical information for the specified IP address from the IPInfo API.
+     *
+     * @param ip The IP address for which to fetch geographical data.
+     * @return A [Mono] emitting a [GeoLocation] object containing the IP address and associated country.
+     */
+    private fun fetchGeoLocation(ip: String): Mono<GeoLocation> {
         val url = buildRequestUrl(ip)
 
         return webClient.get()

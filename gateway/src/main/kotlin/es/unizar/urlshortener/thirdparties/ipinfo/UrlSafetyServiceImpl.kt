@@ -1,34 +1,53 @@
 package es.unizar.urlshortener.thirdparties.ipinfo
 
-
+import com.github.benmanes.caffeine.cache.AsyncCache
 import es.unizar.urlshortener.core.UrlSafetyService
 import io.github.cdimascio.dotenv.Dotenv
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
+import java.util.concurrent.CompletableFuture
 
 /**
  * Implementation of [UrlSafetyService] that uses Google's Safe Browsing API to
- * check if a given URL is safe or potentially malicious.
+ * check if a given URL is safe or potentially malicious, with Caffeine for caching results.
  *
  * @property webClient The WebClient instance used to make HTTP requests.
  * @param dotenv The dotenv library instance for managing environment variables.
+ * @param cache The Caffeine AsyncCache used to cache results of URL safety checks.
  */
-class UrlSafetyServiceImpl (
+class UrlSafetyServiceImpl(
     private val webClient: WebClient,
-    dotenv: Dotenv
+    dotenv: Dotenv,
+    private val cache: AsyncCache<String, Boolean>
 ) : UrlSafetyService {
 
     private val accessToken = System.getenv(DOTENV_SAFEBROWSING_KEY) ?: dotenv[DOTENV_SAFEBROWSING_KEY]
 
     /**
-     * Checks if a given URL is safe by querying the Google Safe Browsing API.
+     * Checks if a given URL is safe by first checking the cache, and if not cached,
+     * querying the Google Safe Browsing API.
      *
      * @param url The URL to be checked.
-     * @return True if the URL is safe or not present in the threat database, false otherwise.
-     * @throws RuntimeException if there is an error response from the API.
+     * @return A [Mono] emitting `true` if the URL is safe, `false` otherwise.
      */
-    @Suppress("TooGenericExceptionThrown")
     override fun isSafe(url: String): Mono<Boolean> {
+        val cachedValue = cache.getIfPresent(url)
+        return if (cachedValue != null) {
+            Mono.fromFuture(cachedValue)
+        } else {
+            fetchUrlSafety(url).doOnSuccess { result ->
+                cache.put(url, CompletableFuture.completedFuture(result))
+            }
+        }
+    }
+
+    /**
+     * Fetches the safety status of a URL from the Google Safe Browsing API.
+     *
+     * @param url The URL to be checked.
+     * @return A [Mono] emitting `true` if the URL is safe, `false` otherwise.
+     */
+    private fun fetchUrlSafety(url: String): Mono<Boolean> {
         val requestUrl = buildRequestUrl()
 
         return webClient.post()
@@ -41,8 +60,8 @@ class UrlSafetyServiceImpl (
                 }
             }
             .bodyToMono(Map::class.java)
-            .map { response -> response.isNullOrEmpty() } // Returns true if response is empty (URL is safe)
-            .onErrorResume { Mono.just(false) } // In case of an error, assume URL is unsafe
+            .map { response -> response.isNullOrEmpty() } // True if the response is empty (URL is safe)
+            .onErrorResume { Mono.just(false) } // Assume URL is unsafe on errors
     }
 
     /**

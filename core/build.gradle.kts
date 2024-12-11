@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.zxing.javase)
     // kotlin-result for functional programming support
     implementation(libs.kotlin.result)
+    implementation(libs.caffeine)
 
     // Test dependencies
     testImplementation(libs.kotlin.test)               // Kotlin test utilities

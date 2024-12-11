@@ -42,6 +42,9 @@ httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5" }  # Ap
 # R2DBC driver for in-memory H2 database
 r2dbc-h2 = { module = "io.r2dbc:r2dbc-h2" }  # R2DBC H2 driver
 
+# Cache
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }  # R2DBC H2 driver
+
 # Other dependencies
 bootstrap = { module = "org.webjars:bootstrap", version.ref = "bootstrap" }  # Bootstrap
 jquery = { module = "org.webjars:jquery", version.ref = "jquery" }  # jQuery

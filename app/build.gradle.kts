@@ -24,6 +24,9 @@ dependencies {
     implementation(libs.spring.boot.starter.data.r2dbc) // R2DBC starter
     implementation(libs.r2dbc.h2)                       // R2DBC H2 driver
 
+    // Cache
+    implementation(libs.caffeine) // Caffeine
+
     // Third-party libraries
     implementation(libs.bootstrap)         // Bootstrap for front-end
     implementation(libs.jquery)            // jQuery for front-end

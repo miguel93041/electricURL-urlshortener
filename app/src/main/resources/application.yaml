@@ -10,7 +10,5 @@ spring:
     init:
       schema-locations: classpath:schema.sql
       mode: always  # Siempre inicializa el esquema al arrancar
-logging:
-  level:
-    org.springframework.boot.sql.init: DEBUG
-    org.springframework.r2dbc.core: DEBUG
+  cache:
+    type: caffeine

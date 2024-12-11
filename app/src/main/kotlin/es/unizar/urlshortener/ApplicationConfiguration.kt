@@ -3,6 +3,8 @@ package es.unizar.urlshortener
 
 import RedirectionLimitUseCase
 import RedirectionLimitUseCaseImpl
+import com.github.benmanes.caffeine.cache.AsyncCache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.zxing.qrcode.QRCodeWriter
 import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.services.*
@@ -17,14 +19,14 @@ import es.unizar.urlshortener.infrastructure.repositories.ShortUrlRepositoryServ
 import es.unizar.urlshortener.thirdparties.ipinfo.GeoLocationServiceImpl
 import es.unizar.urlshortener.thirdparties.ipinfo.UrlSafetyServiceImpl
 import io.github.cdimascio.dotenv.Dotenv
-import io.r2dbc.spi.ConnectionFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
-import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.web.reactive.function.client.WebClient
 import ua_parser.Parser
+import java.util.concurrent.TimeUnit
 
 /**
  * Wires use cases with service implementations, and services implementations with repositories.
@@ -43,14 +45,14 @@ class ApplicationConfiguration(
      * @return an instance of ClickRepositoryServiceImpl.
      */
     @Bean
-    fun clickRepositoryService() = ClickRepositoryServiceImpl(clickEntityRepository)
+    fun clickRepositoryService() = ClickRepositoryServiceImpl(clickEntityRepository, clickCache())
 
     /**
      * Provides an implementation of the ShortUrlRepositoryService.
      * @return an instance of ShortUrlRepositoryServiceImpl.
      */
     @Bean
-    fun shortUrlRepositoryService() = ShortUrlRepositoryServiceImpl(shortUrlEntityRepository, r2dbcEntityTemplate)
+    fun shortUrlRepositoryService() = ShortUrlRepositoryServiceImpl(shortUrlEntityRepository, r2dbcEntityTemplate, shortUrlCache())
 
 
     /**
@@ -154,8 +156,8 @@ class ApplicationConfiguration(
      * @return an instance of GeoLocationServiceImpl.
      */
     @Bean
-    fun geoLocationService(webClient: WebClient, dotEnv: Dotenv): GeoLocationService {
-        return GeoLocationServiceImpl(webClient, dotEnv)
+    fun geoLocationService(webClient: WebClient, dotEnv: Dotenv, cache: AsyncCache<String, GeoLocation>): GeoLocationService {
+        return GeoLocationServiceImpl(webClient, dotEnv, cache)
     }
 
     /**
@@ -163,8 +165,8 @@ class ApplicationConfiguration(
      * @return an instance of Parser.
      */
     @Bean
-    fun urlSafetyService(webClient: WebClient, dotEnv: Dotenv): UrlSafetyService {
-        return UrlSafetyServiceImpl(webClient, dotEnv)
+    fun urlSafetyService(webClient: WebClient, dotEnv: Dotenv, @Qualifier("urlSafeCache") cache: AsyncCache<String, Boolean>): UrlSafetyService {
+        return UrlSafetyServiceImpl(webClient, dotEnv, cache)
     }
 
     @Bean
@@ -183,8 +185,8 @@ class ApplicationConfiguration(
      * @return an instance of UrlAccessibilityCheckUseCaseImpl.
      */
     @Bean
-    fun urlAccesibilityCheckUseCase(webClient: WebClient): UrlAccessibilityCheckUseCase =
-        UrlAccessibilityCheckUseCaseImpl(webClient)
+    fun urlAccesibilityCheckUseCase(webClient: WebClient, @Qualifier("urlReachableCache") cache: AsyncCache<String, Boolean>): UrlAccessibilityCheckUseCase =
+        UrlAccessibilityCheckUseCaseImpl(webClient, cache)
 
     /**
      * Defines the [GetAnalyticsUseCase] bean.
@@ -259,10 +261,44 @@ class ApplicationConfiguration(
         )
     }
 
-    @Bean
-    fun hashValidatorService(
-        shortUrlRepositoryService: ShortUrlRepositoryService
-    ): HashValidatorService {
-        return HashValidatorServiceImpl(shortUrlRepositoryService)
+    @Configuration
+    class CacheConfig {
+
+        @Bean("urlSafeCache")
+        fun urlSafeCache(): AsyncCache<String, Boolean> {
+            return Caffeine.newBuilder()
+                .expireAfterWrite(6, TimeUnit.HOURS)
+                .maximumSize(500)
+                .buildAsync()
+        }
+
+        fun geoLocationCache(): AsyncCache<String, GeoLocation> {
+            return Caffeine.newBuilder()
+                .expireAfterWrite(1, TimeUnit.HOURS)
+                .maximumSize(1000)
+                .buildAsync()
+        }
+
+        @Bean("urlReachableCache")
+        fun urlReachableCache(): AsyncCache<String, Boolean> {
+            return Caffeine.newBuilder()
+                .expireAfterWrite(6, TimeUnit.HOURS)
+                .maximumSize(500)
+                .buildAsync()
+        }
+
+        fun clickCache(): AsyncCache<String, List<Click>> {
+            return Caffeine.newBuilder()
+                .expireAfterWrite(15, TimeUnit.MINUTES)
+                .maximumSize(1000)
+                .buildAsync()
+        }
+
+        fun shortUrlCache(): AsyncCache<String, ShortUrl> {
+            return Caffeine.newBuilder()
+                .expireAfterAccess(12, TimeUnit.HOURS)
+                .maximumSize(1000)
+                .buildAsync()
+        }
     }
 }

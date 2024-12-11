@@ -97,9 +97,12 @@ data class AnalyticsData(
  * Data required to create a short url.
  */
 data class ShortUrlDataIn(
-    val url: String,
+    private val rawUrl: String,
     val qrRequested: Boolean = false
-)
+) {
+    val url: String
+        get() = if (rawUrl.endsWith("/")) rawUrl else "$rawUrl/"
+}
 
 /**
  * Data required to create a short url.

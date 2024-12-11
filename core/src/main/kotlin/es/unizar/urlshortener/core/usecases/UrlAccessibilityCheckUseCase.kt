@@ -1,7 +1,9 @@
 package es.unizar.urlshortener.core.usecases
 
+import com.github.benmanes.caffeine.cache.AsyncCache
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
+import java.util.concurrent.CompletableFuture
 
 /**
  * Interface for checking the accessibility of a given URL.
@@ -27,15 +29,34 @@ interface UrlAccessibilityCheckUseCase {
  */
 @Suppress("TooGenericExceptionCaught", "SwallowedException")
 class UrlAccessibilityCheckUseCaseImpl(
-    private val webClient: WebClient
+    private val webClient: WebClient,
+    private val cache: AsyncCache<String, Boolean>
 ) : UrlAccessibilityCheckUseCase {
     /**
-     * Verifies if a URL is reachable by making a GET request to the URL.
+     * Verifies if a URL is reachable by checking the cache first and falling back to an HTTP GET request if necessary.
      *
      * @param url The URL to check.
      * @return A [Mono] emitting true if the URL is reachable, false otherwise.
      */
     override fun isUrlReachable(url: String): Mono<Boolean> {
+        val cachedValue = cache.getIfPresent(url)
+
+        return if (cachedValue != null) {
+            Mono.fromFuture(cachedValue)
+        } else {
+            fetchUrlAccessibility(url).doOnSuccess { result ->
+                cache.put(url, CompletableFuture.completedFuture(result))
+            }
+        }
+    }
+
+    /**
+     * Performs an HTTP GET request to verify if the URL is reachable.
+     *
+     * @param url The URL to check.
+     * @return A [Mono] emitting true if the URL is reachable, false otherwise.
+     */
+    private fun fetchUrlAccessibility(url: String): Mono<Boolean> {
         return webClient.get()
             .uri(url)
             .retrieve()

@@ -1,17 +1,22 @@
 package es.unizar.urlshortener.infrastructure.repositories
 
+import com.github.benmanes.caffeine.cache.AsyncCache
 import es.unizar.urlshortener.core.Click
 import es.unizar.urlshortener.core.ClickRepositoryService
 import es.unizar.urlshortener.core.ShortUrl
 import es.unizar.urlshortener.core.ShortUrlRepositoryService
+import org.slf4j.LoggerFactory
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.OffsetDateTime
+import java.util.concurrent.CompletableFuture
 
 class ClickRepositoryServiceImpl(
-    private val clickEntityRepository: ClickEntityRepository
+    private val clickEntityRepository: ClickEntityRepository,
+    private val cache: AsyncCache<String, List<Click>>
 ) : ClickRepositoryService {
+
     /**
      * Finds all [Click] entities associated with the given hash.
      *
@@ -19,10 +24,19 @@ class ClickRepositoryServiceImpl(
      * @return A [Flux] emitting [Click] entities.
      */
     override fun findAllByHash(hash: String): Flux<Click> {
-        return clickEntityRepository.findAllByHash(hash)
-            .map { it.toDomain() }
-            .doOnNext { println("Retrieved Click entity for hash $hash: $it") }
+        val cachedValue = cache.getIfPresent(hash)
+
+        return if (cachedValue != null) {
+            Flux.fromIterable(cachedValue.get())
+        } else {
+            clickEntityRepository.findAllByHash(hash)
+                .map { it.toDomain() }
+                .collectList()
+                .doOnNext { cache.put(hash, CompletableFuture.completedFuture(it)) }
+                .flatMapMany { Flux.fromIterable(it) }
+        }
     }
+
     /**
      * Saves a [Click] entity to the repository.
      *
@@ -32,7 +46,9 @@ class ClickRepositoryServiceImpl(
     override fun save(cl: Click): Mono<Click> {
         return clickEntityRepository.save(cl.toEntity())
             .map { it.toDomain() }
-            .doOnNext { println("Saved Click entity: $it") }
+            .doOnNext {
+                cache.asMap().remove(cl.hash) // Invalidate cache
+            }
     }
 
     /**
@@ -44,13 +60,13 @@ class ClickRepositoryServiceImpl(
      */
     override fun countClicksByHashAfter(hash: String, createdAfter: OffsetDateTime): Mono<Long> {
         return clickEntityRepository.countByHashAndCreatedAfter(hash, createdAfter)
-            .doOnNext { println("Counted $it clicks for hash $hash after $createdAfter") }
     }
 }
 
 class ShortUrlRepositoryServiceImpl(
     private val shortUrlEntityRepository: ShortUrlEntityRepository,
-    private val entityTemplate: R2dbcEntityTemplate
+    private val entityTemplate: R2dbcEntityTemplate,
+    private val cache: AsyncCache<String, ShortUrl>
 ) : ShortUrlRepositoryService {
 
     /**
@@ -60,9 +76,17 @@ class ShortUrlRepositoryServiceImpl(
      * @return A [Mono] emitting the found [ShortUrl] entity or empty if not found.
      */
     override fun findByKey(id: String): Mono<ShortUrl> {
-        return shortUrlEntityRepository.findByHash(id)
-            .map { it.toDomain() }
-            .doOnNext { println("Retrieved ShortUrl entity with id $id: $it") }
+        val cachedValue = cache.getIfPresent(id)
+
+        return if (cachedValue != null) {
+            Mono.fromFuture(cachedValue)
+        } else {
+            shortUrlEntityRepository.findByHash(id)
+                .map { it.toDomain() }
+                .doOnNext { shortUrl ->
+                    cache.put(id, CompletableFuture.completedFuture(shortUrl))
+                }
+        }
     }
 
     /**
@@ -75,6 +99,8 @@ class ShortUrlRepositoryServiceImpl(
         return entityTemplate.insert(ShortUrlEntity::class.java)
             .using(su.toEntity())
             .map { it.toDomain() }
-            .doOnNext { println("Saved ShortUrl entity: $it") }
+            .doOnNext { savedShortUrl ->
+                cache.asMap().remove(savedShortUrl.hash) // Invalidate cache after save
+            }
     }
 }
