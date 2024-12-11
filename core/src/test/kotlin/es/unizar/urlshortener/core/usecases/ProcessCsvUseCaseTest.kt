@@ -144,7 +144,6 @@ class ProcessCsvUseCaseTest {
 
     @Test
     fun `should generate QR code URLs if requested`() {
-        // Given
         val inputCsv = "http://example.com"
         val reader = StringReader(inputCsv)
         val writer = StringWriter()
@@ -157,15 +156,149 @@ class ProcessCsvUseCaseTest {
             eq(ShortUrlDataIn("http://example.com", true)),
             eq(mockRequest)
         )).thenReturn(shortUrl)
-
-        // When
         processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", true))
 
-        // Then
         val expectedOutput = """
             original-url,shortened-url,qr-code-url
             http://example.com,http://short.ly/abc123,http://short.ly/qr/abc123
         """.trimIndent()
+
+        assertEquals(expectedOutput, writer.toString().trim())
+    }
+
+    @Test
+    fun `should process URLs with special characters correctly`() {
+        val inputCsv = "http://example.com/?q=hello%20world\nhttp://example.com/path/to/resource"
+        val reader = StringReader(inputCsv)
+        val writer = StringWriter()
+
+        val shortUrl1 = ShortUrlDataOut(
+            shortUrl = URI("http://short.ly/special1"),
+            qrCodeUrl = null
+        )
+        val shortUrl2 = ShortUrlDataOut(
+            shortUrl = URI("http://short.ly/special2"),
+            qrCodeUrl = null
+        )
+
+        `when`(generateEnhancedShortUrlUseCase.generate(any(), eq(mockRequest)))
+            .thenReturn(shortUrl1)
+            .thenReturn(shortUrl2)
+
+        processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", false))
+
+        val expectedOutput = """
+        original-url,shortened-url
+        http://example.com/?q=hello%20world,http://short.ly/special1
+        http://example.com/path/to/resource,http://short.ly/special2
+    """.trimIndent()
+
+        assertEquals(expectedOutput, writer.toString().trim())
+    }
+
+    @Test
+    fun `should handle mix of valid and invalid URLs`() {
+        val inputCsv = "http://valid-url.com\ninvalid-url\nhttp://another-valid-url.com"
+        val reader = StringReader(inputCsv)
+        val writer = StringWriter()
+
+        val shortUrl1 = ShortUrlDataOut(
+            shortUrl = URI("http://short.ly/valid1"),
+            qrCodeUrl = null
+        )
+        val shortUrl2 = ShortUrlDataOut(
+            shortUrl = URI("http://short.ly/valid2"),
+            qrCodeUrl = null
+        )
+
+        `when`(generateEnhancedShortUrlUseCase.generate(
+            eq(ShortUrlDataIn("http://valid-url.com", false)),
+            eq(mockRequest))
+        ).thenReturn(shortUrl1)
+
+        `when`(generateEnhancedShortUrlUseCase.generate(
+            eq(ShortUrlDataIn("http://another-valid-url.com", false)),
+            eq(mockRequest))
+        ).thenReturn(shortUrl2)
+
+        `when`(generateEnhancedShortUrlUseCase.generate(
+            eq(ShortUrlDataIn("invalid-url", false)),
+            eq(mockRequest))
+        ).thenThrow(InvalidUrlException("Invalid URL"))
+
+        processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", false))
+
+        val expectedOutput = """
+        original-url,shortened-url
+        http://valid-url.com,http://short.ly/valid1
+        invalid-url,ERROR: Invalid URL,ERROR: QR not generated
+        http://another-valid-url.com,http://short.ly/valid2
+    """.trimIndent()
+
+        assertEquals(expectedOutput, writer.toString().trim())
+    }
+
+    @Test
+    fun `should handle intermittent errors during processing`() {
+        val inputCsv = "http://example.com\nhttp://flaky-url.com\nhttp://valid-url.com"
+        val reader = StringReader(inputCsv)
+        val writer = StringWriter()
+
+        val shortUrl1 = ShortUrlDataOut(
+            shortUrl = URI("http://short.ly/abc123"),
+            qrCodeUrl = null
+        )
+        val shortUrl2 = ShortUrlDataOut(
+            shortUrl = URI("http://short.ly/valid1"),
+            qrCodeUrl = null
+        )
+
+        `when`(generateEnhancedShortUrlUseCase.generate(eq(ShortUrlDataIn("http://example.com", false)), eq(mockRequest)))
+            .thenReturn(shortUrl1)
+        `when`(generateEnhancedShortUrlUseCase.generate(eq(ShortUrlDataIn("http://flaky-url.com", false)), eq(mockRequest)))
+            .thenThrow(UrlUnreachableException("Temporary failure"))
+        `when`(generateEnhancedShortUrlUseCase.generate(eq(ShortUrlDataIn("http://valid-url.com", false)), eq(mockRequest)))
+            .thenReturn(shortUrl2)
+
+        processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", false))
+
+        val expectedOutput = """
+        original-url,shortened-url
+        http://example.com,http://short.ly/abc123
+        http://flaky-url.com,ERROR: URL unreachable,ERROR: QR not generated
+        http://valid-url.com,http://short.ly/valid1
+    """.trimIndent()
+
+        assertEquals(expectedOutput, writer.toString().trim())
+    }
+
+    @Test
+    fun `should process mix of http and https URLs`() {
+        val inputCsv = "http://example.com\nhttps://secure-example.com"
+        val reader = StringReader(inputCsv)
+        val writer = StringWriter()
+
+        val shortUrl1 = ShortUrlDataOut(
+            shortUrl = URI("http://short.ly/abc123"),
+            qrCodeUrl = null
+        )
+        val shortUrl2 = ShortUrlDataOut(
+            shortUrl = URI("http://short.ly/secure456"),
+            qrCodeUrl = null
+        )
+
+        `when`(generateEnhancedShortUrlUseCase.generate(eq(ShortUrlDataIn("http://example.com", false)), eq(mockRequest)))
+            .thenReturn(shortUrl1)
+        `when`(generateEnhancedShortUrlUseCase.generate(eq(ShortUrlDataIn("https://secure-example.com", false)), eq(mockRequest)))
+            .thenReturn(shortUrl2)
+
+        processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", false))
+
+        val expectedOutput = """
+        original-url,shortened-url
+        http://example.com,http://short.ly/abc123
+        https://secure-example.com,http://short.ly/secure456
+    """.trimIndent()
 
         assertEquals(expectedOutput, writer.toString().trim())
     }
