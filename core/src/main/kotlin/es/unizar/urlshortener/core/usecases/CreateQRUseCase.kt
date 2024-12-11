@@ -47,7 +47,9 @@ class CreateQRUseCaseImpl(
         if (url.isEmpty()) {
             throw InvalidUrlException("URL is invalid")
         }
-
+        if (url.length > 2083) {
+            throw InvalidUrlException("URL exceeds the maximum length of 2082 characters")
+        }
         val bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, size, size)
         val bufferedImage: BufferedImage = MatrixToImageWriter.toBufferedImage(bitMatrix)
         val outputByteArray = ByteArrayOutputStream()
