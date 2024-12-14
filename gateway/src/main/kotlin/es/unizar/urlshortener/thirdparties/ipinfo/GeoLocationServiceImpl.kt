@@ -58,6 +58,10 @@ class GeoLocationServiceImpl(
             return Mono.just(GeoLocation(ip, "Unknown"))
         }
 
+        if (ipAddress.isBogon) {
+            return Mono.just(GeoLocation(ipAddress.ip, "Bogon"))
+        }
+
         val url = buildRequestUrl(ipAddress)
 
         return webClient.get()
@@ -78,9 +82,6 @@ class GeoLocationServiceImpl(
      *
      * @param ip The IP address to be used in the request URL.
      * @return The complete URL string for the API request.
-     *
-     * **TODO**: Adapt request URL to handle different formats for IPv4 and IPv6,
-     * as the IPInfo endpoint may differ based on the format.
      */
     private fun buildRequestUrl(ip: IpAddress): String {
         val formattedIp = if (ip.isIPv6) "[${ip.ip}]" else if (ip.isIPv4) ip.ip else ip.ip
