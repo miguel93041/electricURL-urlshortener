@@ -226,6 +226,13 @@ class ApplicationConfiguration(
     }
 
     @Bean
+    fun hashValidatorService(
+        shortUrlRepositoryService: ShortUrlRepositoryService
+    ): HashValidatorService {
+        return HashValidatorServiceImpl(shortUrlRepositoryService)
+    }
+
+    @Bean
     fun analyticsService(
         hashValidatorService: HashValidatorService,
         analyticsUseCase: GetAnalyticsUseCase
@@ -261,9 +268,6 @@ class ApplicationConfiguration(
         )
     }
 
-    @Configuration
-    class CacheConfig {
-
         @Bean("urlSafeCache")
         fun urlSafeCache(): AsyncCache<String, Boolean> {
             return Caffeine.newBuilder()
@@ -272,6 +276,7 @@ class ApplicationConfiguration(
                 .buildAsync()
         }
 
+        @Bean
         fun geoLocationCache(): AsyncCache<String, GeoLocation> {
             return Caffeine.newBuilder()
                 .expireAfterWrite(1, TimeUnit.HOURS)
@@ -300,5 +305,4 @@ class ApplicationConfiguration(
                 .maximumSize(1000)
                 .buildAsync()
         }
-    }
 }
