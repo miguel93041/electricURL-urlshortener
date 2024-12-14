@@ -77,12 +77,11 @@ class GeoLocationServiceImpl(
     /**
      * Builds the request URL for the IPInfo API using the provided IP address.
      *
-     * @param ip The IP address to be used in the request URL.
+     * @param ipAddress The IP address to be used in the request URL.
      * @return The complete URL string for the API request.
      */
-    private fun buildRequestUrl(ip: IpAddress): String {
-        val formattedIp = if (ip.isIPv6) "[${ip.ip}]" else if (ip.isIPv4) ip.ip else ip.ip
-        return "${IPINFO_BASE_URL}${formattedIp}?token=${accessToken}"
+    private fun buildRequestUrl(ipAddress: IpAddress): String {
+        return "${IPINFO_BASE_URL}${ipAddress.ip}?token=${accessToken}"
     }
 
     companion object {
