@@ -50,11 +50,8 @@ class GeoLocationServiceImpl(
      * @return A [Mono] emitting a [GeoLocation] object containing the IP address and associated country.
      */
     private fun fetchGeoLocation(ip: String): Mono<GeoLocation> {
-        val ipAddress: IpAddress
-
-        try {
-            ipAddress = IpAddress(ip)
-        } catch (e: Exception) {
+        val ipAddress = IpAddress(ip)
+        if (!ipAddress.isValid) {
             return Mono.just(GeoLocation(ip, "Unknown"))
         }
 
