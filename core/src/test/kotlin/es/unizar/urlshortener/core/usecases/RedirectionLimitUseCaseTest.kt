@@ -37,7 +37,7 @@ class RedirectionLimitUseCaseTest {
             .thenReturn((redirectionLimit - 1).toLong())
 
         assertDoesNotThrow {
-            redirectionLimitUseCase.checkRedirectionLimit(urlId)
+            redirectionLimitUseCase.isRedirectionLimit(urlId)
         }
 
         verify(clickRepositoryService, times(1)).countClicksByHashAfter(eq(urlId), any())
@@ -50,7 +50,7 @@ class RedirectionLimitUseCaseTest {
             .thenReturn(redirectionLimit.toLong())
 
         assertThrows<TooManyRequestsException> {
-            redirectionLimitUseCase.checkRedirectionLimit(urlId)
+            redirectionLimitUseCase.isRedirectionLimit(urlId)
         }
 
         verify(clickRepositoryService, times(1)).countClicksByHashAfter(eq(urlId), any())
@@ -62,7 +62,7 @@ class RedirectionLimitUseCaseTest {
             .thenReturn((redirectionLimit + 5).toLong())
 
         assertThrows<TooManyRequestsException> {
-            redirectionLimitUseCase.checkRedirectionLimit(urlId)
+            redirectionLimitUseCase.isRedirectionLimit(urlId)
         }
 
         verify(clickRepositoryService, times(1)).countClicksByHashAfter(eq(urlId), any())
@@ -74,7 +74,7 @@ class RedirectionLimitUseCaseTest {
             .thenThrow(RuntimeException("Database error"))
 
         assertThrows<InternalError> {
-            redirectionLimitUseCase.checkRedirectionLimit(urlId)
+            redirectionLimitUseCase.isRedirectionLimit(urlId)
         }
 
         verify(clickRepositoryService, times(1)).countClicksByHashAfter(eq(urlId), any())

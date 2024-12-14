@@ -1,5 +1,8 @@
 package es.unizar.urlshortener.core
 
+import com.github.michaelbull.result.Result
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import java.time.OffsetDateTime
 
 /**
@@ -12,7 +15,7 @@ interface ClickRepositoryService {
      * @param hash The hash associated with the shortened URL.
      * @return A list of [Click] entities.
      */
-    fun findAllByHash(hash: String): List<Click>
+    fun findAllByHash(hash: String): Flux<Click>
 
     /**
      * Saves a [Click] entity to the repository.
@@ -20,7 +23,7 @@ interface ClickRepositoryService {
      * @param cl The [Click] entity to be saved.
      * @return The saved [Click] entity.
      */
-    fun save(cl: Click): Click
+    fun save(cl: Click): Mono<Click>
 
     /**
      * Counts the number of clicks associated with a specific hash created after a certain date and time.
@@ -29,7 +32,7 @@ interface ClickRepositoryService {
      * @param createdAfter The date and time after which clicks are counted.
      * @return The number of clicks for the specified hash created after the given date and time.
      */
-    fun countClicksByHashAfter(hash: String, createdAfter: OffsetDateTime): Long
+    fun countClicksByHashAfter(hash: String, createdAfter: OffsetDateTime): Mono<Long>
 }
 
 /**
@@ -42,7 +45,7 @@ interface ShortUrlRepositoryService {
      * @param id The key of the [ShortUrl] entity.
      * @return The found [ShortUrl] entity or null if not found.
      */
-    fun findByKey(id: String): ShortUrl?
+    fun findByKey(id: String): Mono<ShortUrl>
 
     /**
      * Saves a [ShortUrl] entity to the repository.
@@ -50,22 +53,35 @@ interface ShortUrlRepositoryService {
      * @param su The [ShortUrl] entity to be saved.
      * @return The saved [ShortUrl] entity.
      */
-    fun save(su: ShortUrl): ShortUrl
+    fun save(su: ShortUrl): Mono<ShortUrl>
 }
 
 /**
- * [ValidatorService] is the port to the service that validates if an url can be shortened.
+ * [UrlValidatorService] is the port to the service that validates if an url can be shortened.
  *
- * **Note**: It is a design decision to create this port. It could be part of the core.
  */
-interface ValidatorService {
+interface UrlValidatorService {
     /**
      * Validates if the given URL can be shortened.
      *
      * @param url The URL to be validated.
-     * @return True if the URL is valid, false otherwise.
+     * @return The result of the validation.
      */
-    fun validate(url: String): ValidatorResult
+    fun validate(url: String): Mono<Result<Unit, UrlError>>
+}
+
+/**
+ * [UrlValidatorService] is the port to the service that validates if an url can be shortened.
+ *
+ */
+interface HashValidatorService {
+    /**
+     * Validates if the given hash is valid.
+     *
+     * @param hash The hash to be validated.
+     * @return The result of the validation.
+     */
+    fun validate(hash: String): Mono<Result<Unit, HashError>>
 }
 
 /**
@@ -75,12 +91,11 @@ interface ValidatorService {
  */
 interface HashService {
     /**
-     * Creates a hash from the given URL.
+     * Generates a random hash using a UUID and the Murmur3 32-bit hashing algorithm.
      *
-     * @param url The URL to be hashed.
-     * @return The hash of the URL.
+     * @return a randomly generated hash as a string
      */
-    fun hasUrl(url: String): String
+    fun generateRandomHash(): String
 }
 
 /**
@@ -88,9 +103,9 @@ interface HashService {
  * information based on an IP address.
  */
 interface GeoLocationService {
-    fun get(ip: String): GeoLocation
+    fun get(ip: String): Mono<GeoLocation>
 }
 
 interface UrlSafetyService {
-    fun isSafe(url: String): Boolean
+    fun isSafe(url: String): Mono<Boolean>
 }

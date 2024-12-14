@@ -2,6 +2,7 @@
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.services.GenerateShortUrlService
 import jakarta.servlet.http.HttpServletRequest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -15,13 +16,13 @@ import java.net.URI
 class ProcessCsvUseCaseTest {
 
     private lateinit var processCsvUseCase: ProcessCsvUseCase
-    private lateinit var generateEnhancedShortUrlUseCase: GenerateEnhancedShortUrlUseCase
+    private lateinit var generateShortUrlService: GenerateShortUrlService
     private lateinit var mockRequest: HttpServletRequest
 
     @BeforeEach
     fun setup() {
-        generateEnhancedShortUrlUseCase = mock()
-        processCsvUseCase = ProcessCsvUseCaseImpl(generateEnhancedShortUrlUseCase)
+        generateShortUrlService = mock()
+        processCsvUseCase = ProcessCsvUseCaseImpl(generateShortUrlService)
         mockRequest = mock()
 
         `when`(mockRequest.remoteAddr).thenReturn("127.0.0.1")
@@ -43,7 +44,7 @@ class ProcessCsvUseCaseTest {
             qrCodeUrl = null
         )
 
-        `when`(generateEnhancedShortUrlUseCase.generate(any(), eq(mockRequest)))
+        `when`(generateShortUrlService.generate(any(), eq(mockRequest)))
             .thenReturn(shortUrl1)
             .thenReturn(shortUrl2)
 
@@ -67,7 +68,7 @@ class ProcessCsvUseCaseTest {
         val reader = StringReader(inputCsv)
         val writer = StringWriter()
 
-        `when`(generateEnhancedShortUrlUseCase.generate(
+        `when`(generateShortUrlService.generate(
             eq(ShortUrlDataIn("invalid-url", false)),
             eq(mockRequest)
         )).thenThrow(InvalidUrlException("Invalid URL"))
@@ -76,7 +77,7 @@ class ProcessCsvUseCaseTest {
             shortUrl = URI("http://short.ly/abc123"),
             qrCodeUrl = null
         )
-        `when`(generateEnhancedShortUrlUseCase.generate(
+        `when`(generateShortUrlService.generate(
             eq(ShortUrlDataIn("http://example.com", false)),
             eq(mockRequest)
         )).thenReturn(shortUrl)
@@ -101,7 +102,7 @@ class ProcessCsvUseCaseTest {
         val reader = StringReader(inputCsv)
         val writer = StringWriter()
 
-        `when`(generateEnhancedShortUrlUseCase.generate(
+        `when`(generateShortUrlService.generate(
             eq(ShortUrlDataIn("http://unsafe-url.com", false)),
             eq(mockRequest)
         )).thenThrow(UnsafeUrlException("Unsafe URL"))
@@ -125,7 +126,7 @@ class ProcessCsvUseCaseTest {
         val reader = StringReader(inputCsv)
         val writer = StringWriter()
 
-        `when`(generateEnhancedShortUrlUseCase.generate(
+        `when`(generateShortUrlService.generate(
             eq(ShortUrlDataIn("http://unreachable-url.com", false)),
             eq(mockRequest)
         )).thenThrow(UrlUnreachableException("URL unreachable"))
@@ -153,7 +154,7 @@ class ProcessCsvUseCaseTest {
             shortUrl = URI("http://short.ly/abc123"),
             qrCodeUrl = URI("http://short.ly/qr/abc123")
         )
-        `when`(generateEnhancedShortUrlUseCase.generate(
+        `when`(generateShortUrlService.generate(
             eq(ShortUrlDataIn("http://example.com", true)),
             eq(mockRequest)
         )).thenReturn(shortUrl)

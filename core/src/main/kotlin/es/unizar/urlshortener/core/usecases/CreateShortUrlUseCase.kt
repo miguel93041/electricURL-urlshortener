@@ -3,6 +3,7 @@
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.*
+import reactor.core.publisher.Mono
 
 /**
  * Given an url returns the key that is used to create a short URL.
@@ -17,7 +18,7 @@ interface CreateShortUrlUseCase {
      * @return The created [ShortUrl] entity.
      * @throws InvalidUrlException if the URL is not valid.
      */
-    fun create(url: String, data: ShortUrlProperties): ShortUrl
+    fun create(url: String, data: ShortUrlProperties): Mono<ShortUrl>
 }
 
 /**
@@ -27,12 +28,10 @@ interface CreateShortUrlUseCase {
  * and saves the resulting short URL along with any provided metadata in the repository.
  *
  * @property shortUrlRepository The repository service responsible for saving and retrieving short URLs.
- * @property validatorService The service responsible for validating the correctness of the target URL.
  * @property hashService The service responsible for generating a unique hash for the URL.
  */
 class CreateShortUrlUseCaseImpl(
     private val shortUrlRepository: ShortUrlRepositoryService,
-    private val validatorService: ValidatorService,
     private val hashService: HashService
 ) : CreateShortUrlUseCase {
     /**
@@ -43,25 +42,15 @@ class CreateShortUrlUseCaseImpl(
      * @return The created [ShortUrl] entity.
      * @throws InvalidUrlException if the URL is not valid.
      */
-    override fun create(url: String, data: ShortUrlProperties): ShortUrl {
-        val validationResult = validatorService.validate(url)
+    override fun create(url: String, data: ShortUrlProperties): Mono<ShortUrl> {
+        val id = hashService.generateRandomHash()
+        val su = ShortUrl(
+            hash = id,
+            redirection = Redirection(target = url),
+            properties = data
+        )
 
-        when (validationResult) {
-            ValidatorResult.NOT_VALID_FORMAT -> throw InvalidUrlException(url)
-            ValidatorResult.NOT_SAFE -> throw UnsafeUrlException(url)
-            ValidatorResult.NOT_REACHABLE -> throw UrlUnreachableException(url)
-            ValidatorResult.VALID -> {
-                return safeCall{
-                    val id = hashService.hasUrl(url)
-                    val su = ShortUrl(
-                        hash = id,
-                        redirection = Redirection(target = url),
-                        properties = data
-                    )
-                    shortUrlRepository.save(su)
-                }
-            }
-        }
+        val shortUrl = shortUrlRepository.save(su)
+        return shortUrl
     }
-
 }

@@ -1,6 +1,6 @@
 package es.unizar.urlshortener.core
 
-import org.springframework.web.multipart.MultipartFile
+import org.springframework.http.codec.multipart.FilePart
 import java.net.URI
 import java.time.OffsetDateTime
 
@@ -30,7 +30,7 @@ data class ShortUrl(
  */
 data class Redirection(
     val target: String,
-    val mode: Int = 307
+    val mode: Int = 301
 )
 
 /**
@@ -97,16 +97,26 @@ data class AnalyticsData(
  * Data required to create a short url.
  */
 data class ShortUrlDataIn(
-    val url: String? = null,
-    val qrRequested: Boolean = false,
-    val file: MultipartFile? = null
+    private val rawUrl: String,
+    val qrRequested: Boolean = false
+) {
+    val url: String
+        get() = if (rawUrl.endsWith("/")) rawUrl else "$rawUrl/"
+}
+
+/**
+ * Data required to create a short url.
+ */
+data class CsvDataIn(
+    val file: FilePart,
+    val qrRequested: Boolean = false
 )
 
 /**
  * Data returned after the creation of a short url.
  */
 data class ShortUrlDataOut(
-    val shortUrl: URI? = null,
+    val shortUrl: URI,
     val qrCodeUrl: URI? = null
 )
 

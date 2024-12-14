@@ -12,11 +12,11 @@ guava = "31.1-jre"  # Google Guava version
 uapJava = "1.6.1"  # UA-Parser version
 zxing = "3.5.2"  # ZXing version
 dotenvKotlin = "6.4.1"  # dotenv-kotlin version
+kotlinResult = "2.0.0"  # kotlin-result version
 
 # Define plugins with their respective IDs and version references
 [plugins]
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin"}  # Kotlin Spring plugin
-kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin"}  # Kotlin JPA plugin
 spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }  # Spring Boot plugin
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }  # Spring Dependency Management plugin
 
@@ -32,16 +32,18 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 
 # Spring Boot managed dependencies
 spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }  # Spring Boot Starter
-spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }  # Spring Boot Starter Web
-spring-boot-starter-hateoas = { module = "org.springframework.boot:spring-boot-starter-hateoas" }  # Spring Boot Starter HATEOAS
-spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }  # Spring Boot Starter JDBC
-spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }  # Spring Boot Starter Data JPA
-spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }  # Spring Boot Starter Test
 spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" } # Spring Boot Starter WebFlux
+spring-boot-starter-data-r2dbc = { module = "org.springframework.boot:spring-boot-starter-data-r2dbc" }  # Spring Boot Starter Data R2DBC
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }  # Spring Boot Starter Test
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }  # JUnit Jupiter
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }  # JUnit Platform Launcher
 httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5" }  # Apache HttpClient 5
-hsqldb = { module = "org.hsqldb:hsqldb"}  # HSQLDB
+
+# R2DBC driver for in-memory H2 database
+r2dbc-h2 = { module = "io.r2dbc:r2dbc-h2" }  # R2DBC H2 driver
+
+# Cache
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }  # R2DBC H2 driver
 
 # Other dependencies
 bootstrap = { module = "org.webjars:bootstrap", version.ref = "bootstrap" }  # Bootstrap
@@ -53,3 +55,4 @@ uap-java = { module = "com.github.ua-parser:uap-java", version.ref = "uapJava" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }  # ZXing Core
 zxing-javase = { module = "com.google.zxing:javase", version.ref = "zxing" }  # ZXing JavaSE
 dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenvKotlin" }  # dotenv Kotlin
+kotlin-result = { module = "com.michael-bull.kotlin-result:kotlin-result", version.ref = "kotlinResult" }  # kotlin-result

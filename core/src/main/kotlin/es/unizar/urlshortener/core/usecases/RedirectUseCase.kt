@@ -1,10 +1,7 @@
 package es.unizar.urlshortener.core.usecases
 
-import RedirectionLimitUseCase
-import es.unizar.urlshortener.core.Redirection
-import es.unizar.urlshortener.core.RedirectionNotFound
-import es.unizar.urlshortener.core.ShortUrlRepositoryService
-import es.unizar.urlshortener.core.safeCall
+import es.unizar.urlshortener.core.*
+import reactor.core.publisher.Mono
 
 /**
  * Given a key returns a [Redirection] that contains a [URI target][Redirection.target]
@@ -18,40 +15,33 @@ interface RedirectUseCase {
      * @return The [Redirection] containing the target URL and redirection mode.
      * @throws RedirectionNotFound if no redirection is found for the given key.
      */
-    fun redirectTo(key: String): Redirection
+    fun redirectTo(key: String): Mono<Redirection>
 }
 
 /**
  * Implementation of [RedirectUseCase].
  *
- * Retrieves redirection details from a [ShortUrlRepositoryService], while ensuring compliance with
- * redirection limits defined by the [RedirectionLimitUseCase].
+ * Retrieves redirection details from a [ShortUrlRepositoryService].
  *
  * @property shortUrlService The repository used to retrieve redirection details.
- * @property redirectionLimitUseCase The use case that enforces limits on redirections.
  */
 class RedirectUseCaseImpl(
     private val shortUrlService: ShortUrlRepositoryService,
-    private val redirectionLimitUseCase: RedirectionLimitUseCase
 ) : RedirectUseCase {
     /**
      * Redirects to the target URL associated with the given key.
      *
      * @param key The key associated with the target URL.
-     * @return The [Redirection] containing the target URL and redirection mode.
-     * @throws RedirectionNotFound if no redirection is found for the given key.
+     * @return A [Mono] emitting the [Redirection] containing the target URL and redirection mode.
+     *         Emits an error if no redirection is found for the given key.
      */
-    override fun redirectTo(key: String): Redirection {
-        redirectionLimitUseCase.checkRedirectionLimit(key)
-
-        val redirection = safeCall {
-            shortUrlService.findByKey(key)
-        }?.redirection
-
-        if (redirection == null) {
-            throw RedirectionNotFound(key)
-        }
-
-        return redirection
+    override fun redirectTo(key: String): Mono<Redirection> {
+        return shortUrlService.findByKey(key)
+            .flatMap { shortUrl ->
+                Mono.just(shortUrl.redirection)
+            }
+            .switchIfEmpty(
+                Mono.error(RedirectionNotFound("No redirection found for key: $key"))
+            )
     }
 }

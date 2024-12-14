@@ -10,51 +10,41 @@ plugins {
 }
 
 dependencies {
-    // Adds the core project as an implementation dependency.
-    implementation(project(":core"))
-    // Adds the delivery project as an implementation dependency.
-    implementation(project(":delivery"))
-    // Adds the repositories project as an implementation dependency.
-    implementation(project(":repositories"))
-    // Adds the gateway project as an implementation dependency.
-    implementation(project(":gateway"))
+    // Core modules
+    implementation(project(":core"))        // Core logic
+    implementation(project(":delivery"))    // Delivery layer
+    implementation(project(":repositories")) // Repositories layer
+    implementation(project(":gateway"))     // Gateway layer
 
-    // Adds the Spring Boot starter as an implementation dependency.
-    implementation(libs.spring.boot.starter)
-    // Adds Bootstrap as an implementation dependency.
-    implementation(libs.bootstrap)
-    // Adds jQuery as an implementation dependency.
-    implementation(libs.jquery)
-    // Adds the Spring Boot starter WebFlux as an implementation dependency.
-    implementation(libs.spring.boot.starter.webflux)
-    // Adds UA-Parser as an implementation dependency.
-    implementation(libs.uap.java)
-    // Adds ZXing Core as an implementation dependency.
-    implementation(libs.zxing.core)
-    // Adds dotenv Kotlin as an implementation dependency.
-    implementation(libs.dotenv.kotlin)
+    // Spring Boot starters
+    implementation(libs.spring.boot.starter)         // Spring Boot base starter
+    implementation(libs.spring.boot.starter.webflux) // WebFlux for reactive controllers
 
-    // Adds HSQLDB as a runtime-only dependency.
-    runtimeOnly(libs.hsqldb)
-    // Adds Kotlin reflection library as a runtime-only dependency.
-    runtimeOnly(libs.kotlin.reflect)
+    // R2DBC for reactive database access
+    implementation(libs.spring.boot.starter.data.r2dbc) // R2DBC starter
+    implementation(libs.r2dbc.h2)                       // R2DBC H2 driver
 
-    // Adds Kotlin test library as a test implementation dependency.
-    testImplementation(libs.kotlin.test)
-    // Adds Mockito Kotlin library as a test implementation dependency.
-    testImplementation(libs.mockito.kotlin)
-    // Adds Spring Boot starter test library as a test implementation dependency.
-    testImplementation(libs.spring.boot.starter.test)
-    // Adds Spring Boot starter web library as a test implementation dependency.
-    testImplementation(libs.spring.boot.starter.web)
-    // Adds Spring Boot starter JDBC library as a test implementation dependency.
-    testImplementation(libs.spring.boot.starter.jdbc)
-    // Adds Apache HttpClient 5 as a test implementation dependency.
-    testImplementation(libs.httpclient5)
-    // Adds JUnit Jupiter as a test implementation dependency.
-    testImplementation(libs.junit.jupiter)
-    // Adds JUnit Platform launcher as a test runtime-only dependency.
-    testRuntimeOnly(libs.junit.platform.launcher)
+    // Cache
+    implementation(libs.caffeine) // Caffeine
+
+    // Third-party libraries
+    implementation(libs.bootstrap)         // Bootstrap for front-end
+    implementation(libs.jquery)            // jQuery for front-end
+    implementation(libs.uap.java)          // UA-Parser for user-agent parsing
+    implementation(libs.zxing.core)        // ZXing for QR code generation
+    implementation(libs.dotenv.kotlin)     // dotenv for environment variables
+
+    // Kotlin-specific libraries
+    runtimeOnly(libs.kotlin.reflect)       // Kotlin reflection
+
+    // Test dependencies
+    testImplementation(libs.kotlin.test)                 // Kotlin test utilities
+    testImplementation(libs.mockito.kotlin)              // Mockito Kotlin
+    testImplementation(libs.spring.boot.starter.test)    // Spring Boot testing
+    testImplementation(libs.spring.boot.starter.webflux) // WebFlux testing
+    testImplementation(libs.httpclient5)                 // Apache HttpClient 5
+    testImplementation(libs.junit.jupiter)               // JUnit Jupiter for tests
+    testRuntimeOnly(libs.junit.platform.launcher)         // JUnit platform launcher
 }
 
 dependencyManagement {

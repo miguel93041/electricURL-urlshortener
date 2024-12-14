@@ -3,6 +3,7 @@ package es.unizar.urlshortener.core.usecases
 import es.unizar.urlshortener.core.Click
 import es.unizar.urlshortener.core.ClickProperties
 import es.unizar.urlshortener.core.ClickRepositoryService
+import reactor.core.publisher.Mono
 
 /**
  * Log that somebody has requested the redirection identified by a key.
@@ -14,7 +15,7 @@ interface LogClickUseCase {
      * @param key The key associated with the redirection.
      * @param data The properties of the click event.
      */
-    fun logClick(key: String, data: ClickProperties)
+    fun logClick(key: String, data: ClickProperties): Mono<Void>
 }
 
 /**
@@ -33,7 +34,7 @@ class LogClickUseCaseImpl(
      * @param key The key associated with the redirection.
      * @param data The properties of the click event.
      */
-    override fun logClick(key: String, data: ClickProperties) {
+    override fun logClick(key: String, data: ClickProperties): Mono<Void> {
         val cl = Click(
             hash = key,
             properties = ClickProperties(
@@ -43,8 +44,8 @@ class LogClickUseCaseImpl(
                 platform = data.platform
             )
         )
-        runCatching {
-            clickRepository.save(cl)
-        }
+
+        return clickRepository.save(cl)
+            .then() // Convert Mono<Click> to Mono<Void>
     }
 }

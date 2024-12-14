@@ -60,7 +60,7 @@ Now you have a shortener service running at port 8080. You can test that
 it works as follows:
 
 ``` bash
-$ curl -v -d "url=http://www.unizar.es/" http://localhost:8080/api/link
+$ curl -v -d "rawUrl=http://www.unizar.es/" http://localhost:8080/api/link
 *   Trying ::1:8080...
 * Connected to localhost (::1) port 8080 (#0)
 > POST /api/link HTTP/1.1
@@ -216,12 +216,12 @@ Retrieves aggregated analytics data for a shortened URL. You can request breakdo
 Creates a shortened URL from the data sent by a form.
 
 - **Parameters:**
-    - `url` (Required): The original URL to shorten.
+    - `rawUrl` (Required): The original URL to shorten.
     - `qrRequested` (Optional, Default: false): Whether to generate a QR code for the shortened URL.
 
 
 - **Responses:**
-    - `200 OK`: The `url` was successfully processed.
+    - `201 CREATED`: The `url` was successfully processed.
     - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
     - `403 Forbidden`: The `url` is unsafe.
     - `500 Internal Server Error`: Unexpected server error.
