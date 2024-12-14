@@ -50,7 +50,7 @@ class GeoLocationServiceImpl(
      * @return A [Mono] emitting a [GeoLocation] object containing the IP address and associated country.
      */
     private fun fetchGeoLocation(ip: String): Mono<GeoLocation> {
-        var ipAddress: IpAddress
+        val ipAddress: IpAddress
 
         try {
             ipAddress = IpAddress(ip)
