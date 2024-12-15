@@ -75,10 +75,13 @@ class RedirectServiceImpl(
                                     .flatMap { redirection ->
                                         logClickUseCase.logClick(hash)
                                             .flatMap { click ->
-                                                geoLocationService.get(request.remoteAddress.toString())
-                                                    .doOnSuccess { geoLocation ->
-                                                        clickRepositoryService.updateGeolocation(click.id!!, geoLocation).subscribe()
-                                                    }.subscribe()
+                                                val ipAddress = ClientHostResolver.resolve(request)
+                                                if (ipAddress != null) {
+                                                    geoLocationService.get(ipAddress)
+                                                        .doOnSuccess { geoLocation ->
+                                                            clickRepositoryService.updateGeolocation(click.id!!, geoLocation).subscribe()
+                                                        }.subscribe()
+                                                }
 
                                                 val userAgent = request.headers.getFirst("User-Agent")
                                                 Mono.fromCallable {

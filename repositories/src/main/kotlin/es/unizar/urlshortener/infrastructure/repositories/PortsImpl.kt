@@ -142,6 +142,10 @@ class ClickRepositoryServiceImpl(
             }
             .then()
     }
+
+    fun clearCache() {
+        cache.synchronous().invalidateAll()
+    }
 }
 
 class ShortUrlRepositoryServiceImpl(
@@ -241,5 +245,9 @@ class ShortUrlRepositoryServiceImpl(
                 logger.info("Geolocation updated for hash=${hash} with geolocation=${geolocation}, cache invalidated")
             }
             .then()
+    }
+
+    fun clearCache() {
+        cache.synchronous().invalidateAll() // Invalida toda la caché
     }
 }

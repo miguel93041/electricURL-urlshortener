@@ -44,6 +44,6 @@ class RedirectionLimitUseCaseImpl(
         val startTime = now.minusSeconds(timeFrameInSeconds)
 
         return clickRepositoryService.countClicksByHashAfter(urlId, startTime)
-            .map { count -> count >= redirectionLimit }
+            .map { count -> count > redirectionLimit }
     }
 }

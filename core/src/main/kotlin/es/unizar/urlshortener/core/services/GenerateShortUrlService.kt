@@ -59,11 +59,11 @@ class GenerateShortUrlServiceImpl(
                             when (error) {
                                 is UrlError.InvalidFormat -> shortUrlRepositoryService.updateValidation(
                                     shortUrlModel.hash,
-                                    ShortUrlValidation(safe = false, reachable = false, validated = true)
+                                    ShortUrlValidation(safe = true, reachable = false, validated = true)
                                 ).subscribe()
                                 is UrlError.Unreachable -> shortUrlRepositoryService.updateValidation(
                                     shortUrlModel.hash,
-                                    ShortUrlValidation(safe = false, reachable = false, validated = true)
+                                    ShortUrlValidation(safe = true, reachable = false, validated = true)
                                 ).subscribe()
                                 is UrlError.Unsafe ->  shortUrlRepositoryService.updateValidation(
                                     shortUrlModel.hash,
@@ -79,12 +79,13 @@ class GenerateShortUrlServiceImpl(
                     }.subscribe()
 
                 // Enrich Shortened URL in a background task
-                val forwardedFor = request.headers["X-Forwarded-For"]?.firstOrNull()
-                val ipAddress = forwardedFor ?: request.remoteAddress?.address?.hostAddress ?: "unknown"
-                geoLocationService.get(ipAddress)
-                    .doOnSuccess { geoLocation ->
-                        shortUrlRepositoryService.updateGeolocation(shortUrlModel.hash, geoLocation).subscribe()
-                    }.subscribe()
+                val ipAddress = ClientHostResolver.resolve(request)
+                if (ipAddress != null) {
+                    geoLocationService.get(ipAddress)
+                        .doOnSuccess { geoLocation ->
+                            shortUrlRepositoryService.updateGeolocation(shortUrlModel.hash, geoLocation).subscribe()
+                        }.subscribe()
+                }
 
                 Mono.just(ShortUrlDataOut(shortUrl, qrCodeUrl))
             }

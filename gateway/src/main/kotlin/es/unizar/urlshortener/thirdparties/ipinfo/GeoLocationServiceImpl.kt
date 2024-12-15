@@ -43,6 +43,10 @@ class GeoLocationServiceImpl(
         }
     }
 
+    fun clearCache() {
+        cache.synchronous().invalidateAll()
+    }
+
     /**
      * Fetches geographical information for the specified IP address from the IPInfo API.
      *

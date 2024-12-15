@@ -50,6 +50,10 @@ interface UrlAccessibilityCheckUseCase {
         }
     }
 
+    fun clearCache() {
+        cache.synchronous().invalidateAll()
+    }
+
     /**
      * Performs an HTTP GET request to verify if the URL is reachable.
      *
