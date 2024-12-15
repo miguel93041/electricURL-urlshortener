@@ -39,12 +39,13 @@ class GeoLocationServiceTest {
 
     @Test
     fun `should return GeoLocation when API returns valid response for IPv6`() {
-        val response = mapOf("ip" to "2606:2800:220:1:248:1893:25c8:1946", "country" to "ES")
+        val ip = "2606:2800:220:1:248:1893:25c8:1946";
+        val response = mapOf("ip" to ip, "country" to "ES")
         mockWebClientResponse(response)
 
-        val result = geoLocationService.get("2606:2800:220:1:248:1893:25c8:1946").block()
+        val result = geoLocationService.get(ip).block()
 
-        assertEquals("2606:2800:220:1:248:1893:25c8:1946", result?.ip)
+        assertEquals(ip, result?.ip)
         assertEquals("ES", result?.country)
     }
 
