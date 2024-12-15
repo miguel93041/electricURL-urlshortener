@@ -59,15 +59,11 @@ class GenerateShortUrlServiceImpl(
                         if (validationResult.isErr) {
                             val error = validationResult.unwrapError()
                             when (error) {
-                                is UrlError.InvalidFormat -> shortUrlRepositoryService.updateValidation(
+                                UrlError.InvalidFormat, UrlError.Unreachable -> shortUrlRepositoryService.updateValidation(
                                     shortUrlModel.hash,
                                     ShortUrlValidation(safe = true, reachable = false, validated = true)
                                 ).subscribe()
-                                is UrlError.Unreachable -> shortUrlRepositoryService.updateValidation(
-                                    shortUrlModel.hash,
-                                    ShortUrlValidation(safe = true, reachable = false, validated = true)
-                                ).subscribe()
-                                is UrlError.Unsafe ->  shortUrlRepositoryService.updateValidation(
+                                UrlError.Unsafe ->  shortUrlRepositoryService.updateValidation(
                                     shortUrlModel.hash,
                                     ShortUrlValidation(safe = false, reachable = true, validated = true)
                                 ).subscribe()
