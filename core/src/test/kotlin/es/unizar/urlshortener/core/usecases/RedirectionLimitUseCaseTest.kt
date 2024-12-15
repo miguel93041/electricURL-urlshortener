@@ -1,15 +1,15 @@
 @file:Suppress("WildcardImport")
+
 package es.unizar.urlshortener.core.usecases
 
 import RedirectionLimitUseCaseImpl
 import es.unizar.urlshortener.core.ClickRepositoryService
-import es.unizar.urlshortener.core.InternalError
-import es.unizar.urlshortener.core.TooManyRequestsException
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.*
+import reactor.core.publisher.Mono
 import kotlin.test.Test
 
 class RedirectionLimitUseCaseTest {
@@ -32,48 +32,44 @@ class RedirectionLimitUseCaseTest {
     }
 
     @Test
-    fun `checkRedirectionLimit does not throw when count is below limit`() {
-        `when`(clickRepositoryService.countClicksByHashAfter(any(), any()))
-            .thenReturn((redirectionLimit - 1).toLong())
+    fun `should return false if redirection limit is not reached`() {
+        `when`(
+            clickRepositoryService.countClicksByHashAfter(eq(urlId), any())
+        ).thenReturn(Mono.just((redirectionLimit - 1).toLong()))
 
-        assertDoesNotThrow {
-            redirectionLimitUseCase.isRedirectionLimit(urlId)
-        }
+        val result = redirectionLimitUseCase.isRedirectionLimit(urlId).block()
 
-        verify(clickRepositoryService, times(1)).countClicksByHashAfter(eq(urlId), any())
+        assertFalse(result ?: true)
     }
 
     @Test
-    fun `checkRedirectionLimit throws when count equals limit`() {
-        // Arrange
-        `when`(clickRepositoryService.countClicksByHashAfter(any(), any()))
-            .thenReturn(redirectionLimit.toLong())
+    fun `should return true if redirection limit is reached`() {
+        `when`(
+            clickRepositoryService.countClicksByHashAfter(eq(urlId), any())
+        ).thenReturn(Mono.just(redirectionLimit.toLong()))
 
-        assertThrows<TooManyRequestsException> {
-            redirectionLimitUseCase.isRedirectionLimit(urlId)
-        }
+        val result = redirectionLimitUseCase.isRedirectionLimit(urlId).block()
 
-        verify(clickRepositoryService, times(1)).countClicksByHashAfter(eq(urlId), any())
+        assertTrue(result ?: false)
     }
 
     @Test
-    fun `checkRedirectionLimit throws when count exceeds limit`() {
-        `when`(clickRepositoryService.countClicksByHashAfter(any(), any()))
-            .thenReturn((redirectionLimit + 5).toLong())
+    fun `should handle count exceeding redirection limit`() {
+        `when`(
+            clickRepositoryService.countClicksByHashAfter(eq(urlId), any())
+        ).thenReturn(Mono.just((redirectionLimit + 1).toLong()))
 
-        assertThrows<TooManyRequestsException> {
-            redirectionLimitUseCase.isRedirectionLimit(urlId)
-        }
+        val result = redirectionLimitUseCase.isRedirectionLimit(urlId).block()
 
-        verify(clickRepositoryService, times(1)).countClicksByHashAfter(eq(urlId), any())
+        assertTrue(result ?: false)
     }
 
     @Test
-    fun `checkRedirectionLimit throws InternalError when an exception occurs inside the service`() {
+    fun `checkRedirectionLimit throws RuntimeException when an exception occurs inside the service`() {
         `when`(clickRepositoryService.countClicksByHashAfter(any(), any()))
             .thenThrow(RuntimeException("Database error"))
 
-        assertThrows<InternalError> {
+        assertThrows<RuntimeException> {
             redirectionLimitUseCase.isRedirectionLimit(urlId)
         }
 

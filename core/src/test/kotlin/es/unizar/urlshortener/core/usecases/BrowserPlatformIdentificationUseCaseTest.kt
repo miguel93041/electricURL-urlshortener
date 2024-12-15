@@ -17,9 +17,9 @@ class BrowserPlatformIdentificationUseCaseTest {
     private val browserPlatformIdentificationUseCase = BrowserPlatformIdentificationUseCaseImpl(parser)
 
     @Test
-    fun `should return correct browser and platform when userAgent is valid`() {
+    fun `should return correct browser and platform for valid user agent`() {
         val userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/91.0.4472.124 Safari/537.36"
+            "Chrome/91.0.4472.124 Safari/537.36"
 
         val userAgent = UserAgent("Chrome", "91", "0", "4472")
         val os = OS("Windows", "10", "", "", "")
@@ -33,26 +33,37 @@ class BrowserPlatformIdentificationUseCaseTest {
     }
 
     @Test
-    fun `should throw InvalidUrlException when userAgent is invalid`() {
-        val invalidUserAgentString = ""
+    fun `should return Unknown for empty user agent`() {
+        val result = browserPlatformIdentificationUseCase.parse(null)
 
-        assertThrows(InvalidUrlException::class.java) {
-            browserPlatformIdentificationUseCase.parse(invalidUserAgentString)
-        }
+        assertEquals(BrowserPlatform("Unknown", "Unknown"), result)
     }
 
     @Test
-    fun `should return default values when parser returns null fields`() {
-        val userAgentString = "Unknown/0.0"
+    fun `should return Unknown for blank user agent`() {
+        val result = browserPlatformIdentificationUseCase.parse("")
 
-        val userAgent = UserAgent(null, null, null, null)
-        val os = OS(null, null, null, null, null)
-        val client = Client(userAgent, os, null)
+        assertEquals(BrowserPlatform("Unknown", "Unknown"), result)
+    }
 
-        whenever(parser.parse(userAgentString)).thenReturn(client)
+    @Test
+    fun `should handle unknown browser and platform when parser returns nulls`() {
+        val userAgent = "SomeRandomUserAgentString"
+        whenever(parser.parse(userAgent)).thenReturn(Client(null, null, null))
 
-        val result = browserPlatformIdentificationUseCase.parse(userAgentString)
+        val result = browserPlatformIdentificationUseCase.parse(userAgent)
 
-        assertEquals(BrowserPlatform("Unknown Browser", "Unknown Platform"), result)
+        assertEquals("Unknown", result.browser)
+        assertEquals("Unknown", result.platform)
+    }
+
+    @Test
+    fun `should throw InvalidUrlException for invalid user agent`() {
+        val invalidUserAgent = "InvalidUserAgentString"
+        whenever(parser.parse(invalidUserAgent)).thenThrow(InvalidUrlException::class.java)
+
+        assertThrows(InvalidUrlException::class.java) {
+            browserPlatformIdentificationUseCase.parse(invalidUserAgent)
+        }
     }
 }

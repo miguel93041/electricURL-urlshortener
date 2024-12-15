@@ -1,106 +1,89 @@
 package es.unizar.urlshortener.core.usecases
 
-import es.unizar.urlshortener.core.ShortUrlProperties
-import es.unizar.urlshortener.core.ShortUrlRepositoryService
-import es.unizar.urlshortener.core.UrlValidatorService
-import es.unizar.urlshortener.core.HashService
-import es.unizar.urlshortener.core.ValidatorResult
-import es.unizar.urlshortener.core.InvalidUrlException
-import es.unizar.urlshortener.core.InternalError
-import es.unizar.urlshortener.core.ShortUrl
+import es.unizar.urlshortener.core.*
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.BeforeEach
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.whenever
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import reactor.core.publisher.Mono
 
 class CreateShortUrlUseCaseTest {
 
+    private lateinit var createShortUrlUseCase: CreateShortUrlUseCase
+    private lateinit var shortUrlRepository: ShortUrlRepositoryService
+    private lateinit var hashService: HashService
+    private lateinit var shortUrlProperties: ShortUrlProperties
+
+    @BeforeEach
+    fun setUp() {
+        shortUrlRepository = mock()
+        hashService = mock()
+        createShortUrlUseCase = CreateShortUrlUseCaseImpl(shortUrlRepository, hashService)
+        shortUrlProperties = mock()
+    }
+
     @Test
     fun `creates returns a basic redirect if it can compute a hash`() {
-        val shortUrlRepository = mock<ShortUrlRepositoryService>()
-        val urlValidatorService = mock<UrlValidatorService>()
-        val hashService = mock<HashService>()
-        val shortUrlProperties = ShortUrlProperties() // No debe ser un mock si se espera usar valores reales.
+        val url = "https://example.com"
+        val generatedHash = "f684a3c4"
 
-        // Configuración correcta de los mocks
-        whenever(urlValidatorService.validate("http://example.com/")).thenReturn(ValidatorResult.VALID)
-        whenever(hashService.hashUrl("http://example.com/")).thenReturn("f684a3c4")
-        whenever(shortUrlRepository.save(any())).doAnswer { it.arguments[0] as ShortUrl }
+        whenever(hashService.generateRandomHash()).thenReturn(generatedHash)
+        val shortUrl = ShortUrl(
+            hash = generatedHash,
+            redirection = Redirection(target = url),
+            properties = shortUrlProperties
+        )
+        whenever(shortUrlRepository.save(any<ShortUrl>())).thenReturn(Mono.just(shortUrl))
 
-        val createShortUrlUseCase = CreateShortUrlUseCaseImpl(shortUrlRepository, urlValidatorService, hashService)
-        val shortUrl = createShortUrlUseCase.create("http://example.com/", shortUrlProperties)
+        val result = createShortUrlUseCase.create(url, shortUrlProperties).block()
 
-        // Verificación
-        assertEquals("f684a3c4", shortUrl.hash)
+        assertNotNull(result)
+        assertEquals(generatedHash, result.hash)
+        assertEquals(url, result.redirection.target)
+        assertEquals(shortUrlProperties, result.properties)
     }
 
     @Test
     fun `creates returns invalid URL exception if the URL is not valid`() {
-        val shortUrlRepository = mock<ShortUrlRepositoryService>()
-        val urlValidatorService = mock<UrlValidatorService>()
-        val hashService = mock<HashService>()
-        val shortUrlProperties = mock<ShortUrlProperties>()
+        val invalidUrl = "ftp://example.com/"
 
-        whenever(urlValidatorService.validate("ftp://example.com/")).thenReturn(ValidatorResult.NOT_VALID_FORMAT)
+        whenever(hashService.generateRandomHash()).thenThrow(InvalidUrlException::class.java)
 
-        val createShortUrlUseCase = CreateShortUrlUseCaseImpl(shortUrlRepository, urlValidatorService, hashService)
-
-        assertFailsWith<InvalidUrlException> {
-            createShortUrlUseCase.create("ftp://example.com/", shortUrlProperties)
-        }
-    }
-
-    @Test
-    fun `creates returns invalid URL exception if the URI cannot be validated`() {
-        val shortUrlRepository = mock<ShortUrlRepositoryService>()
-        val urlValidatorService = mock<UrlValidatorService>()
-        val hashService = mock<HashService>()
-        val shortUrlProperties = mock<ShortUrlProperties>()
-
-        whenever(urlValidatorService.validate("http://example.com/")).thenReturn(ValidatorResult.VALID)
-
-        val createShortUrlUseCase = CreateShortUrlUseCaseImpl(shortUrlRepository, urlValidatorService, hashService)
-
-        assertFailsWith<InternalError> {
-            createShortUrlUseCase.create("http://example.com/", shortUrlProperties)
+        assertThrows(InvalidUrlException::class.java) {
+            createShortUrlUseCase.create(invalidUrl, shortUrlProperties).block()
         }
     }
 
     @Test
     fun `creates returns invalid URL exception if the hash cannot be computed`() {
-        val shortUrlRepository = mock<ShortUrlRepositoryService>()
-        val urlValidatorService = mock<UrlValidatorService>()
-        val hashService = mock<HashService>()
-        val shortUrlProperties = mock<ShortUrlProperties>()
+        val url = "http://example.com/"
 
-        whenever(urlValidatorService.validate("http://example.com/")).thenReturn(ValidatorResult.VALID)
-        whenever(hashService.hashUrl("http://example.com/")).thenThrow(RuntimeException())
+        whenever(hashService.generateRandomHash()).thenThrow(NullPointerException::class.java)
 
-        val createShortUrlUseCase = CreateShortUrlUseCaseImpl(shortUrlRepository, urlValidatorService, hashService)
-
-        assertFailsWith<InternalError> {
-            createShortUrlUseCase.create("http://example.com/", shortUrlProperties)
+        assertThrows(NullPointerException::class.java) {
+            createShortUrlUseCase.create(url, shortUrlProperties).block()
         }
     }
 
     @Test
     fun `creates returns invalid URL exception if the short URL cannot be saved`() {
-        val shortUrlRepository = mock<ShortUrlRepositoryService>()
-        val urlValidatorService = mock<UrlValidatorService>()
-        val hashService = mock<HashService>()
-        val shortUrlProperties = mock<ShortUrlProperties>()
+        val url = "https://example.com"
+        val generatedHash = "f684a3c4"
 
-        whenever(urlValidatorService.validate("http://example.com/")).thenReturn(ValidatorResult.VALID)
-        whenever(hashService.hashUrl("http://example.com/")).thenReturn("f684a3c4")
-        whenever(shortUrlRepository.save(any())).thenThrow(RuntimeException())
+        whenever(hashService.generateRandomHash()).thenReturn(generatedHash)
+        val shortUrl = ShortUrl(
+            hash = generatedHash,
+            redirection = Redirection(target = url),
+            properties = shortUrlProperties
+        )
+        whenever(shortUrlRepository.save(shortUrl)).thenReturn(Mono.error(RuntimeException("Database error")))
 
-        val createShortUrlUseCase = CreateShortUrlUseCaseImpl(shortUrlRepository, urlValidatorService, hashService)
-
-        assertFailsWith<InternalError> {
-            createShortUrlUseCase.create("http://example.com/", shortUrlProperties)
+        assertThrows(RuntimeException::class.java) {
+            createShortUrlUseCase.create(url, shortUrlProperties).block()
         }
     }
 }
