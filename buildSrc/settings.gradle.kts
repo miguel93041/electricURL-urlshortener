@@ -6,3 +6,8 @@ dependencyResolutionManagement {
         }
     }
 }
+pluginManagement {
+    repositories {
+        gradlePluginPortal() // necessary
+    }
+}

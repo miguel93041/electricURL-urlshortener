@@ -13,6 +13,7 @@ jobs:
     env:
       IPINFO_API_KEY: ${{ secrets.IPINFO_API_KEY }}
       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Token de autenticación para SonarQube o SonarCloud
 
     steps:
       - uses: actions/checkout@v2
@@ -28,10 +29,16 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew build --no-daemon
-
+      - name: Run SonarQube Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonarqube \
+          -Dsonar.projectKey=miguel93041_electricURL-urlshortener \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.organization=electric-urlshortenerº
       - name: Test with Gradle
         run: ./gradlew test --no-daemon
-
       - name: Upload test reports
         if: failure() || always()
         uses: actions/upload-artifact@v3
