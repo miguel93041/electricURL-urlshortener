@@ -68,4 +68,18 @@ class CreateQRUseCaseTest {
         assertEquals(size, image.width)
         assertEquals(size, image.height)
     }
+
+    @Test
+    fun `should not create QR code because of the size of the URL`() {
+        val maxUrlSize = 2084
+        val baseUrl = "https://example.com?"
+        val paddingChar = "a"
+        val url = baseUrl + paddingChar.repeat(maxUrlSize - baseUrl.length)
+        val size = 300
+
+        assertThrows<InvalidUrlException> { createQRUseCase.create(url, size) }
+
+        verify(qrCodeWriter, never()).encode(anyString(), any(), anyInt(), anyInt())
+    }
+
 }
