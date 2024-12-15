@@ -6,6 +6,7 @@ import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import reactor.core.publisher.Mono
 import kotlin.test.Test
 
 class LogClickUseCaseTest {
@@ -14,7 +15,7 @@ class LogClickUseCaseTest {
     fun `logClick fails silently`() {
         val repository = mock<ClickRepositoryService> ()
         val clickProperties = mock<ClickProperties>()
-        whenever(repository.save(any())).thenThrow(RuntimeException())
+        whenever(repository.save(any())).thenReturn(Mono.error(RuntimeException()))
 
         val useCase = LogClickUseCaseImpl(repository)
 

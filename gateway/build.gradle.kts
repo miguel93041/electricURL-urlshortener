@@ -18,6 +18,8 @@ dependencies {
 
     // Adds WebFlux for handling reactive HTTP calls
     implementation(libs.spring.boot.starter.webflux)
+    // Validate ipv6 o ipv4
+    implementation("commons-validator:commons-validator:1.7")
 
     // Adds dotenv Kotlin for managing environment variables
     implementation(libs.dotenv.kotlin)

@@ -54,20 +54,24 @@ class GeoLocationServiceImpl(
      * @return A [Mono] emitting a [GeoLocation] object containing the IP address and associated country.
      */
     private fun fetchGeoLocation(ip: String): Mono<GeoLocation> {
-        val url = buildRequestUrl(ip)
+        val ipAddress = IpAddress(ip)
+        if (!ipAddress.isValid) {
+            return Mono.just(GeoLocation(ip, "Unknown"))
+        }
+
+        if (ipAddress.isBogon) {
+            return Mono.just(GeoLocation(ipAddress.ip, "Bogon"))
+        }
+
+        val url = buildRequestUrl(ipAddress)
 
         return webClient.get()
             .uri(url)
             .retrieve()
             .bodyToMono(Map::class.java)
             .map { response ->
-                val ipAddress = response["ip"] as? String ?: ip
-                val country = if (response.containsKey("bogon")) {
-                    "Bogon"
-                } else {
-                    response["country"] as? String ?: "Unknown"
-                }
-                GeoLocation(ipAddress, country)
+                val country = response?.get("country") as String? ?: "Unknown"
+                GeoLocation(ipAddress.ip, country)
             }
             .onErrorResume { throwable ->
                 Mono.just(GeoLocation(ip, "Unknown"))
@@ -77,14 +81,11 @@ class GeoLocationServiceImpl(
     /**
      * Builds the request URL for the IPInfo API using the provided IP address.
      *
-     * @param ip The IP address to be used in the request URL.
+     * @param ipAddress The IP address to be used in the request URL.
      * @return The complete URL string for the API request.
-     *
-     * **TODO**: Adapt request URL to handle different formats for IPv4 and IPv6,
-     * as the IPInfo endpoint may differ based on the format.
      */
-    private fun buildRequestUrl(ip: String): String {
-        return "${IPINFO_BASE_URL}${ip}?token=${accessToken}"
+    private fun buildRequestUrl(ipAddress: IpAddress): String {
+        return "${IPINFO_BASE_URL}${ipAddress.ip}?token=${accessToken}"
     }
 
     companion object {
