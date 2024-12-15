@@ -119,7 +119,7 @@ class ReactiveIntegrationTest(
 
     @Test
     fun `redirectTo returns a redirect when the key exists`() {
-        val target = shortUrl("http://example.com/")
+        val target = shortUrl(URL)
         assertThat(target.statusCode.is2xxSuccessful).isTrue
         val redirectUri = target.body!!.shortUrl
 
@@ -130,7 +130,7 @@ class ReactiveIntegrationTest(
             .uri(redirectUri)
             .exchange()
             .expectStatus().isEqualTo(301)
-            .expectHeader().valueEquals(HttpHeaders.LOCATION, "http://example.com/")
+            .expectHeader().valueEquals(HttpHeaders.LOCATION, URL)
 
         assertThat(countRowsInTable("click")).isEqualTo(1)
     }
@@ -145,7 +145,7 @@ class ReactiveIntegrationTest(
             .returnResult()
 
         assertThat(response.responseBody).isEqualTo(
-            "The given shortened hash does not exist"
+            HASH_DONT_EXIST
         )
         assertThat(countRowsInTable("click")).isEqualTo(0)
     }
@@ -160,14 +160,14 @@ class ReactiveIntegrationTest(
             .returnResult()
 
         assertThat(response.responseBody).isEqualTo(
-            "Invalid shortened hash format"
+            INVALID_HASH_FORMAT
         )
         assertThat(countRowsInTable("click")).isEqualTo(0)
     }
 
     @Test
     fun `creating a shortened URL and accessing it immediately returns 400 with validation in progress message`() {
-        val target = shortUrl("http://example.com/")
+        val target = shortUrl(URL)
         assertThat(target.statusCode.is2xxSuccessful).isTrue
         val redirectUri = target.body!!.shortUrl
 
@@ -179,7 +179,7 @@ class ReactiveIntegrationTest(
             .returnResult()
 
         assertThat(immediateResponse.responseBody).isEqualTo(
-            "This shortened hash is still being validated. Wait a few seconds and try again"
+            HASH_VALIDATING
         )
         assertThat(countRowsInTable("click")).isEqualTo(0)
     }
@@ -201,21 +201,21 @@ class ReactiveIntegrationTest(
             .returnResult()
 
         assertThat(response.responseBody).isEqualTo(
-            "The original url is unreachable"
+            ORIGINAL_URL_UNREACHABLE
         )
         assertThat(countRowsInTable("click")).isEqualTo(0)
     }
 
     @Test
     fun `creating a shortened URL with more than 2083 characters returns 500`() {
-        val longUrl = "http://example.com/" + "a".repeat(2084)
+        val longUrl = URL + "a".repeat(2084)
 
         val data: MultiValueMap<String, String> = LinkedMultiValueMap()
         data["rawUrl"] = longUrl
         data["qrRequested"] = false.toString()
 
         webTestClient.post()
-            .uri("/api/link")
+            .uri(LINK_ENDPOINT)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .bodyValue(data)
             .exchange()
@@ -229,7 +229,7 @@ class ReactiveIntegrationTest(
 
     @Test
     fun `exceeding redirection limit returns 429 with hold up message`() {
-        val target = shortUrl("http://example.com/")
+        val target = shortUrl(URL)
         assertThat(target.statusCode.is2xxSuccessful).isTrue
         val redirectUri = target.body!!.shortUrl
 
@@ -241,7 +241,7 @@ class ReactiveIntegrationTest(
                 .uri(redirectUri)
                 .exchange()
                 .expectStatus().isEqualTo(301)
-                .expectHeader().valueEquals(HttpHeaders.LOCATION, "http://example.com/")
+                .expectHeader().valueEquals(HttpHeaders.LOCATION, URL)
 
             assertThat(countRowsInTable("click")).isEqualTo(i+1)
         }
@@ -261,7 +261,7 @@ class ReactiveIntegrationTest(
 
     @Test
     fun `creating a shortened URL based on an unsafe URL and accessing it returns 403 with unsafe message`() {
-        val target = shortUrl("https://malware.wicar.org/")
+        val target = shortUrl(MALWARE_URL)
         assertThat(target.statusCode.is2xxSuccessful).isTrue
         val redirectUri = target.body!!.shortUrl
 
@@ -276,21 +276,21 @@ class ReactiveIntegrationTest(
             .returnResult()
 
         assertThat(response.responseBody).isEqualTo(
-            "The original url is unsafe"
+            ORIGINAL_URL_UNSAFE
         )
         assertThat(countRowsInTable("click")).isEqualTo(0)
     }
 
     @Test
     fun `creates returns a basic redirect without QR if it can compute a hash`() {
-        val response = shortUrl("http://example.com/")
+        val response = shortUrl(URL)
 
         assertThat(response.statusCode.value()).isEqualTo(201)
         assertThat(response.headers.location).isNotNull
         assertThat(response.body?.shortUrl).isNotNull
         assertThat(response.body?.qrCodeUrl).isNull()
 
-        val regexPattern = Regex(".*/[a-zA-Z0-9]{8}$").toPattern()
+        val regexPattern = Regex(REGEX_PATTERN).toPattern()
         assertThat(response.body!!.shortUrl.toString()).matches(regexPattern)
 
         assertThat(countRowsInTable("shorturl")).isEqualTo(1)
@@ -304,8 +304,8 @@ class ReactiveIntegrationTest(
         data["qrRequested"] = false.toString()
 
         val response = webTestClient.post()
-            .uri("/api/link")
-            .header("X-Forwarded-For", "8.8.8.8")
+            .uri(LINK_ENDPOINT)
+            .header("X-Forwarded-For", IP)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .bodyValue(data)
             .exchange()
@@ -318,7 +318,7 @@ class ReactiveIntegrationTest(
         assertThat(response.responseBody?.shortUrl).isNotNull
         assertThat(response.responseBody?.qrCodeUrl).isNull()
 
-        val regexPattern = Regex(".*/[a-zA-Z0-9]{8}$").toPattern()
+        val regexPattern = Regex(REGEX_PATTERN).toPattern()
         assertThat(response.responseBody!!.shortUrl.toString()).matches(regexPattern)
 
         assertThat(countRowsInTable("shorturl")).isEqualTo(1)
@@ -329,19 +329,19 @@ class ReactiveIntegrationTest(
 
         val shortUrlEntity = findShortUrlById(hash)
         assertThat(shortUrlEntity).isNotNull
-        assertThat(shortUrlEntity!!.ip).isEqualTo("8.8.8.8")
+        assertThat(shortUrlEntity!!.ip).isEqualTo(IP)
         assertThat(shortUrlEntity.country).isEqualTo("US")
     }
 
     @Test
     fun `creates returns a basic redirect with QR requested if it can compute a hash`() {
-        val response = shortUrl("http://example.com/", true)
+        val response = shortUrl(URL, true)
 
         assertThat(response.statusCode.value()).isEqualTo(201)
         assertThat(response.headers.location).isNotNull
         assertThat(response.body?.shortUrl).isNotNull
 
-        val shortUrlRegexPattern = Regex(".*/[a-zA-Z0-9]{8}$").toPattern()
+        val shortUrlRegexPattern = Regex(REGEX_PATTERN).toPattern()
         assertThat(response.body!!.shortUrl.toString()).matches(shortUrlRegexPattern)
 
         val qrCodeUrlRegexPattern = Regex(".*/api/qr\\?id=[a-zA-Z0-9]{8}$").toPattern()
@@ -353,14 +353,14 @@ class ReactiveIntegrationTest(
 
     @Test
     fun `get analytics - returns empty aggregated data`() {
-        val response = shortUrl("http://example.com/")
+        val response = shortUrl(URL)
         val hash = response.body!!.shortUrl.path.split("/").last()
 
         // Wait for URL validation
         Thread.sleep(1000)
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", hash).build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", hash).build() }
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -369,7 +369,7 @@ class ReactiveIntegrationTest(
 
     @Test
     fun `get analytics - returns correct data for all parameter permutations with user-agent simulation`() {
-        val response = shortUrl("http://example.com/")
+        val response = shortUrl(URL)
         val hash = response.body!!.shortUrl.path.split("/").last()
 
         // Wait for URL validation
@@ -408,7 +408,7 @@ class ReactiveIntegrationTest(
         allCombinations.forEach { paramMap ->
             webTestClient.get()
                 .uri {
-                    val builder = it.path("/api/analytics").queryParam("id", hash)
+                    val builder = it.path(ANALYTICS_ENDPOINT).queryParam("id", hash)
                     paramMap.forEach { (key, value) ->
                         builder.queryParam(key, value.toString())
                     }
@@ -451,7 +451,7 @@ class ReactiveIntegrationTest(
 
     @Test
     fun `get analytics - returns correct country for simulated Google IP`() {
-        val response = shortUrl("http://example.com/")
+        val response = shortUrl(URL)
         val hash = response.body!!.shortUrl.path.split("/").last()
 
         // Wait for URL validation
@@ -459,7 +459,7 @@ class ReactiveIntegrationTest(
 
         webTestClient.get()
             .uri(response.body!!.shortUrl)
-            .header("X-Forwarded-For", "8.8.8.8")
+            .header("X-Forwarded-For", IP)
             .exchange()
             .expectStatus().isEqualTo(301)
 
@@ -467,7 +467,7 @@ class ReactiveIntegrationTest(
         Thread.sleep(1000)
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", hash).queryParam("country", "true").build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", hash).queryParam("country", "true").build() }
             .exchange()
             .expectStatus().isOk
             .expectBody()
@@ -478,7 +478,7 @@ class ReactiveIntegrationTest(
     @Test
     fun `get analytics - returns 404 for non-existent ID`() {
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", "fa123456").build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", "fa123456").build() }
             .exchange()
             .expectStatus().isNotFound
             .expectBody(String::class.java)
@@ -492,33 +492,33 @@ class ReactiveIntegrationTest(
     @Test
     fun `get analytics - returns 400 for invalid ID format`() {
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", "invalid#id123").build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", "invalid#id123").build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
             .consumeWith { response ->
                 assertThat(response.responseBody).isEqualTo(
-                    "Invalid shortened hash format"
+                    INVALID_HASH_FORMAT
                 )
             }
     }
 
     @Test
     fun `get analytics - returns 403 for unsafe URL`() {
-        val response = shortUrl("https://malware.wicar.org/")
+        val response = shortUrl(MALWARE_URL)
         val hash = response.body!!.shortUrl.path.split("/").last()
 
         // Wait for URL validation
         Thread.sleep(1000)
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", hash).build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", hash).build() }
             .exchange()
             .expectStatus().isForbidden
             .expectBody(String::class.java)
             .consumeWith { result ->
                 assertThat(result.responseBody).isEqualTo(
-                    "The original url is unsafe"
+                    ORIGINAL_URL_UNSAFE
                 )
             }
     }
@@ -531,30 +531,30 @@ class ReactiveIntegrationTest(
         Thread.sleep(1000)
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", hash).build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", hash).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
             .consumeWith { result ->
                 assertThat(result.responseBody).isEqualTo(
-                    "The original url is unreachable"
+                    ORIGINAL_URL_UNREACHABLE
                 )
             }
     }
 
     @Test
     fun `get analytics - returns 400 when the URL is still being validated`() {
-        val response = shortUrl("http://example.com/")
+        val response = shortUrl(URL)
         val hash = response.body!!.shortUrl.path.split("/").last()
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", hash).build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", hash).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
             .consumeWith { result ->
                 assertThat(result.responseBody).isEqualTo(
-                    "This shortened hash is still being validated. Wait a few seconds and try again"
+                    HASH_VALIDATING
                 )
             }
     }
@@ -579,14 +579,14 @@ class ReactiveIntegrationTest(
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
             .consumeWith { response ->
-                assertThat(response.responseBody).isEqualTo("Invalid shortened hash format")
+                assertThat(response.responseBody).isEqualTo(INVALID_HASH_FORMAT)
             }
     }
 
     @Test
     fun `qr page - returns 403 when the URL is unsafe`() {
         // Simulate creating a short URL pointing to an unsafe link
-        val response = shortUrl("https://malware.wicar.org/")
+        val response = shortUrl(MALWARE_URL)
         val hash = response.body!!.shortUrl.path.split("/").last()
 
         // Wait for validation
@@ -598,7 +598,7 @@ class ReactiveIntegrationTest(
             .expectStatus().isForbidden
             .expectBody(String::class.java)
             .consumeWith { result ->
-                assertThat(result.responseBody).isEqualTo("The original url is unsafe")
+                assertThat(result.responseBody).isEqualTo(ORIGINAL_URL_UNSAFE)
             }
     }
 
@@ -616,13 +616,13 @@ class ReactiveIntegrationTest(
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
             .consumeWith { result ->
-                assertThat(result.responseBody).isEqualTo("The original url is unreachable")
+                assertThat(result.responseBody).isEqualTo(ORIGINAL_URL_UNREACHABLE)
             }
     }
 
     @Test
     fun `qr page - returns 400 when the URL is still being validated`() {
-        val response = shortUrl("http://example.com/")
+        val response = shortUrl(URL)
         val hash = response.body!!.shortUrl.path.split("/").last()
 
         webTestClient.get()
@@ -632,13 +632,13 @@ class ReactiveIntegrationTest(
             .expectBody(String::class.java)
             .consumeWith { result ->
                 assertThat(result.responseBody)
-                    .isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
+                    .isEqualTo(HASH_VALIDATING)
             }
     }
 
     @Test
     fun `qr page - returns PNG image for valid short URL`() {
-        val response = shortUrl("http://example.com/", true)
+        val response = shortUrl(URL, true)
         val apiUrl = response.body!!.qrCodeUrl.toString()
 
         // Wait for URL validation
@@ -668,12 +668,12 @@ class ReactiveIntegrationTest(
 
         val multipartData = MultipartBodyBuilder().apply {
             part("file", ByteArrayResource(csvContent.toByteArray()), MediaType.TEXT_PLAIN)
-                .header("Content-Disposition", "form-data; name=file; filename=urls.csv")
+                .header(HEADER, "form-data; name=file; filename=urls.csv")
             part("qrRequested", "true")
         }.build()
 
         webTestClient.post()
-            .uri("/api/upload-csv")
+            .uri(CSV_ENDPOINT)
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .body(BodyInserters.fromMultipartData(multipartData))
             .exchange()
@@ -711,11 +711,11 @@ class ReactiveIntegrationTest(
 
         val multipartData = MultipartBodyBuilder().apply {
             part("file", ByteArrayResource(invalidContent.toByteArray()), MediaType.TEXT_PLAIN)
-                .header("Content-Disposition", "form-data; name=file; filename=not_a_csv.txt")
+                .header(HEADER, "form-data; name=file; filename=not_a_csv.txt")
         }.build()
 
         webTestClient.post()
-            .uri("/api/upload-csv")
+            .uri(CSV_ENDPOINT)
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .body(BodyInserters.fromMultipartData(multipartData))
             .exchange()
@@ -732,11 +732,11 @@ class ReactiveIntegrationTest(
 
         val multipartData = MultipartBodyBuilder().apply {
             part("file", ByteArrayResource(emptyCsvContent.toByteArray()), MediaType.TEXT_PLAIN)
-                .header("Content-Disposition", "form-data; name=file; filename=empty.csv")
+                .header(HEADER, "form-data; name=file; filename=empty.csv")
         }.build()
 
         webTestClient.post()
-            .uri("/api/upload-csv")
+            .uri(CSV_ENDPOINT)
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .body(BodyInserters.fromMultipartData(multipartData))
             .exchange()
@@ -753,7 +753,7 @@ class ReactiveIntegrationTest(
         data["qrRequested"] = qrRequested.toString()
 
         val result = webTestClient.post()
-            .uri("/api/link")
+            .uri(LINK_ENDPOINT)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .bodyValue(data)
             .exchange()
@@ -765,5 +765,21 @@ class ReactiveIntegrationTest(
             result.responseHeaders,
             result.status
         )
+    }
+
+    companion object {
+        const val URL = "http://example.com/"
+        const val MALWARE_URL = "https://malware.wicar.org/"
+        const val LINK_ENDPOINT = "/api/link"
+        const val ANALYTICS_ENDPOINT = "/api/analytics"
+        const val CSV_ENDPOINT = "/api/upload-csv"
+        const val HASH_DONT_EXIST = "The given shortened hash does not exist"
+        const val INVALID_HASH_FORMAT = "Invalid shortened hash format"
+        const val HASH_VALIDATING = "This shortened hash is still being validated. Wait a few seconds and try again"
+        const val ORIGINAL_URL_UNREACHABLE = "The original url is unreachable"
+        const val ORIGINAL_URL_UNSAFE = "The original url is unsafe"
+        const val REGEX_PATTERN = ".*/[a-zA-Z0-9]{8}$"
+        const val IP = "8.8.8.8"
+        const val HEADER = "Content-Disposition"
     }
 }
