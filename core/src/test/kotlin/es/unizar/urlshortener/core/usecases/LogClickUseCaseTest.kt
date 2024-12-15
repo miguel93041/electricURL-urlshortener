@@ -1,6 +1,5 @@
 package es.unizar.urlshortener.core.usecases
 
-import es.unizar.urlshortener.core.ClickProperties
 import es.unizar.urlshortener.core.ClickRepositoryService
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
