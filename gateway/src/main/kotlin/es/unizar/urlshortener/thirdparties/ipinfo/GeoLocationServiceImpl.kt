@@ -1,4 +1,4 @@
-@file:Suppress("ForbiddenComment")
+@file:Suppress("ForbiddenComment", "ReturnCount")
 package es.unizar.urlshortener.thirdparties.ipinfo
 
 import com.github.benmanes.caffeine.cache.AsyncCache

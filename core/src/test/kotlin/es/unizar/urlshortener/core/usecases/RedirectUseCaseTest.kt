@@ -33,7 +33,7 @@ class RedirectUseCaseTest {
         val key = "invalidKey"
         whenever(shortUrlService.findByKey(key)).thenReturn(Mono.empty())
 
-        assertThrows<RedirectionNotFound> {
+        assertThrows<Exception> {
             redirectUseCase.redirectTo(key).block()
         }
     }

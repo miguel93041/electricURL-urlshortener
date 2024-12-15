@@ -45,9 +45,31 @@ class GetAnalyticsUseCaseImplTest {
     ) {
         val id = "testId"
         val clicks = listOf(
-            Click(hash = id, properties = ClickProperties(browser = "Chrome", country = "Spain", platform = "Windows", referrer = "Google")),
-            Click(hash = id, properties = ClickProperties(browser = "Firefox", country = "France", platform = "Linux", referrer = null)),
-            Click(hash = id, properties = ClickProperties(null, null, null, null, null))
+            Click(hash = id, properties = ClickProperties(
+                    browserPlatform = BrowserPlatform(
+                        browser = "Chrome",
+                        platform = "Windows"
+                    ),
+                    geoLocation = GeoLocation(
+                        country = "Spain"
+                    )
+                )
+            ),
+            Click(hash = id, properties = ClickProperties(
+                    browserPlatform = BrowserPlatform(
+                        browser = "Firefox",
+                        platform = "Linux"
+                    ),
+                    geoLocation = GeoLocation(
+                        country = "France"
+                    )
+                )
+            ),
+            Click(hash = id, properties = ClickProperties(
+                    browserPlatform = BrowserPlatform(),
+                    geoLocation = GeoLocation()
+                )
+            )
         )
 
         whenever(clickRepository.findAllByHash(id)).thenReturn(Flux.fromIterable(clicks))
@@ -60,24 +82,24 @@ class GetAnalyticsUseCaseImplTest {
         ).block()
 
         kotlin.test.assertNotNull(analyticsData)
-        assertEquals(3, analyticsData?.totalClicks)
+        assertEquals(3, analyticsData.totalClicks)
 
         if (includeBrowser) {
-            assertEquals(mapOf("Chrome" to 1, "Firefox" to 1, "Unknown" to 1), analyticsData?.byBrowser)
+            assertEquals(mapOf("Chrome" to 1, "Firefox" to 1, "Unknown" to 1), analyticsData.byBrowser)
         } else {
-            assertNull(analyticsData?.byBrowser)
+            assertNull(analyticsData.byBrowser)
         }
 
         if (includeCountry) {
-            assertEquals(mapOf("Spain" to 1, "France" to 1, "Unknown" to 1), analyticsData?.byCountry)
+            assertEquals(mapOf("Spain" to 1, "France" to 1, "Unknown" to 1), analyticsData.byCountry)
         } else {
-            assertNull(analyticsData?.byCountry)
+            assertNull(analyticsData.byCountry)
         }
 
         if (includePlatform) {
-            assertEquals(mapOf("Windows" to 1, "Linux" to 1, "Unknown" to 1), analyticsData?.byPlatform)
+            assertEquals(mapOf("Windows" to 1, "Linux" to 1, "Unknown" to 1), analyticsData.byPlatform)
         } else {
-            assertNull(analyticsData?.byPlatform)
+            assertNull(analyticsData.byPlatform)
         }
     }
 

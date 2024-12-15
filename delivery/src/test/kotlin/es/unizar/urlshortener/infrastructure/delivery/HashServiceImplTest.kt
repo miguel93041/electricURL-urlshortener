@@ -1,3 +1,5 @@
+@file:Suppress("WildcardImport")
+
 package es.unizar.urlshortener.infrastructure.delivery
 
 import org.junit.jupiter.api.Assertions.*
@@ -11,7 +13,7 @@ import org.springframework.test.context.ContextConfiguration
         HashServiceImpl::class
     ]
 )
-class HashServiceImplBlockTest {
+class HashServiceImplTest {
 
     @Test
     fun `generateRandomHash - returns an 8-char hex string`() {

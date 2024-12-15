@@ -1,3 +1,5 @@
+@file:Suppress("WildcardImport")
+
 package es.unizar.urlshortener.core.usecases
 
 import com.github.benmanes.caffeine.cache.AsyncCache

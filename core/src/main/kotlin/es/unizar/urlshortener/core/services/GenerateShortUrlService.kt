@@ -1,3 +1,5 @@
+@file:Suppress("WildcardImport")
+
 package es.unizar.urlshortener.core.services
 
 import com.github.michaelbull.result.Result
@@ -52,7 +54,7 @@ class GenerateShortUrlServiceImpl(
                 } else null
 
                 // Validate URL in a background task
-                val validationMono = urlValidatorService.validate(data.url)
+                urlValidatorService.validate(data.url)
                     .doOnSuccess { validationResult ->
                         if (validationResult.isErr) {
                             val error = validationResult.unwrapError()

@@ -1,4 +1,4 @@
-@file:Suppress("WildcardImport")
+@file:Suppress("WildcardImport", "LongParameterList")
 
 package es.unizar.urlshortener.core.services
 
@@ -79,14 +79,17 @@ class RedirectServiceImpl(
                                                 if (ipAddress != null) {
                                                     geoLocationService.get(ipAddress)
                                                         .doOnSuccess { geoLocation ->
-                                                            clickRepositoryService.updateGeolocation(click.id!!, geoLocation).subscribe()
+                                                            clickRepositoryService
+                                                                .updateGeolocation(click.id!!, geoLocation).subscribe()
                                                         }.subscribe()
                                                 }
 
                                                 val userAgent = request.headers.getFirst("User-Agent")
                                                 Mono.fromCallable {
-                                                    val browserPlatform = browserPlatformIdentificationUseCase.parse(userAgent)
-                                                    clickRepositoryService.updateBrowserPlatform(click.id!!, browserPlatform).subscribe()
+                                                    val browserPlatform =
+                                                        browserPlatformIdentificationUseCase.parse(userAgent)
+                                                    clickRepositoryService
+                                                        .updateBrowserPlatform(click.id!!, browserPlatform).subscribe()
                                                 }.subscribe()
 
                                                 Mono.just(Ok(redirection))

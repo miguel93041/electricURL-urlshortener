@@ -1,4 +1,4 @@
-@file:Suppress("WildcardImport")
+@file:Suppress("WildcardImport", "MagicNumber", "LongParameterList")
 package es.unizar.urlshortener
 
 import RedirectionLimitUseCase
@@ -52,7 +52,8 @@ class ApplicationConfiguration(
      * @return an instance of ShortUrlRepositoryServiceImpl.
      */
     @Bean
-    fun shortUrlRepositoryService() = ShortUrlRepositoryServiceImpl(shortUrlEntityRepository, r2dbcEntityTemplate, shortUrlCache())
+    fun shortUrlRepositoryService() =
+        ShortUrlRepositoryServiceImpl(shortUrlEntityRepository, r2dbcEntityTemplate, shortUrlCache())
 
 
     /**
@@ -156,7 +157,10 @@ class ApplicationConfiguration(
      * @return an instance of GeoLocationServiceImpl.
      */
     @Bean
-    fun geoLocationService(webClient: WebClient, dotEnv: Dotenv, cache: AsyncCache<String, GeoLocation>): GeoLocationService {
+    fun geoLocationService(
+        webClient: WebClient,
+        dotEnv: Dotenv, cache: AsyncCache<String, GeoLocation>
+    ): GeoLocationService {
         return GeoLocationServiceImpl(webClient, dotEnv, cache)
     }
 
@@ -165,7 +169,10 @@ class ApplicationConfiguration(
      * @return an instance of Parser.
      */
     @Bean
-    fun urlSafetyService(webClient: WebClient, dotEnv: Dotenv, @Qualifier("urlSafeCache") cache: AsyncCache<String, Boolean>): UrlSafetyService {
+    fun urlSafetyService(
+        webClient: WebClient,
+        dotEnv: Dotenv, @Qualifier("urlSafeCache") cache: AsyncCache<String, Boolean>
+    ): UrlSafetyService {
         return UrlSafetyServiceImpl(webClient, dotEnv, cache)
     }
 
@@ -185,8 +192,10 @@ class ApplicationConfiguration(
      * @return an instance of UrlAccessibilityCheckUseCaseImpl.
      */
     @Bean
-    fun urlAccesibilityCheckUseCase(webClient: WebClient, @Qualifier("urlReachableCache") cache: AsyncCache<String, Boolean>): UrlAccessibilityCheckUseCase =
-        UrlAccessibilityCheckUseCaseImpl(webClient, cache)
+    fun urlAccesibilityCheckUseCase(
+        webClient: WebClient,
+        @Qualifier("urlReachableCache") cache: AsyncCache<String, Boolean>
+    ): UrlAccessibilityCheckUseCase = UrlAccessibilityCheckUseCaseImpl(webClient, cache)
 
     /**
      * Defines the [GetAnalyticsUseCase] bean.

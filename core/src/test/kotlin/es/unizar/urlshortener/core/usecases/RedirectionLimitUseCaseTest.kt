@@ -46,7 +46,7 @@ class RedirectionLimitUseCaseTest {
     fun `should return true if redirection limit is reached`() {
         `when`(
             clickRepositoryService.countClicksByHashAfter(eq(urlId), any())
-        ).thenReturn(Mono.just(redirectionLimit.toLong()))
+        ).thenReturn(Mono.just(redirectionLimit.toLong()+1))
 
         val result = redirectionLimitUseCase.isRedirectionLimit(urlId).block()
 

@@ -1,3 +1,5 @@
+@file:Suppress("WildcardImport")
+
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.*
@@ -41,7 +43,7 @@ class RedirectUseCaseImpl(
                 Mono.just(shortUrl.redirection)
             }
             .switchIfEmpty(
-                Mono.error(RedirectionNotFound("No redirection found for key: $key"))
+                Mono.error(Exception("No redirection found for key: $key"))
             )
     }
 }

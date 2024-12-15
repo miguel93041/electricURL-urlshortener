@@ -1,7 +1,6 @@
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.BrowserPlatform
-import es.unizar.urlshortener.core.InvalidUrlException
 import ua_parser.Parser
 
 /**
@@ -35,7 +34,6 @@ class BrowserPlatformIdentificationUseCaseImpl(
      * @param userAgent The user agent header from the request.
      * @return A BrowserPlatform object containing the identified browser and platform or "Unknown Browser" as
      * the identified browser name and "Unknown Browser" as the identified platform name if not found.
-     * @throws InvalidUrlException if the provided user agent string is empty or invalid.
      */
     override fun parse(userAgent: String?): BrowserPlatform {
         var browser = "Unknown"

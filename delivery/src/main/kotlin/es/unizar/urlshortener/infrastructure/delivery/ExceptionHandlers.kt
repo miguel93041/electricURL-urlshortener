@@ -1,4 +1,5 @@
-@file:Suppress("WildcardImport")
+@file:Suppress("WildcardImport", "MatchingDeclarationName", "MagicNumber", "UnusedPrivateProperty")
+
 package es.unizar.urlshortener.infrastructure.delivery
 
 import com.fasterxml.jackson.databind.ObjectMapper

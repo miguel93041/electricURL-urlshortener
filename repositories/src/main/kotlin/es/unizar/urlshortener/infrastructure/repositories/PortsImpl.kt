@@ -1,3 +1,5 @@
+@file:Suppress("WildcardImport")
+
 package es.unizar.urlshortener.infrastructure.repositories
 
 import com.github.benmanes.caffeine.cache.AsyncCache
@@ -138,7 +140,9 @@ class ClickRepositoryServiceImpl(
             .doOnNext { updatedEntity ->
                 val hash = updatedEntity.hash
                 cache.asMap().remove(hash)
-                logger.info("Browser and platform updated for hash=${hash} with browserPlatform=${browserPlatform}, cache invalidated")
+                logger.info(
+                    "Browser and platform updated for hash=${hash} with browserPlatform=${browserPlatform}, " +
+                            "cache invalidated")
             }
             .then()
     }

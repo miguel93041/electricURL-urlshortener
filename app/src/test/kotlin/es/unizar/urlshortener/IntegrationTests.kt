@@ -1,7 +1,6 @@
-@file:Suppress("MatchingDeclarationName", "WildcardImport")
+@file:Suppress("MatchingDeclarationName", "WildcardImport", "LargeClass", "LongMethod", "LongParameterList")
 package es.unizar.urlshortener
 
-import es.unizar.urlshortener.core.GeoLocationService
 import es.unizar.urlshortener.core.ShortUrlDataOut
 import es.unizar.urlshortener.core.usecases.UrlAccessibilityCheckUseCaseImpl
 import es.unizar.urlshortener.infrastructure.repositories.ClickRepositoryServiceImpl
@@ -632,7 +631,8 @@ class ReactiveIntegrationTest(
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
             .consumeWith { result ->
-                assertThat(result.responseBody).isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
+                assertThat(result.responseBody)
+                    .isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
             }
     }
 

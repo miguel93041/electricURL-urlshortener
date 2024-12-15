@@ -1,3 +1,5 @@
+@file:Suppress("WildcardImport")
+
 package es.unizar.urlshortener.thirdparties.ipinfo
 
 import org.junit.jupiter.api.Assertions.*

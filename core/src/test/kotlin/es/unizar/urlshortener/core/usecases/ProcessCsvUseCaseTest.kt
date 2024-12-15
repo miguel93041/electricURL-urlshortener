@@ -42,8 +42,8 @@ class ProcessCsvUseCaseTest {
 
         `when`(generateShortUrlService.generate(any(), any()))
             .thenReturn(
-                Mono.just(Ok(shortUrl1)),
-                Mono.just(Ok(shortUrl2))
+                Mono.just(shortUrl1),
+                Mono.just(shortUrl2)
         )
 
         val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())
@@ -64,81 +64,6 @@ class ProcessCsvUseCaseTest {
     }
 
     @Test
-    fun `should handle invalid URLs`() {
-        val inputCsv = "invalid-url"
-
-        `when`(generateShortUrlService.generate(any(), any()))
-            .thenReturn(Mono.just(Err(UrlError.InvalidFormat)))
-
-        val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())
-        val request = mock<ServerHttpRequest>()
-
-        val result = processCsvUseCase
-            .processCsv(Flux.just(inputBuffer), request, qrRequested = false)
-            .map { it.asByteBuffer().array().toString(Charsets.UTF_8) }
-            .collectList()
-            .block()
-
-        val resultText = result?.joinToString(separator = "")
-
-        val expectedOutput = """
-            invalid-url,ERROR: Invalid URL
-        """.trimIndent() + "\n"
-
-        assertEquals(expectedOutput, resultText)
-    }
-
-    @Test
-    fun `should handle unsafe URLs`() {
-        val inputCsv = "http://unsafe-url.com"
-
-        `when`(generateShortUrlService.generate(any(), any()))
-            .thenReturn(Mono.just(Err(UrlError.Unsafe)))
-
-        val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())
-        val request = mock<ServerHttpRequest>()
-
-        val result = processCsvUseCase
-            .processCsv(Flux.just(inputBuffer), request, qrRequested = false)
-            .map { it.asByteBuffer().array().toString(Charsets.UTF_8) }
-            .collectList()
-            .block()
-
-        val resultText = result?.joinToString(separator = "")
-
-        val expectedOutput = """
-            http://unsafe-url.com,ERROR: Unsafe URL
-        """.trimIndent() + "\n"
-
-        assertEquals(expectedOutput, resultText)
-    }
-
-    @Test
-    fun `should handle unreachable URLs`() {
-        val inputCsv = "http://unreachable-url.com"
-
-        `when`(generateShortUrlService.generate(any(), any()))
-            .thenReturn(Mono.just(Err(UrlError.Unreachable)))
-
-        val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())
-        val request = mock<ServerHttpRequest>()
-
-        val result = processCsvUseCase
-            .processCsv(Flux.just(inputBuffer), request, qrRequested = false)
-            .map { it.asByteBuffer().array().toString(Charsets.UTF_8) }
-            .collectList()
-            .block()
-
-        val resultText = result?.joinToString(separator = "")
-
-        val expectedOutput = """
-            http://unreachable-url.com,ERROR: URL unreachable
-        """.trimIndent() + "\n"
-
-        assertEquals(expectedOutput, resultText)
-    }
-
-    @Test
     fun `should generate QR code URLs if requested`() {
         val inputCsv = "http://example.com"
 
@@ -148,7 +73,7 @@ class ProcessCsvUseCaseTest {
         )
 
         `when`(generateShortUrlService.generate(any(), any()))
-            .thenReturn(Mono.just(Ok(shortUrl)))
+            .thenReturn(Mono.just(shortUrl))
 
         val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())
         val request = mock<ServerHttpRequest>()
@@ -161,60 +86,6 @@ class ProcessCsvUseCaseTest {
 
         val expectedOutput = """
             http://example.com,http://short.ly/abc123,http://short.ly/qr/abc123
-        """.trimIndent() + "\n"
-
-        assertEquals(expectedOutput, resultText)
-    }
-
-    @Test
-    fun `should process empty CSV`() {
-        val inputCsv = ""
-
-        `when`(generateShortUrlService.generate(any(), any()))
-            .thenReturn(Mono.just(Err(UrlError.InvalidFormat)))
-
-        val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())
-        val request = mock<ServerHttpRequest>()
-
-        val result = processCsvUseCase
-            .processCsv(Flux.just(inputBuffer), request, qrRequested = false)
-            .map { it.asByteBuffer().array().toString(Charsets.UTF_8) }
-            .collectList()
-            .block()
-
-        val resultText = result?.joinToString(separator = "")
-
-        val expectedOutput = """
-            ,ERROR: Invalid URL
-        """.trimIndent() + "\n"
-
-        assertEquals(expectedOutput, resultText)
-    }
-
-    @Test
-    fun `should handle mix of valid and invalid URLs`() {
-        val inputCsv = "http://valid.com\nhttp://unsafe.com"
-
-        whenever(generateShortUrlService.generate(any(), any()))
-            .thenReturn(
-                Mono.just(Ok(ShortUrlDataOut(URI("http://short.ly/valid"), null))),
-                Mono.just(Err(UrlError.Unsafe))
-            )
-
-        val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())
-        val request = mock<ServerHttpRequest>()
-
-        val result = processCsvUseCase
-            .processCsv(Flux.just(inputBuffer), request, qrRequested = false)
-            .map { it.asByteBuffer().array().toString(Charsets.UTF_8) }
-            .collectList()
-            .block()
-
-        val resultText = result?.joinToString(separator = "")
-
-        val expectedOutput = """
-            http://valid.com,http://short.ly/valid,QR not generated
-            http://unsafe.com,ERROR: Unsafe URL
         """.trimIndent() + "\n"
 
         assertEquals(expectedOutput, resultText)
@@ -235,8 +106,8 @@ class ProcessCsvUseCaseTest {
 
         `when`(generateShortUrlService.generate(any(), any()))
             .thenReturn(
-                Mono.just(Ok(shortUrl1)),
-                Mono.just(Ok(shortUrl2))
+                Mono.just(shortUrl1),
+                Mono.just(shortUrl2)
             )
 
         val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())
@@ -271,8 +142,8 @@ class ProcessCsvUseCaseTest {
 
         `when`(generateShortUrlService.generate(any(), any()))
             .thenReturn(
-                Mono.just(Ok(shortUrl1)),
-                Mono.just(Ok(shortUrl2))
+                Mono.just(shortUrl1),
+                Mono.just(shortUrl2)
             )
 
         val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())

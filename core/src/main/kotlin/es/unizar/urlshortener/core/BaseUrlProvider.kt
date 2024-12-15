@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package es.unizar.urlshortener.core
 
 import org.springframework.http.server.reactive.ServerHttpRequest

@@ -107,9 +107,13 @@ class UrlShortenerControllerImpl(
                     failure = { error ->
                         val (status, message) = when (error) {
                             RedirectionError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
-                            RedirectionError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
-                            RedirectionError.TooManyRequests -> HttpStatus.TOO_MANY_REQUESTS to "This shortened hash is under load"
-                            RedirectionError.NotValidated -> HttpStatus.BAD_REQUEST to "This shortened hash is still being validated. Wait a few seconds and try again"
+                            RedirectionError.NotFound ->
+                                HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                            RedirectionError.TooManyRequests ->
+                                HttpStatus.TOO_MANY_REQUESTS to "This shortened hash is under load"
+                            RedirectionError.NotValidated ->
+                                HttpStatus.BAD_REQUEST to
+                                        "This shortened hash is still being validated. Wait a few seconds and try again"
                             RedirectionError.Unreachable -> HttpStatus.BAD_REQUEST to "The original url is unreachable"
                             RedirectionError.Unsafe -> HttpStatus.FORBIDDEN to "The original url is unsafe"
                         }
@@ -140,7 +144,9 @@ class UrlShortenerControllerImpl(
                         val (status, message) = when (error) {
                             HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
                             HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
-                            HashError.NotValidated -> HttpStatus.BAD_REQUEST to "This shortened hash is still being validated. Wait a few seconds and try again"
+                            HashError.NotValidated ->
+                                HttpStatus.BAD_REQUEST to
+                                        "This shortened hash is still being validated. Wait a few seconds and try again"
                             HashError.Unreachable -> HttpStatus.BAD_REQUEST to "The original url is unreachable"
                             HashError.Unsafe -> HttpStatus.FORBIDDEN to "The original url is unsafe"
                         }
@@ -159,7 +165,10 @@ class UrlShortenerControllerImpl(
      * @return A [ResponseEntity] with the processed CSV file as a downloadable response.
      */
     @PostMapping("/api/upload-csv", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    override fun shortenUrlsFromCsv(data: CsvDataIn, request: ServerHttpRequest): Mono<ResponseEntity<Flux<DataBuffer>>> {
+    override fun shortenUrlsFromCsv(
+        data: CsvDataIn,
+        request: ServerHttpRequest
+    ): Mono<ResponseEntity<Flux<DataBuffer>>> {
         return csvService.process(data, request)
             .map { result ->
                 result.fold(
@@ -176,7 +185,9 @@ class UrlShortenerControllerImpl(
                         val (status, message) = when (error) {
                             CsvError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid CSV format"
                         }
-                        ResponseEntity.status(status).body(Flux.just(DefaultDataBufferFactory().wrap(message.toByteArray())))
+                        ResponseEntity
+                            .status(status)
+                            .body(Flux.just(DefaultDataBufferFactory().wrap(message.toByteArray())))
                     }
                 )
             }
@@ -229,7 +240,9 @@ class UrlShortenerControllerImpl(
                         val (status, message) = when (error) {
                             HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
                             HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
-                            HashError.NotValidated -> HttpStatus.BAD_REQUEST to "This shortened hash is still being validated. Wait a few seconds and try again"
+                            HashError.NotValidated ->
+                                HttpStatus.BAD_REQUEST to
+                                        "This shortened hash is still being validated. Wait a few seconds and try again"
                             HashError.Unreachable -> HttpStatus.BAD_REQUEST to "The original url is unreachable"
                             HashError.Unsafe -> HttpStatus.FORBIDDEN to "The original url is unsafe"
                         }

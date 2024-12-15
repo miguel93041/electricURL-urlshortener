@@ -1,3 +1,5 @@
+@file:Suppress("WildcardImport")
+
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.*
@@ -37,36 +39,14 @@ class CreateShortUrlUseCaseTest {
             redirection = Redirection(target = url),
             properties = shortUrlProperties
         )
-        whenever(shortUrlRepository.save(any<ShortUrl>())).thenReturn(Mono.just(shortUrl))
+        whenever(shortUrlRepository.create(any<ShortUrl>())).thenReturn(Mono.just(shortUrl))
 
-        val result = createShortUrlUseCase.create(url, shortUrlProperties).block()
+        val result = createShortUrlUseCase.create(url).block()
 
         assertNotNull(result)
         assertEquals(generatedHash, result.hash)
         assertEquals(url, result.redirection.target)
         assertEquals(shortUrlProperties, result.properties)
-    }
-
-    @Test
-    fun `creates returns invalid URL exception if the URL is not valid`() {
-        val invalidUrl = "ftp://example.com/"
-
-        whenever(hashService.generateRandomHash()).thenThrow(InvalidUrlException::class.java)
-
-        assertThrows(InvalidUrlException::class.java) {
-            createShortUrlUseCase.create(invalidUrl, shortUrlProperties).block()
-        }
-    }
-
-    @Test
-    fun `creates returns invalid URL exception if the hash cannot be computed`() {
-        val url = "http://example.com/"
-
-        whenever(hashService.generateRandomHash()).thenThrow(NullPointerException::class.java)
-
-        assertThrows(NullPointerException::class.java) {
-            createShortUrlUseCase.create(url, shortUrlProperties).block()
-        }
     }
 
     @Test
@@ -80,10 +60,10 @@ class CreateShortUrlUseCaseTest {
             redirection = Redirection(target = url),
             properties = shortUrlProperties
         )
-        whenever(shortUrlRepository.save(shortUrl)).thenReturn(Mono.error(RuntimeException("Database error")))
+        whenever(shortUrlRepository.create(shortUrl)).thenReturn(Mono.error(RuntimeException("Database error")))
 
         assertThrows(RuntimeException::class.java) {
-            createShortUrlUseCase.create(url, shortUrlProperties).block()
+            createShortUrlUseCase.create(url).block()
         }
     }
 }

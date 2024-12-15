@@ -124,7 +124,8 @@ class UrlShortenerControllerTest {
             .uri("/$shortId")
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody(String::class.java).isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
+            .expectBody(String::class.java)
+            .isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
     }
 
     @Test
@@ -295,7 +296,8 @@ class UrlShortenerControllerTest {
             .uri { it.path("/api/qr").queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody(String::class.java).isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
+            .expectBody(String::class.java)
+            .isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
     }
 
     @Test
@@ -351,7 +353,8 @@ class UrlShortenerControllerTest {
             .body(BodyInserters.fromMultipartData(builder.build()))
             .exchange()
             .expectStatus().isOk
-            .expectHeader().valueEquals(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=shortened_urls.csv")
+            .expectHeader()
+            .valueEquals(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=shortened_urls.csv")
             .expectBody(String::class.java).isEqualTo("short_url,qr_url\nhttp://loc/abc,http://loc/qr?abc")
     }
 
@@ -475,7 +478,8 @@ class UrlShortenerControllerTest {
             .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody(String::class.java).isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
+            .expectBody(String::class.java)
+            .isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
     }
 
     @Test

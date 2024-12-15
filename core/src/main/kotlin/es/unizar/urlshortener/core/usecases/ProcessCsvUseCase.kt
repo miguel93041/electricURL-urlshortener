@@ -53,7 +53,11 @@ class ProcessCsvUseCaseImpl (
      * @param request The HTTP request providing client context
      * @param data Data of the HTTP request
      */
-    override fun processCsv(inputBuffer: Flux<DataBuffer>, request: ServerHttpRequest, qrRequested: Boolean): Flux<DataBuffer> {
+    override fun processCsv(
+        inputBuffer: Flux<DataBuffer>,
+        request: ServerHttpRequest,
+        qrRequested: Boolean
+    ): Flux<DataBuffer> {
         return DataBufferUtils.join(inputBuffer)
             .flatMapMany { dataBuffer ->
                 val content = dataBuffer.asByteBuffer().array().inputStream().bufferedReader().use { it.readText() }

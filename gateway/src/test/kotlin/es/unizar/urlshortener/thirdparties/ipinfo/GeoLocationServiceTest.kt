@@ -120,7 +120,11 @@ class GeoLocationServiceTest {
         Mockito.`when`(requestHeadersUriSpec.uri(Mockito.anyString())).thenReturn(requestHeadersSpec)
         Mockito.`when`(requestHeadersSpec.retrieve()).thenReturn(responseSpec)
         Mockito.`when`(responseSpec.bodyToMono(Map::class.java))
-            .thenReturn(Mono.error(WebClientResponseException.create(404, "Not Found", HttpHeaders.EMPTY, ByteArray(0), null)))
+            .thenReturn(Mono.error(WebClientResponseException.create(
+                404,
+                "Not Found",
+                HttpHeaders.EMPTY,
+                ByteArray(0), null)))
     }
 
     private fun mockWebClientInvalidApiKey() {
@@ -132,6 +136,10 @@ class GeoLocationServiceTest {
         Mockito.`when`(requestHeadersUriSpec.uri(Mockito.anyString())).thenReturn(requestHeadersSpec)
         Mockito.`when`(requestHeadersSpec.retrieve()).thenReturn(responseSpec)
         Mockito.`when`(responseSpec.bodyToMono(Map::class.java))
-            .thenReturn(Mono.error(WebClientResponseException.create(401, "Unauthorized", HttpHeaders.EMPTY, ByteArray(0), null)))
+            .thenReturn(Mono.error(WebClientResponseException.create(
+                401,
+                "Unauthorized",
+                HttpHeaders.EMPTY,
+                ByteArray(0), null)))
     }
 }

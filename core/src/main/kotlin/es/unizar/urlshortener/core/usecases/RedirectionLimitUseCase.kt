@@ -1,5 +1,4 @@
 import es.unizar.urlshortener.core.ClickRepositoryService
-import es.unizar.urlshortener.core.TooManyRequestsException
 import reactor.core.publisher.Mono
 import java.time.OffsetDateTime
 

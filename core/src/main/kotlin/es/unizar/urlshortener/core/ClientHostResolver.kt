@@ -11,7 +11,8 @@ class ClientHostResolver private constructor() {
         fun resolve(request: ServerHttpRequest): String? {
             val xRealIp = request.headers.getFirst("X-Real-IP") // Header commonly used by Nginx
             val xForwardedFor = request.headers.getFirst("X-Forwarded-For") // Header used by most load balancers
-            val remoteAddr = request.remoteAddress?.address?.hostAddress // IP address directly from the server connection
+            val remoteAddr =
+                request.remoteAddress?.address?.hostAddress // IP address directly from the server connection
 
             // Process X-Forwarded-For to extract the first IP, if present
             val clientIp = extractClientIp(xForwardedFor)

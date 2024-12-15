@@ -5,7 +5,6 @@ package es.unizar.urlshortener.core.usecases
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.j2se.MatrixToImageWriter
 import com.google.zxing.qrcode.QRCodeWriter
-import es.unizar.urlshortener.core.InvalidUrlException
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 import java.io.ByteArrayOutputStream

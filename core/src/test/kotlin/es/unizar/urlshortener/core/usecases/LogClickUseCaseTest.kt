@@ -14,12 +14,11 @@ class LogClickUseCaseTest {
     @Test
     fun `logClick fails silently`() {
         val repository = mock<ClickRepositoryService> ()
-        val clickProperties = mock<ClickProperties>()
         whenever(repository.save(any())).thenReturn(Mono.error(RuntimeException()))
 
         val useCase = LogClickUseCaseImpl(repository)
 
-        useCase.logClick("key", clickProperties)
+        useCase.logClick("key")
         verify(repository).save(any())
     }
 }

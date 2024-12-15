@@ -41,3 +41,7 @@ configurations.matching { it.name == "detekt" }.all {
         }
     }
 }
+
+tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    enabled = false
+}
