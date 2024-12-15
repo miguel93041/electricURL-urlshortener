@@ -81,7 +81,7 @@ class ClickRepositoryServiceImpl(
      *
      * @param id The unique id identifying the [Click] to be updated.
      * @param geolocation The [GeoLocation] object containing the new geolocation details (IP and country).
-     * @return A [Mono<Void>] indicating the completion of the operation.
+     * @return A [Mono<Unit>] indicating the completion of the operation.
      */
     override fun updateGeolocation(id: Long, geolocation: GeoLocation): Mono<Void> {
         return entityTemplate.update(ClickEntity::class.java)
@@ -117,7 +117,7 @@ class ClickRepositoryServiceImpl(
      *
      * @param id The unique id identifying the [Click] to be updated.
      * @param geolocation The [GeoLocation] object containing the new browser and platform details.
-     * @return A [Mono<Void>] indicating the completion of the operation.
+     * @return A [Mono<Unit>] indicating the completion of the operation.
      */
     override fun updateBrowserPlatform(id: Long, browserPlatform: BrowserPlatform): Mono<Void> {
         return entityTemplate.update(ClickEntity::class.java)
@@ -207,7 +207,7 @@ class ShortUrlRepositoryServiceImpl(
      *
      * @param hash The unique hash identifying the [ShortUrl] to be updated.
      * @param validation The [ShortUrlValidation] object containing the new validation status.
-     * @return A [Mono<Void>] indicating the completion of the operation.
+     * @return A [Mono<Unit>] indicating the completion of the operation.
      */
     override fun updateValidation(hash: String, validation: ShortUrlValidation): Mono<Void> {
          return entityTemplate.update(ShortUrlEntity::class.java)
@@ -234,7 +234,7 @@ class ShortUrlRepositoryServiceImpl(
      *
      * @param hash The unique hash identifying the [ShortUrl] to be updated.
      * @param geolocation The [GeoLocation] object containing the new geolocation details (IP and country).
-     * @return A [Mono<Void>] indicating the completion of the operation.
+     * @return A [Mono<Unit>] indicating the completion of the operation.
      */
     override fun updateGeolocation(hash: String, geolocation: GeoLocation): Mono<Void> {
         return entityTemplate.update(ShortUrlEntity::class.java)

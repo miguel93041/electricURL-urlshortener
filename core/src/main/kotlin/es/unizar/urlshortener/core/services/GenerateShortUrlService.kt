@@ -14,7 +14,7 @@ import java.net.URI
  * Defines the specification for the use case responsible for generating
  * enhanced short URLs with additional properties like geolocation data.
  */
-interface GenerateShortUrlService {
+fun interface GenerateShortUrlService {
     /**
      * Generates a short URL based on the input data and the HTTP request context.
      *

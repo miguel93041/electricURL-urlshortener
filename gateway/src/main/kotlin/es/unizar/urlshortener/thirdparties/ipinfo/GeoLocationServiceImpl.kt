@@ -73,7 +73,7 @@ class GeoLocationServiceImpl(
                 val country = response?.get("country") as String? ?: "Unknown"
                 GeoLocation(ipAddress.ip, country)
             }
-            .onErrorResume { throwable ->
+            .onErrorResume {
                 Mono.just(GeoLocation(ip, "Unknown"))
             }
     }

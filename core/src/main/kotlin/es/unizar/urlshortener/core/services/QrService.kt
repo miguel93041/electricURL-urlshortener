@@ -15,7 +15,7 @@ import java.net.URI
  * Defines the specification for the use case responsible for generating
  * enhanced short URLs with additional properties like geolocation data.
  */
-interface QrService {
+fun interface QrService {
     /**
      * Obtains the original url of a short url.
      *

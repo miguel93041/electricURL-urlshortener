@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono
  * Defines the specification for the use case responsible for generating
  * enhanced short URLs with additional properties like geolocation data.
  */
-interface RedirectService {
+fun interface RedirectService {
     /**
      * Obtains the original url of a short url.
      *

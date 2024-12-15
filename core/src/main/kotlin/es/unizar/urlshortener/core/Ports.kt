@@ -42,7 +42,7 @@ interface ClickRepositoryService {
      *
      * @param id The unique id identifying the [Click] to be updated.
      * @param geolocation The [GeoLocation] object containing the new geolocation details (IP and country).
-     * @return A [Mono<Void>] indicating the completion of the operation.
+     * @return A [Mono<Unit>] indicating the completion of the operation.
      */
     fun updateGeolocation(id: Long, geolocation: GeoLocation): Mono<Void>
 
@@ -54,7 +54,7 @@ interface ClickRepositoryService {
      *
      * @param id The unique id identifying the [Click] to be updated.
      * @param geolocation The [GeoLocation] object containing the new browser and platform details.
-     * @return A [Mono<Void>] indicating the completion of the operation.
+     * @return A [Mono<Unit>] indicating the completion of the operation.
      */
     fun updateBrowserPlatform(id: Long, browserPlatform: BrowserPlatform): Mono<Void>
 }
@@ -87,7 +87,7 @@ interface ShortUrlRepositoryService {
      *
      * @param hash The unique hash identifying the [ShortUrl] to be updated.
      * @param validation The [ShortUrlValidation] object containing the new validation status.
-     * @return A [Mono<Void>] indicating the completion of the operation.
+     * @return A [Mono<Unit>] indicating the completion of the operation.
      */
     fun updateValidation(hash: String, validation: ShortUrlValidation): Mono<Void>
 
@@ -100,7 +100,7 @@ interface ShortUrlRepositoryService {
      *
      * @param hash The unique hash identifying the [ShortUrl] to be updated.
      * @param geolocation The [GeoLocation] object containing the new geolocation details (IP and country).
-     * @return A [Mono<Void>] indicating the completion of the operation.
+     * @return A [Mono<Unit>] indicating the completion of the operation.
      */
     fun updateGeolocation(hash: String, geolocation: GeoLocation): Mono<Void>
 }
@@ -109,7 +109,7 @@ interface ShortUrlRepositoryService {
  * [UrlValidatorService] is the port to the service that validates if an url can be shortened.
  *
  */
-interface UrlValidatorService {
+fun interface UrlValidatorService {
     /**
      * Validates if the given URL can be shortened.
      *
@@ -123,7 +123,7 @@ interface UrlValidatorService {
  * [UrlValidatorService] is the port to the service that validates if an url can be shortened.
  *
  */
-interface HashValidatorService {
+fun interface HashValidatorService {
     /**
      * Validates if the given hash is valid.
      *

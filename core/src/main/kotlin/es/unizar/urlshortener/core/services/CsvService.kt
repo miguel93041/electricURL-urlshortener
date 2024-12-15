@@ -17,7 +17,7 @@ import java.io.*
  * Defines the specification for the use case responsible for generating
  * enhanced short URLs with additional properties like geolocation data.
  */
-interface CsvService {
+fun interface CsvService {
     /**
      * Obtains the original url of a short url.
      *
