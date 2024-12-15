@@ -45,7 +45,7 @@ class ApplicationConfiguration(
      * @return an instance of ClickRepositoryServiceImpl.
      */
     @Bean
-    fun clickRepositoryService() = ClickRepositoryServiceImpl(clickEntityRepository, clickCache())
+    fun clickRepositoryService() = ClickRepositoryServiceImpl(clickEntityRepository, r2dbcEntityTemplate, clickCache())
 
     /**
      * Provides an implementation of the ShortUrlRepositoryService.
@@ -208,12 +208,14 @@ class ApplicationConfiguration(
         urlValidatorService: UrlValidatorService,
         createShortUrlUseCase: CreateShortUrlUseCase,
         geoLocationService: GeoLocationService,
+        shortUrlRepositoryService: ShortUrlRepositoryService,
         baseUrlProvider: BaseUrlProvider
     ): GenerateShortUrlService {
         return GenerateShortUrlServiceImpl(
             urlValidatorService,
             createShortUrlUseCase,
             geoLocationService,
+            shortUrlRepositoryService,
             baseUrlProvider
         )
     }
@@ -257,6 +259,7 @@ class ApplicationConfiguration(
         geoLocationService: GeoLocationService,
         browserPlatformIdentificationUseCase: BrowserPlatformIdentificationUseCase,
         redirectionLimitUseCase: RedirectionLimitUseCase,
+        clickRepositoryService: ClickRepositoryService,
     ): RedirectService {
         return RedirectServiceImpl(
             hashValidatorService,
@@ -264,45 +267,46 @@ class ApplicationConfiguration(
             logClickUseCase,
             geoLocationService,
             browserPlatformIdentificationUseCase,
-            redirectionLimitUseCase
+            redirectionLimitUseCase,
+            clickRepositoryService
         )
     }
 
-        @Bean("urlSafeCache")
-        fun urlSafeCache(): AsyncCache<String, Boolean> {
-            return Caffeine.newBuilder()
-                .expireAfterWrite(6, TimeUnit.HOURS)
-                .maximumSize(500)
-                .buildAsync()
-        }
+    @Bean("urlSafeCache")
+    fun urlSafeCache(): AsyncCache<String, Boolean> {
+        return Caffeine.newBuilder()
+            .expireAfterWrite(6, TimeUnit.HOURS)
+            .maximumSize(500)
+            .buildAsync()
+    }
 
-        @Bean
-        fun geoLocationCache(): AsyncCache<String, GeoLocation> {
-            return Caffeine.newBuilder()
-                .expireAfterWrite(1, TimeUnit.HOURS)
-                .maximumSize(1000)
-                .buildAsync()
-        }
+    @Bean
+    fun geoLocationCache(): AsyncCache<String, GeoLocation> {
+        return Caffeine.newBuilder()
+            .expireAfterWrite(1, TimeUnit.HOURS)
+            .maximumSize(1000)
+            .buildAsync()
+    }
 
-        @Bean("urlReachableCache")
-        fun urlReachableCache(): AsyncCache<String, Boolean> {
-            return Caffeine.newBuilder()
-                .expireAfterWrite(6, TimeUnit.HOURS)
-                .maximumSize(500)
-                .buildAsync()
-        }
+    @Bean("urlReachableCache")
+    fun urlReachableCache(): AsyncCache<String, Boolean> {
+        return Caffeine.newBuilder()
+            .expireAfterWrite(6, TimeUnit.HOURS)
+            .maximumSize(500)
+            .buildAsync()
+    }
 
-        fun clickCache(): AsyncCache<String, List<Click>> {
-            return Caffeine.newBuilder()
-                .expireAfterWrite(15, TimeUnit.MINUTES)
-                .maximumSize(1000)
-                .buildAsync()
-        }
+    fun clickCache(): AsyncCache<String, List<Click>> {
+        return Caffeine.newBuilder()
+            .expireAfterWrite(15, TimeUnit.MINUTES)
+            .maximumSize(1000)
+            .buildAsync()
+    }
 
-        fun shortUrlCache(): AsyncCache<String, ShortUrl> {
-            return Caffeine.newBuilder()
-                .expireAfterAccess(12, TimeUnit.HOURS)
-                .maximumSize(1000)
-                .buildAsync()
-        }
+    fun shortUrlCache(): AsyncCache<String, ShortUrl> {
+        return Caffeine.newBuilder()
+            .expireAfterAccess(12, TimeUnit.HOURS)
+            .maximumSize(1000)
+            .buildAsync()
+    }
 }

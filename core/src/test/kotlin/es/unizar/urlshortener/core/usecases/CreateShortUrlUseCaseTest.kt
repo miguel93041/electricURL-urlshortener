@@ -28,7 +28,7 @@ class CreateShortUrlUseCaseTest {
         // Configuración correcta de los mocks
         whenever(urlValidatorService.validate("http://example.com/")).thenReturn(ValidatorResult.VALID)
         whenever(hashService.hashUrl("http://example.com/")).thenReturn("f684a3c4")
-        whenever(shortUrlRepository.save(any())).doAnswer { it.arguments[0] as ShortUrl }
+        whenever(shortUrlRepository.create(any())).doAnswer { it.arguments[0] as ShortUrl }
 
         val createShortUrlUseCase = CreateShortUrlUseCaseImpl(shortUrlRepository, urlValidatorService, hashService)
         val shortUrl = createShortUrlUseCase.create("http://example.com/", shortUrlProperties)
@@ -95,7 +95,7 @@ class CreateShortUrlUseCaseTest {
 
         whenever(urlValidatorService.validate("http://example.com/")).thenReturn(ValidatorResult.VALID)
         whenever(hashService.hashUrl("http://example.com/")).thenReturn("f684a3c4")
-        whenever(shortUrlRepository.save(any())).thenThrow(RuntimeException())
+        whenever(shortUrlRepository.create(any())).thenThrow(RuntimeException())
 
         val createShortUrlUseCase = CreateShortUrlUseCaseImpl(shortUrlRepository, urlValidatorService, hashService)
 

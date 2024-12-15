@@ -14,7 +14,6 @@ interface GetAnalyticsUseCase {
      * @param includeBrowser Whether to include analytics data grouped by browser. Default is false.
      * @param includeCountry Whether to include analytics data grouped by country. Default is false.
      * @param includePlatform Whether to include analytics data grouped by platform. Default is false.
-     * @param includeReferrer Whether to include analytics data grouped by referrer. Default is false.
      * @return An instance of [AnalyticsData] containing the requested analytics details.
      * @throws RedirectionNotFound If no ShortUrl entity is found with the given [id].
      */
@@ -22,8 +21,7 @@ interface GetAnalyticsUseCase {
         id: String,
         includeBrowser: Boolean = false,
         includeCountry: Boolean = false,
-        includePlatform: Boolean = false,
-        includeReferrer: Boolean = false
+        includePlatform: Boolean = false
     ): Mono<AnalyticsData>
 }
 
@@ -42,8 +40,7 @@ class GetAnalyticsUseCaseImpl(private val clickRepository: ClickRepositoryServic
         id: String,
         includeBrowser: Boolean,
         includeCountry: Boolean,
-        includePlatform: Boolean,
-        includeReferrer: Boolean
+        includePlatform: Boolean
     ): Mono<AnalyticsData> {
         return clickRepository.findAllByHash(id)
             .collectList()
@@ -51,30 +48,25 @@ class GetAnalyticsUseCaseImpl(private val clickRepository: ClickRepositoryServic
                 val totalClicks = clicks.size
 
                 val byBrowser = if (includeBrowser) {
-                    clicks.groupingBy { it.properties.browser ?: "Unknown" }.eachCount()
+                    clicks.groupingBy { it.properties.browserPlatform.browser ?: "Unknown" }.eachCount()
                 } else null
 
                 val byCountry = if (includeCountry) {
-                    clicks.groupingBy { it.properties.country ?: "Unknown" }.eachCount()
+                    clicks.groupingBy { it.properties.geoLocation.country ?: "Unknown" }.eachCount()
                 } else null
 
                 val byPlatform = if (includePlatform) {
-                    clicks.groupingBy { it.properties.platform ?: "Unknown" }.eachCount()
+                    clicks.groupingBy { it.properties.browserPlatform.platform ?: "Unknown" }.eachCount()
                 } else null
 
-                val byReferrer = if (includeReferrer) {
-                    clicks.groupingBy { it.properties.referrer ?: "Unknown" }.eachCount()
-                } else null
-
-                AnalyticsData(totalClicks, byBrowser, byCountry, byPlatform, byReferrer)
+                AnalyticsData(totalClicks, byBrowser, byCountry, byPlatform)
             }
             .defaultIfEmpty(
                 AnalyticsData(
                     totalClicks = 0,
                     byBrowser = if (includeBrowser) emptyMap() else null,
                     byCountry = if (includeCountry) emptyMap() else null,
-                    byPlatform = if (includePlatform) emptyMap() else null,
-                    byReferrer = if (includeReferrer) emptyMap() else null
+                    byPlatform = if (includePlatform) emptyMap() else null
                 )
             )
     }

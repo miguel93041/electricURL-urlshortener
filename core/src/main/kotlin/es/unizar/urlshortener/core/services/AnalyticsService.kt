@@ -25,8 +25,7 @@ interface AnalyticsService {
         hash: String,
         includeBrowser: Boolean,
         includeCountry: Boolean,
-        includePlatform: Boolean,
-        includeReferrer: Boolean
+        includePlatform: Boolean
     ): Mono<Result<AnalyticsData, HashError>>
 }
 
@@ -47,15 +46,13 @@ class AnalyticsServiceImpl(
      * @param includeBrowser Whether to include analytics data grouped by browser.
      * @param includeCountry Whether to include analytics data grouped by country.
      * @param includePlatform Whether to include analytics data grouped by platform.
-     * @param includeReferrer Whether to include analytics data grouped by referrer.
      * @return A Mono emitting a Result containing either the analytics data or a HashError.
      */
     override fun get(
         hash: String,
         includeBrowser: Boolean,
         includeCountry: Boolean,
-        includePlatform: Boolean,
-        includeReferrer: Boolean
+        includePlatform: Boolean
     ): Mono<Result<AnalyticsData, HashError>> {
         return hashValidatorService.validate(hash)
             .flatMap { validationResult ->
@@ -67,8 +64,7 @@ class AnalyticsServiceImpl(
                     hash,
                     includeBrowser,
                     includeCountry,
-                    includePlatform,
-                    includeReferrer
+                    includePlatform
                 ).map { analyticsData ->
                     Ok(analyticsData)
                 }

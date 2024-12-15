@@ -15,7 +15,7 @@ interface LogClickUseCase {
      * @param key The key associated with the redirection.
      * @param data The properties of the click event.
      */
-    fun logClick(key: String, data: ClickProperties): Mono<Void>
+    fun logClick(key: String): Mono<Click>
 }
 
 /**
@@ -34,18 +34,12 @@ class LogClickUseCaseImpl(
      * @param key The key associated with the redirection.
      * @param data The properties of the click event.
      */
-    override fun logClick(key: String, data: ClickProperties): Mono<Void> {
+    override fun logClick(key: String): Mono<Click> {
         val cl = Click(
             hash = key,
-            properties = ClickProperties(
-                ip = data.ip,
-                country = data.country,
-                browser = data.browser,
-                platform = data.platform
-            )
+            properties = ClickProperties()
         )
 
         return clickRepository.save(cl)
-            .then() // Convert Mono<Click> to Mono<Void>
     }
 }

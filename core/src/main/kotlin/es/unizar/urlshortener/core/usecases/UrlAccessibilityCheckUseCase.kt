@@ -28,7 +28,7 @@ interface UrlAccessibilityCheckUseCase {
  * @property webClient The [WebClient] used to send the HTTP request.
  */
 @Suppress("TooGenericExceptionCaught", "SwallowedException")
-class UrlAccessibilityCheckUseCaseImpl(
+    class UrlAccessibilityCheckUseCaseImpl(
     private val webClient: WebClient,
     private val cache: AsyncCache<String, Boolean>
 ) : UrlAccessibilityCheckUseCase {

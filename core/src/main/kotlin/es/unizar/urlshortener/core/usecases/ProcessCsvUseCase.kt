@@ -54,9 +54,8 @@ class ProcessCsvUseCaseImpl (
      * @param data Data of the HTTP request
      */
     override fun processCsv(inputBuffer: Flux<DataBuffer>, request: ServerHttpRequest, qrRequested: Boolean): Flux<DataBuffer> {
-        return DataBufferUtils.join(inputBuffer) // Une el flujo en un único DataBuffer si es necesario
+        return DataBufferUtils.join(inputBuffer)
             .flatMapMany { dataBuffer ->
-                // Convierte el contenido en líneas de texto
                 val content = dataBuffer.asByteBuffer().array().inputStream().bufferedReader().use { it.readText() }
                 Flux.fromIterable(content.lines())
             }
@@ -65,18 +64,9 @@ class ProcessCsvUseCaseImpl (
 
                 generateShortUrlServiceImpl.generate(ShortUrlDataIn(originalUrl, qrRequested), request)
                     .map { result ->
-                        if (result.isErr) {
-                            val errorMessage = when (result.error) {
-                                UrlError.InvalidFormat -> "ERROR: Invalid URL"
-                                UrlError.Unreachable -> "ERROR: URL unreachable"
-                                UrlError.Unsafe -> "ERROR: Unsafe URL"
-                            }
-                            "$originalUrl,$errorMessage\n"
-                        } else {
-                            val shortUrl = result.value.shortUrl.toString()
-                            val qrCodeUrl = result.value.qrCodeUrl?.toString() ?: "QR not generated"
-                            "$originalUrl,$shortUrl,$qrCodeUrl\n"
-                        }
+                        val shortUrl = result.shortUrl.toString()
+                        val qrCodeUrl = result.qrCodeUrl?.toString() ?: "QR not generated"
+                        "$originalUrl,$shortUrl,$qrCodeUrl\n"
                     }
                     .map { newLine -> DefaultDataBufferFactory().wrap(newLine.toByteArray()) }
             }

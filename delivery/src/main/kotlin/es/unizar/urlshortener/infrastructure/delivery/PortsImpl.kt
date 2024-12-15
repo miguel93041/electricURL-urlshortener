@@ -79,8 +79,18 @@ class HashValidatorServiceImpl(
         }
 
         return shortUrlRepositoryService.findByKey(hash)
-                .map<Result<Unit, HashError>> { Ok(Unit) }
-                .switchIfEmpty(Mono.just(Err(HashError.NotFound)))
+            .map { shorturl ->
+                if (!shorturl.properties.validation.validated) {
+                    Err(HashError.NotValidated)
+                } else if (!shorturl.properties.validation.safe) {
+                    Err(HashError.Unsafe)
+                } else if (!shorturl.properties.validation.reachable) {
+                    Err(HashError.Unreachable)
+                } else {
+                    Ok(Unit)
+                }
+            }
+            .switchIfEmpty(Mono.just(Err(HashError.NotFound)))
     }
 
     /**

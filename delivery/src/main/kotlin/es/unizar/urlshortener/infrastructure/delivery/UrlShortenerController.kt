@@ -11,7 +11,6 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.http.codec.multipart.FilePart
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.web.bind.annotation.*
 import reactor.core.publisher.Flux
@@ -39,7 +38,7 @@ interface UrlShortenerController {
      * @param request The HTTP request for capturing client context.
      * @return A [ResponseEntity] with the details of the created short URL.
      */
-    fun shortener(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ResponseEntity<Any>>
+    fun shortener(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ResponseEntity<ShortUrlDataOut>>
 
     fun redirectToQrCode(id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>>
 }
@@ -79,6 +78,9 @@ class UrlShortenerControllerImpl(
                             RedirectionError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
                             RedirectionError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
                             RedirectionError.TooManyRequests -> HttpStatus.TOO_MANY_REQUESTS to "This shortened hash is under load"
+                            RedirectionError.NotValidated -> HttpStatus.BAD_REQUEST to "This shortened hash is still being validated. Wait a few seconds and try again"
+                            RedirectionError.Unreachable -> HttpStatus.BAD_REQUEST to "The original url is unreachable"
+                            RedirectionError.Unsafe -> HttpStatus.FORBIDDEN to "The original url is unsafe"
                         }
                         ResponseEntity<Any>(message, null, status)
                     }
@@ -107,6 +109,9 @@ class UrlShortenerControllerImpl(
                         val (status, message) = when (error) {
                             HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
                             HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                            HashError.NotValidated -> HttpStatus.BAD_REQUEST to "This shortened hash is still being validated. Wait a few seconds and try again"
+                            HashError.Unreachable -> HttpStatus.BAD_REQUEST to "The original url is unreachable"
+                            HashError.Unsafe -> HttpStatus.FORBIDDEN to "The original url is unsafe"
                         }
                         ResponseEntity.status(status).body(message)
                     }
@@ -154,24 +159,12 @@ class UrlShortenerControllerImpl(
      * @return a Mono<ResponseEntity> with the created short url details or an error
      */
     @PostMapping("/api/link", consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE])
-    override fun shortener(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ResponseEntity<Any>> {
+    override fun shortener(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ResponseEntity<ShortUrlDataOut>> {
         return generateShortUrlServiceImpl.generate(data, request)
             .map { result ->
-                result.fold(
-                    success = { shortUrlDataOut ->
-                        val headers = HttpHeaders()
-                        headers.location = shortUrlDataOut.shortUrl
-                        ResponseEntity(shortUrlDataOut, headers, HttpStatus.CREATED)
-                    },
-                    failure = { error ->
-                        val (status, message) = when (error) {
-                            UrlError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid URL format"
-                            UrlError.Unreachable -> HttpStatus.BAD_REQUEST to "URL is unreachable"
-                            UrlError.Unsafe -> HttpStatus.FORBIDDEN to "URL is flagged as unsafe"
-                        }
-                        ResponseEntity.status(status).body(message)
-                    }
-                )
+                val headers = HttpHeaders()
+                headers.location = result.shortUrl
+                ResponseEntity(result, headers, HttpStatus.CREATED)
             }
     }
 
@@ -179,13 +172,12 @@ class UrlShortenerControllerImpl(
      * Endpoint to retrieve aggregated analytics data for a shortened URL.
      *
      * This method provides a way to fetch total clicks and optionally include breakdowns by browser,
-     * country, platform, and referrer based on the provided query parameters.
+     * country, platform based on the provided query parameters.
      *
      * @param id The hash of the shortened URL for which analytics data is requested. (Required)
      * @param browser Indicates whether to include a breakdown of clicks by browser. Defaults to false. (Optional)
      * @param country Indicates whether to include a breakdown of clicks by country. Defaults to false. (Optional)
      * @param platform Indicates whether to include a breakdown of clicks by platform. Defaults to false. (Optional)
-     * @param referrer Indicates whether to include a breakdown of clicks by referrer. Defaults to false. (Optional)
      * @return A ResponseEntity containing the analytics data. Returns 200 OK with the data on success,
      *         or 404 NOT FOUND if hash is invalid.
      */
@@ -194,10 +186,9 @@ class UrlShortenerControllerImpl(
         @RequestParam id: String,
         @RequestParam(required = false, defaultValue = "false") browser: Boolean,
         @RequestParam(required = false, defaultValue = "false") country: Boolean,
-        @RequestParam(required = false, defaultValue = "false") platform: Boolean,
-        @RequestParam(required = false, defaultValue = "false") referrer: Boolean
+        @RequestParam(required = false, defaultValue = "false") platform: Boolean
     ): Mono<ResponseEntity<Any>> {
-        return analyticsService.get(id, browser, country, platform, referrer)
+        return analyticsService.get(id, browser, country, platform)
             .map { result ->
                 result.fold(
                     success = { analytics ->
@@ -207,6 +198,9 @@ class UrlShortenerControllerImpl(
                         val (status, message) = when (error) {
                             HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
                             HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                            HashError.NotValidated -> HttpStatus.BAD_REQUEST to "This shortened hash is still being validated. Wait a few seconds and try again"
+                            HashError.Unreachable -> HttpStatus.BAD_REQUEST to "The original url is unreachable"
+                            HashError.Unsafe -> HttpStatus.FORBIDDEN to "The original url is unsafe"
                         }
                         ResponseEntity.status(status).body(message)
                     }

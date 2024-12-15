@@ -10,6 +10,9 @@ sealed class UrlError {
 sealed class HashError {
     object InvalidFormat : HashError()
     object NotFound : HashError()
+    object NotValidated: HashError()
+    object Unsafe: HashError()
+    object Unreachable: HashError()
 }
 
 sealed class CsvError {
@@ -20,4 +23,7 @@ sealed class RedirectionError {
     object TooManyRequests: RedirectionError()
     object InvalidFormat : RedirectionError()
     object NotFound : RedirectionError()
+    object NotValidated: RedirectionError()
+    object Unsafe: RedirectionError()
+    object Unreachable: RedirectionError()
 }

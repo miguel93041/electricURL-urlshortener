@@ -38,6 +38,7 @@ class RedirectServiceImpl(
     private val geoLocationService: GeoLocationService,
     private val browserPlatformIdentificationUseCase: BrowserPlatformIdentificationUseCase,
     private val redirectionLimitUseCase: RedirectionLimitUseCase,
+    private val clickRepositoryService: ClickRepositoryService
 ) : RedirectService {
 
 
@@ -59,6 +60,9 @@ class RedirectServiceImpl(
                     val mappedError = when (error) {
                         is HashError.InvalidFormat -> RedirectionError.InvalidFormat
                         is HashError.NotFound -> RedirectionError.NotFound
+                        is HashError.NotValidated -> RedirectionError.NotValidated
+                        is HashError.Unreachable -> RedirectionError.Unreachable
+                        is HashError.Unsafe -> RedirectionError.Unsafe
                     }
                     Mono.just(Err(mappedError))
                 } else {
@@ -67,27 +71,22 @@ class RedirectServiceImpl(
                             if (isLimitReached) {
                                 Mono.just(Err(RedirectionError.TooManyRequests))
                             } else {
-                                geoLocationService.get(request.remoteAddress.toString())
-                                    .zipWith(
-                                        Mono.defer {
-                                            Mono.just(browserPlatformIdentificationUseCase.parse(request.headers.getFirst("User-Agent")))
-                                        }
-                                    )
-                                    .flatMap { tuple ->
-                                        val geoLocation = tuple.t1
-                                        val browserPlatform = tuple.t2
+                                redirectUseCase.redirectTo(hash)
+                                    .flatMap { redirection ->
+                                        logClickUseCase.logClick(hash)
+                                            .flatMap { click ->
+                                                geoLocationService.get(request.remoteAddress.toString())
+                                                    .doOnSuccess { geoLocation ->
+                                                        clickRepositoryService.updateGeolocation(click.id!!, geoLocation).subscribe()
+                                                    }.subscribe()
 
-                                        val enrichedData = ClickProperties(
-                                            ip = geoLocation.ip,
-                                            country = geoLocation.country,
-                                            browser = browserPlatform.browser,
-                                            platform = browserPlatform.platform
-                                        )
+                                                val userAgent = request.headers.getFirst("User-Agent")
+                                                Mono.fromCallable {
+                                                    val browserPlatform = browserPlatformIdentificationUseCase.parse(userAgent)
+                                                    clickRepositoryService.updateBrowserPlatform(click.id!!, browserPlatform).subscribe()
+                                                }.subscribe()
 
-                                        redirectUseCase.redirectTo(hash)
-                                            .flatMap { redirection ->
-                                                logClickUseCase.logClick(hash, enrichedData)
-                                                    .then(Mono.just(Ok(redirection)))
+                                                Mono.just(Ok(redirection))
                                             }
                                     }
                             }

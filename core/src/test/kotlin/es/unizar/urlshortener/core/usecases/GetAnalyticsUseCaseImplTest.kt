@@ -40,8 +40,7 @@ class GetAnalyticsUseCaseImplTest {
     fun `should return correct analytics data for all parameter permutations`(
         includeBrowser: Boolean,
         includeCountry: Boolean,
-        includePlatform: Boolean,
-        includeReferrer: Boolean
+        includePlatform: Boolean
     ) {
         // Configuración
         val id = "abc123"
@@ -53,8 +52,7 @@ class GetAnalyticsUseCaseImplTest {
             properties = ClickProperties(
                 browser = "Chrome",
                 country = "Spain",
-                platform = "Windows",
-                referrer = "Google"
+                platform = "Windows"
             )
         )
         val click2 = Click(
@@ -62,8 +60,7 @@ class GetAnalyticsUseCaseImplTest {
             properties = ClickProperties(
                 browser = "Firefox",
                 country = "France",
-                platform = "Linux",
-                referrer = "Bing"
+                platform = "Linux"
             )
         )
         val clicks = listOf(click1, click2)
@@ -74,8 +71,7 @@ class GetAnalyticsUseCaseImplTest {
             id,
             includeBrowser = includeBrowser,
             includeCountry = includeCountry,
-            includePlatform = includePlatform,
-            includeReferrer = includeReferrer
+            includePlatform = includePlatform
         )
 
         // Verificación
@@ -98,12 +94,6 @@ class GetAnalyticsUseCaseImplTest {
         } else {
             assertNull(analyticsData.byPlatform)
         }
-
-        if (includeReferrer) {
-            assertEquals(mapOf("Google" to 1, "Bing" to 1), analyticsData.byReferrer)
-        } else {
-            assertNull(analyticsData.byReferrer)
-        }
     }
 
     companion object {
@@ -115,9 +105,7 @@ class GetAnalyticsUseCaseImplTest {
             for (browser in booleans) {
                 for (country in booleans) {
                     for (platform in booleans) {
-                        for (referrer in booleans) {
-                            permutations.add(arrayOf(browser, country, platform, referrer))
-                        }
+                        permutations.add(arrayOf(browser, country, platform))
                     }
                 }
             }

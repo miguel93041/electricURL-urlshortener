@@ -79,7 +79,7 @@ class UrlShortenerControllerTest {
         // Verify that logClickUseCase logs the click with the correct IP address
         verify(logClickUseCase).logClick(
             "key",
-            ClickProperties(ip = "127.0.0.1", referrer = null, browser = null, platform = null, country = "Bogon")
+            ClickProperties(ip = "127.0.0.1", browser = null, platform = null, country = "Bogon")
         )
     }
 

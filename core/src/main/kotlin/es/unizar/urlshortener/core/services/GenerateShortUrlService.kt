@@ -1,8 +1,7 @@
 package es.unizar.urlshortener.core.services
 
-import com.github.michaelbull.result.Err
-import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.unwrapError
 import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.usecases.CreateShortUrlUseCase
 import org.springframework.http.server.reactive.ServerHttpRequest
@@ -21,7 +20,7 @@ interface GenerateShortUrlService {
      * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
      * @return A [Mono] emitting a [Result] containing the generated short URL and optional QR code URL or an error.
      */
-    fun generate(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<Result<ShortUrlDataOut, UrlError>>
+    fun generate(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ShortUrlDataOut>
 }
 
 /**
@@ -33,6 +32,7 @@ class GenerateShortUrlServiceImpl(
     private val urlValidatorService: UrlValidatorService,
     private val createShortUrlUseCase: CreateShortUrlUseCase,
     private val geoLocationService: GeoLocationService,
+    private val shortUrlRepositoryService: ShortUrlRepositoryService,
     private val baseUrlProvider: BaseUrlProvider
 ) : GenerateShortUrlService {
 
@@ -41,34 +41,52 @@ class GenerateShortUrlServiceImpl(
      *
      * @param data The input data containing the original URL and a flag indicating whether a QR code is required.
      * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
-     * @return A [Mono] emitting a [Result] containing the short URL and optionally a QR code URL or an error.
+     * @return A [Mono] emitting a [ShortUrlDataOut] and optionally a QR code URL or an error.
      */
-    override fun generate(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<Result<ShortUrlDataOut, UrlError>> {
-        return urlValidatorService.validate(data.url)
-            .flatMap { validationResult ->
-                if (validationResult.isErr) {
-                    return@flatMap Mono.just(Err(validationResult.error))
-                }
+    override fun generate(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ShortUrlDataOut> {
+        return createShortUrlUseCase.create(data.url)
+            .flatMap { shortUrlModel ->
+                val shortUrl = URI.create("${baseUrlProvider.get(request)}/${shortUrlModel.hash}")
+                val qrCodeUrl = if (data.qrRequested) {
+                    URI.create("${baseUrlProvider.get(request)}/api/qr?id=${shortUrlModel.hash}")
+                } else null
 
+                // Validate URL in a background task
+                val validationMono = urlValidatorService.validate(data.url)
+                    .doOnSuccess { validationResult ->
+                        if (validationResult.isErr) {
+                            val error = validationResult.unwrapError()
+                            when (error) {
+                                is UrlError.InvalidFormat -> shortUrlRepositoryService.updateValidation(
+                                    shortUrlModel.hash,
+                                    ShortUrlValidation(safe = false, reachable = false, validated = true)
+                                ).subscribe()
+                                is UrlError.Unreachable -> shortUrlRepositoryService.updateValidation(
+                                    shortUrlModel.hash,
+                                    ShortUrlValidation(safe = false, reachable = false, validated = true)
+                                ).subscribe()
+                                is UrlError.Unsafe ->  shortUrlRepositoryService.updateValidation(
+                                    shortUrlModel.hash,
+                                    ShortUrlValidation(safe = false, reachable = true, validated = true)
+                                ).subscribe()
+                            }
+                        } else {
+                            shortUrlRepositoryService.updateValidation(
+                                shortUrlModel.hash,
+                                ShortUrlValidation(safe = true, reachable = true, validated = true)
+                            ).subscribe()
+                        }
+                    }.subscribe()
+
+                // Enrich Shortened URL in a background task
                 val forwardedFor = request.headers["X-Forwarded-For"]?.firstOrNull()
                 val ipAddress = forwardedFor ?: request.remoteAddress?.address?.hostAddress ?: "unknown"
                 geoLocationService.get(ipAddress)
-                    .flatMap { geoLocation ->
-                        val enrichedData = ShortUrlProperties(
-                            ip = geoLocation.ip,
-                            country = geoLocation.country
-                        )
+                    .doOnSuccess { geoLocation ->
+                        shortUrlRepositoryService.updateGeolocation(shortUrlModel.hash, geoLocation).subscribe()
+                    }.subscribe()
 
-                        createShortUrlUseCase.create(data.url, enrichedData)
-                            .flatMap { shortUrlModel ->
-                                val shortUrl = URI.create("${baseUrlProvider.get(request)}/${shortUrlModel.hash}")
-                                val qrCodeUrl = if (data.qrRequested) {
-                                    URI.create("${baseUrlProvider.get(request)}/api/qr?id=${shortUrlModel.hash}")
-                                } else null
-
-                                Mono.just(Ok(ShortUrlDataOut(shortUrl, qrCodeUrl)))
-                            }
-                    }
+                Mono.just(ShortUrlDataOut(shortUrl, qrCodeUrl))
             }
     }
 }

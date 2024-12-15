@@ -17,7 +17,6 @@ data class ClickEntity(
     val hash: String,
     val created: OffsetDateTime,
     val ip: String?,
-    val referrer: String?,
     val browser: String?,
     val platform: String?,
     val country: String?
@@ -32,9 +31,10 @@ data class ShortUrlEntity(
     val hash: String,
     val target: String,
     val created: OffsetDateTime,
-    val owner: String?,
     val mode: Int,
-    val safe: Boolean,
     val ip: String?,
-    val country: String?
+    val country: String?,
+    val reachable: Boolean,
+    val safe: Boolean,
+    val validated: Boolean
 )

@@ -131,7 +131,7 @@ The project offers a set of functionalities:
 - **Google Safe Browsing Check**. URLs are checked for safety before shortening them.
 - **CSV Upload for Bulk URL Shortening**. Allows users to upload a CSV file containing URLs and download a new CSV with the shortened URLs.
 - **Redirection Limits**. Imposes a limit of 10 redirections per URL, preventing further redirects once the limit is reached.
-- **Analytics**. Retrieves aggregated analytics data for a given URL (total clicks, browser, platform, country and referrer).
+- **Analytics**. Retrieves aggregated analytics data for a given URL (total clicks, browser, platform and country).
 
 The objects in the domain are:
 
@@ -142,7 +142,7 @@ The objects in the domain are:
 - `ClickProperties`: a handy way to extend data about a click
 - `GeoLocation`: IP address and its country
 - `BrowserPlatform`: user`s browser and platform
-- `AnalyticsData`: total clicks, browser, platform, country and referrer of a shortened URL
+- `AnalyticsData`: total clicks, browser, platform and country of a shortened URL
 
 ## Delivery
 
@@ -193,15 +193,13 @@ Generates a QR code for the shortened URL identified by id.
 
 `GET /api/analytics`
 
-Retrieves aggregated analytics data for a shortened URL. You can request breakdowns by browser, country, platform, and referrer.
+Retrieves aggregated analytics data for a shortened URL. You can request breakdowns by browser, country and platform.
 
 - **Parameters:**
     - `id` (Required): The identifier of the shortened URL.
     - `browser` (Optional, Default: `false`): Include breakdown by browser.
     - `country` (Optional, Default: `false`): Include breakdown by country.
     - `platform` (Optional, Default: `false`): Include breakdown by platform.
-    - `referrer` (Optional, Default: `false`): Include breakdown by referrer.
-
 
 - **Responses:**
     - `200 OK`: The analytics data is successfully returned.
@@ -402,7 +400,7 @@ New tests implemented:
 Analytics functionality has been added to provide insights into the usage of shortened URLs. A new endpoint `GET /api/analytics` allows users to retrieve aggregated analytics data based on specified parameters, including:
 
 - Total Clicks: The total number of times the shortened URL was accessed.
-- Detailed Breakdown: Click data categorized by browser, referrer, country, and platform.
+- Detailed Breakdown: Click data categorized by browser, country, and platform.
 
 The endpoint supports flexible queries, enabling users to request analytics for specific categories (e.g., browser data, country data, or both simultaneously) based on their needs.
 

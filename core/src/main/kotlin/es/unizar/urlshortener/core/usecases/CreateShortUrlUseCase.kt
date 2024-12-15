@@ -11,21 +11,19 @@ import reactor.core.publisher.Mono
  */
 interface CreateShortUrlUseCase {
     /**
-     * Creates a short URL for the given URL and optional data.
+     * Creates a short URL for the given URL.
      *
      * @param url The URL to be shortened.
-     * @param data The optional properties for the short URL.
      * @return The created [ShortUrl] entity.
-     * @throws InvalidUrlException if the URL is not valid.
      */
-    fun create(url: String, data: ShortUrlProperties): Mono<ShortUrl>
+    fun create(url: String): Mono<ShortUrl>
 }
 
 /**
  * Implementation of [CreateShortUrlUseCase].
  *
  * Validates the target URL, generates a unique hash for the URL,
- * and saves the resulting short URL along with any provided metadata in the repository.
+ * and saves the resulting short URL in the repository.
  *
  * @property shortUrlRepository The repository service responsible for saving and retrieving short URLs.
  * @property hashService The service responsible for generating a unique hash for the URL.
@@ -35,22 +33,20 @@ class CreateShortUrlUseCaseImpl(
     private val hashService: HashService
 ) : CreateShortUrlUseCase {
     /**
-     * Creates a short URL for the given URL and optional data.
+     * Creates a short URL for the given URL.
      *
      * @param url The URL to be shortened.
-     * @param data The optional properties for the short URL.
      * @return The created [ShortUrl] entity.
-     * @throws InvalidUrlException if the URL is not valid.
      */
-    override fun create(url: String, data: ShortUrlProperties): Mono<ShortUrl> {
+    override fun create(url: String): Mono<ShortUrl> {
         val id = hashService.generateRandomHash()
         val su = ShortUrl(
             hash = id,
             redirection = Redirection(target = url),
-            properties = data
+            properties = ShortUrlProperties()
         )
 
-        val shortUrl = shortUrlRepository.save(su)
+        val shortUrl = shortUrlRepository.create(su)
         return shortUrl
     }
 }

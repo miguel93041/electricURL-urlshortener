@@ -33,6 +33,30 @@ interface ClickRepositoryService {
      * @return The number of clicks for the specified hash created after the given date and time.
      */
     fun countClicksByHashAfter(hash: String, createdAfter: OffsetDateTime): Mono<Long>
+
+    /**
+     * Updates the geolocation details of a [Click] entity in the repository and clears the cache for
+     * the updated entity.
+     *
+     * This method updates the fields `ip` and `country` of a [Click] identified by its `id` in the database.
+     *
+     * @param id The unique id identifying the [Click] to be updated.
+     * @param geolocation The [GeoLocation] object containing the new geolocation details (IP and country).
+     * @return A [Mono<Void>] indicating the completion of the operation.
+     */
+    fun updateGeolocation(id: Long, geolocation: GeoLocation): Mono<Void>
+
+    /**
+     * Updates the browser and platform details of a [Click] entity in the repository and clears the cache for
+     * the updated entity.
+     *
+     * This method updates the fields `browser` and `platform` of a [Click] identified by its `id` in the database.
+     *
+     * @param id The unique id identifying the [Click] to be updated.
+     * @param geolocation The [GeoLocation] object containing the new browser and platform details.
+     * @return A [Mono<Void>] indicating the completion of the operation.
+     */
+    fun updateBrowserPlatform(id: Long, browserPlatform: BrowserPlatform): Mono<Void>
 }
 
 /**
@@ -48,12 +72,37 @@ interface ShortUrlRepositoryService {
     fun findByKey(id: String): Mono<ShortUrl>
 
     /**
-     * Saves a [ShortUrl] entity to the repository.
+     * Creates a new [ShortUrl] entity to the repository.
      *
-     * @param su The [ShortUrl] entity to be saved.
-     * @return The saved [ShortUrl] entity.
+     * @param su The [ShortUrl] entity to be created.
+     * @return A [Mono] emitting the created [ShortUrl] entity.
      */
-    fun save(su: ShortUrl): Mono<ShortUrl>
+    fun create(su: ShortUrl): Mono<ShortUrl>
+
+    /**
+     * Updates the validation status of a [ShortUrl] entity in the repository.
+     *
+     * This method updates the fields `reachable`, `safe`, and `validated` of a [ShortUrl] identified by its `hash`
+     * in the database.
+     *
+     * @param hash The unique hash identifying the [ShortUrl] to be updated.
+     * @param validation The [ShortUrlValidation] object containing the new validation status.
+     * @return A [Mono<Void>] indicating the completion of the operation.
+     */
+    fun updateValidation(hash: String, validation: ShortUrlValidation): Mono<Void>
+
+    /**
+     * Updates the geolocation details of a [ShortUrl] entity in the repository and clears the cache for
+     * the updated entity.
+     *
+     * This method updates the fields `ip` and `country` of a [ShortUrl] identified by its `hash` in the database.
+     * Additionally, it removes the corresponding cache entry for the given `hash` after a successful update.
+     *
+     * @param hash The unique hash identifying the [ShortUrl] to be updated.
+     * @param geolocation The [GeoLocation] object containing the new geolocation details (IP and country).
+     * @return A [Mono<Void>] indicating the completion of the operation.
+     */
+    fun updateGeolocation(hash: String, geolocation: GeoLocation): Mono<Void>
 }
 
 /**
