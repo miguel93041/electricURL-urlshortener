@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.spring.dependency.management)
     id("org.sonarqube") version "4.4.1.3373" // sonarLint
 }
+
 subprojects {
     apply(plugin = "org.sonarqube") // Apply the plugin to all the folders
 }
