@@ -169,6 +169,8 @@ Redirects a user to the target URL identified by the provided `id` (shortened UR
 
 - **Responses:**
     - `301 Moved Permanently`: Successfully redirects to the target URL.
+    - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
+    - `403 Forbidden`: The `url` is unsafe.
     - `404 Not Found`: The provided `id` does not exist.
     - `429 TOO MANY REQUESTS`: Redirection limit reached for the given URL.
     - `500 Internal Server Error`: Unexpected server error.
@@ -185,6 +187,8 @@ Generates a QR code for the shortened URL identified by id.
 
 - **Responses:**
   - `200 OK`: The QR code image is successfully generated and returned.
+  - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
+  - `403 Forbidden`: The `url` is unsafe.
   - `404 Not Found`: The provided `id` does not exist.
   - `406 Not Acceptable`: The client requested an invalid format for the QR.
   - `500 Internal Server Error`: Unexpected server error.
@@ -203,6 +207,8 @@ Retrieves aggregated analytics data for a shortened URL. You can request breakdo
 
 - **Responses:**
     - `200 OK`: The analytics data is successfully returned.
+    - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
+    - `403 Forbidden`: The `url` is unsafe.
     - `404 Not Found`: The provided `id` does not exist.
     - `406 Not Acceptable`: The client requested an invalid format for the analytics.
     - `500 Internal Server Error`: Unexpected server error.
@@ -219,9 +225,7 @@ Creates a shortened URL from the data sent by a form.
 
 
 - **Responses:**
-    - `201 CREATED`: The `url` was successfully processed.
-    - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
-    - `403 Forbidden`: The `url` is unsafe.
+    - `200 CREATED`: The `url` was successfully processed.
     - `500 Internal Server Error`: Unexpected server error.
 
 ### 6. **Upload CSV and Shorten URLs**
@@ -448,3 +452,38 @@ New tests implemented:
 - checkRedirectionLimit throws when count equals limit 
 - checkRedirectionLimit throws when count exceeds limit 
 - checkRedirectionLimit throws InternalError when an exception occurs inside the service
+
+
+# Third Project Report
+
+Several significant improvements and changes have been implemented in the project to optimize its performance and quality. One of the key updates is that the shortened URL is now generated and returned instantly upon creation, prioritizing response speed. Validation and geolocation tasks are processed asynchronously in the background, ensuring that the user experience is not affected by these additional operations.
+
+Another major change is the migration to a reactive programming model using Spring WebFlux, replacing the previous synchronous logic. This transition involved moving from JPA to R2DBC, a reactive database. This adjustment also required a complete refactoring of the tests to align with the reactive approach.
+
+To enhance performance, caching has been added to all requests made to external APIs and the database. This reduces latency and optimizes resource usage, particularly for recurring or high-demand operations.
+
+Additionally, the Result pattern has been implemented to handle request outcomes more robustly. This approach avoids the unnecessary throwing of unchecked exceptions, improving error management predictability and maintaining a smoother flow of operations.
+
+Regarding code quality, validation tools like SonarCloud and PMD have been integrated. These tools ensure the project meets high standards of quality and best practices. SonarLint, included within SonarCloud, is also used for local analysis during development.
+
+Finally, the geolocation logic has been significantly improved. The system can now extract IP addresses from requests more accurately, validate their authenticity, and detect bogon addresses (IPs invalid for public use). These adjustments ensure greater reliability in geolocation-related functionalities.
+
+These changes not only strengthen the system's performance but also enhance code quality and improve the overall user experience.
+
+# Issues Found
+
+1. **Webflux and testing issues**
+
+   The integration with WebFlux and testing proved to be challenging. When errors occurred, it was difficult to trace their origin because the stack trace was often unclear or incomplete. Additionally, integration tests were being cached inadvertently, which was not intended and caused further complications.
+
+2. **Exceptions**  
+
+   To fully transition away from the exception-based paradigm and implement the Result pattern, large portions of the code had to be rewritten to align with this new approach.
+
+3. **Database issues**
+
+   For the reactive database, it became necessary to create a schema.sql file to define and generate the database schema, as it was not being generated automatically.
+
+4. **Caching**
+
+    Caching was initially implemented using Spring Boot’s default caching library. However, it was eventually rolled back upon discovering that the library operated synchronously. As a result, Caffeine was adopted to provide an asynchronous caching solution.
