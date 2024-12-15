@@ -7,8 +7,12 @@ plugins {
     alias(libs.plugins.spring.boot)
     // Applies the Spring Dependency Management plugin using an alias from the version catalog.
     alias(libs.plugins.spring.dependency.management)
+    id("org.sonarqube") version "4.4.1.3373" // sonarLint
 }
 
+subprojects {
+    apply(plugin = "org.sonarqube") // Apply the plugin to all the folders
+}
 
 dependencies {
     // Core modules

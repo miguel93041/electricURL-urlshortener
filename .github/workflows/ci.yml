@@ -27,7 +27,7 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
       - name: Run SonarQube Analysis
-        run: ./gradlew sonarqube \
+        run: ./gradlew sonar \
           -Dsonar.projectKey=miguel93041_electricURL-urlshortener \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
