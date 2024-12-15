@@ -40,7 +40,38 @@ interface UrlShortenerController {
      */
     fun shortener(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ResponseEntity<ShortUrlDataOut>>
 
+    /**
+     * Generates a QR code for the given short URL.
+     *
+     * @param id Identifier of the short URL.
+     * @param request The HTTP request.
+     * @return A [ResponseEntity] with the QR code image as a PNG image in a byte array format.
+     */
     fun redirectToQrCode(id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>>
+
+    /**
+     * Processes a CSV file containing URLs and generates a CSV with shortened URLs and its QR code URLs if requested.
+     *
+     * @param file The uploaded CSV file containing URLs.
+     * @param request The HTTP request.
+     * @return A [ResponseEntity] with the processed CSV file as a downloadable response.
+     */
+    fun shortenUrlsFromCsv(data: CsvDataIn, request: ServerHttpRequest): Mono<ResponseEntity<Flux<DataBuffer>>>
+
+    /**
+     * Endpoint to retrieve aggregated analytics data for a shortened URL.
+     *
+     * This method provides a way to fetch total clicks and optionally include breakdowns by browser,
+     * country, platform based on the provided query parameters.
+     *
+     * @param id The hash of the shortened URL for which analytics data is requested. (Required)
+     * @param browser Indicates whether to include a breakdown of clicks by browser. Defaults to false. (Optional)
+     * @param country Indicates whether to include a breakdown of clicks by country. Defaults to false. (Optional)
+     * @param platform Indicates whether to include a breakdown of clicks by platform. Defaults to false. (Optional)
+     * @return A ResponseEntity containing the analytics data. Returns 200 OK with the data on success,
+     *         or 404 NOT FOUND if hash is invalid.
+     */
+    fun getAnalytics(id: String, browser: Boolean, country: Boolean, platform: Boolean): Mono<ResponseEntity<Any>>
 }
 
 /**
@@ -128,7 +159,7 @@ class UrlShortenerControllerImpl(
      * @return A [ResponseEntity] with the processed CSV file as a downloadable response.
      */
     @PostMapping("/api/upload-csv", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun shortenUrlsFromCsv(data: CsvDataIn, request: ServerHttpRequest): Mono<ResponseEntity<Flux<DataBuffer>>> {
+    override fun shortenUrlsFromCsv(data: CsvDataIn, request: ServerHttpRequest): Mono<ResponseEntity<Flux<DataBuffer>>> {
         return csvService.process(data, request)
             .map { result ->
                 result.fold(
@@ -182,7 +213,7 @@ class UrlShortenerControllerImpl(
      *         or 404 NOT FOUND if hash is invalid.
      */
     @GetMapping("/api/analytics", produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getAnalytics(
+    override fun getAnalytics(
         @RequestParam id: String,
         @RequestParam(required = false, defaultValue = "false") browser: Boolean,
         @RequestParam(required = false, defaultValue = "false") country: Boolean,
