@@ -75,7 +75,7 @@ class HashValidatorServiceImpl(
      */
     override fun validate(hash: String): Mono<Result<Unit, HashError>> {
         if (!isValidHash(hash)) {
-            Mono.just(Err(HashError.InvalidFormat))
+            return Mono.just(Err(HashError.InvalidFormat))
         }
 
         return shortUrlRepositoryService.findByKey(hash)

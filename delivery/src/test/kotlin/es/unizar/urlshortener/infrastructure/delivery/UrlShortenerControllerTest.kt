@@ -35,8 +35,7 @@ import java.util.stream.Stream
 @WebFluxTest(UrlShortenerControllerImpl::class)
 @ContextConfiguration(
     classes = [
-        UrlShortenerControllerImpl::class,
-        RestResponseEntityExceptionHandler::class
+        UrlShortenerControllerImpl::class
     ]
 )
 class UrlShortenerControllerTest {
