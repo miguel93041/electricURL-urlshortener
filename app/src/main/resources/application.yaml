@@ -9,6 +9,6 @@ spring:
   sql:
     init:
       schema-locations: classpath:schema.sql
-      mode: always  # Siempre inicializa el esquema al arrancar
+      mode: always
   cache:
     type: caffeine
