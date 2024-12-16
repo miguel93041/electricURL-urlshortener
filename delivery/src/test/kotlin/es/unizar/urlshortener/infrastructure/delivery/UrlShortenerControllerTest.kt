@@ -170,39 +170,13 @@ class UrlShortenerControllerTest {
     @Test
     fun `shortener - creates a shortUrl without QR`() {
         val inputData = ShortUrlDataIn(rawUrl = VALID_URL)
-        val outputData = ShortUrlDataOut(shortUrl = URI(LOCALHOST_URL))
-
-        `when`(generateShortUrlServiceImpl.generate(eq(inputData), any())).thenReturn(Mono.just(outputData))
-
-        webTestClient.post()
-            .uri(LINK_ENDPOINT)
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .bodyValue("rawUrl=http://validurl.com")
-            .exchange()
-            .expectStatus().isCreated
-            .expectHeader().valueEquals(HttpHeaders.LOCATION, LOCALHOST_URL)
-            .expectBody()
-            .jsonPath(SHORTURL_PATH).isEqualTo(LOCALHOST_URL)
-            .jsonPath(QRCODEURL_PATH).doesNotExist()
+        createShortUrlWithoutQr("http://validurl.com", inputData)
     }
 
     @Test
     fun `shortener - creates a shortUrl without QR explicitly`() {
         val inputData = ShortUrlDataIn(rawUrl = VALID_URL, qrRequested = false)
-        val outputData = ShortUrlDataOut(shortUrl = URI(LOCALHOST_URL))
-
-        `when`(generateShortUrlServiceImpl.generate(eq(inputData), any())).thenReturn(Mono.just(outputData))
-
-        webTestClient.post()
-            .uri(LINK_ENDPOINT)
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .bodyValue("rawUrl=http://validurl.com&qrRequested=false")
-            .exchange()
-            .expectStatus().isCreated
-            .expectHeader().valueEquals(HttpHeaders.LOCATION, LOCALHOST_URL)
-            .expectBody()
-            .jsonPath(SHORTURL_PATH).isEqualTo(LOCALHOST_URL)
-            .jsonPath(QRCODEURL_PATH).doesNotExist()
+        createShortUrlWithoutQr("http://validurl.com&qrRequested=false", inputData)
     }
 
     @Test
@@ -489,6 +463,23 @@ class UrlShortenerControllerTest {
             .exchange()
             .expectStatus().isForbidden
             .expectBody(String::class.java).isEqualTo(ORIGINAL_URL_UNSAFE)
+    }
+
+    private fun createShortUrlWithoutQr(rawUrl: String, inputData: ShortUrlDataIn) {
+        val outputData = ShortUrlDataOut(shortUrl = URI(LOCALHOST_URL))
+
+        `when`(generateShortUrlServiceImpl.generate(eq(inputData), any())).thenReturn(Mono.just(outputData))
+
+        webTestClient.post()
+            .uri(LINK_ENDPOINT)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .bodyValue("rawUrl=$rawUrl")
+            .exchange()
+            .expectStatus().isCreated
+            .expectHeader().valueEquals(HttpHeaders.LOCATION, LOCALHOST_URL)
+            .expectBody()
+            .jsonPath(SHORTURL_PATH).isEqualTo(LOCALHOST_URL)
+            .jsonPath(QRCODEURL_PATH).doesNotExist()
     }
 
     companion object {
