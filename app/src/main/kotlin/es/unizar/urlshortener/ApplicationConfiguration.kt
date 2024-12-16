@@ -1,8 +1,6 @@
 @file:Suppress("WildcardImport", "MagicNumber", "LongParameterList")
 package es.unizar.urlshortener
 
-import RedirectionLimitUseCase
-import RedirectionLimitUseCaseImpl
 import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.zxing.qrcode.QRCodeWriter

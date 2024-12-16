@@ -7,6 +7,9 @@ plugins {
     alias(libs.plugins.spring.boot)
     // Applies the Spring Dependency Management plugin using an alias from the version catalog.
     alias(libs.plugins.spring.dependency.management)
+
+    // Apply jacoco plugin
+    id("jacoco")
 }
 
 dependencies {

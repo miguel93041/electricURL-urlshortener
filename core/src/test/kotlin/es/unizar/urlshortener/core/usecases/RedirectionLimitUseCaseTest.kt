@@ -2,7 +2,6 @@
 
 package es.unizar.urlshortener.core.usecases
 
-import RedirectionLimitUseCaseImpl
 import es.unizar.urlshortener.core.ClickRepositoryService
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach

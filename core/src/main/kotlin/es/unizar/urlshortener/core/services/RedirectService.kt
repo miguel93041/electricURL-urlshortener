@@ -2,12 +2,12 @@
 
 package es.unizar.urlshortener.core.services
 
-import RedirectionLimitUseCase
 import com.github.michaelbull.result.*
 import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.usecases.BrowserPlatformIdentificationUseCase
 import es.unizar.urlshortener.core.usecases.LogClickUseCase
 import es.unizar.urlshortener.core.usecases.RedirectUseCase
+import es.unizar.urlshortener.core.usecases.RedirectionLimitUseCase
 import org.springframework.http.server.reactive.ServerHttpRequest
 import reactor.core.publisher.Mono
 
