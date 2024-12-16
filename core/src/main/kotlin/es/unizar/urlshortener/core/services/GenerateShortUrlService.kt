@@ -5,6 +5,7 @@ package es.unizar.urlshortener.core.services
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrapError
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.queues.GeolocationChannelService
 import es.unizar.urlshortener.core.usecases.CreateShortUrlUseCase
 import org.springframework.http.server.reactive.ServerHttpRequest
 import reactor.core.publisher.Mono
@@ -33,9 +34,9 @@ fun interface GenerateShortUrlService {
 class GenerateShortUrlServiceImpl(
     private val urlValidatorService: UrlValidatorService,
     private val createShortUrlUseCase: CreateShortUrlUseCase,
-    private val geoLocationService: GeoLocationService,
     private val shortUrlRepositoryService: ShortUrlRepositoryService,
-    private val baseUrlProvider: BaseUrlProvider
+    private val baseUrlProvider: BaseUrlProvider,
+    private val geolocationChannelService: GeolocationChannelService
 ) : GenerateShortUrlService {
 
     /**
@@ -80,10 +81,7 @@ class GenerateShortUrlServiceImpl(
                 // Enrich Shortened URL in a background task
                 val ipAddress = ClientHostResolver.resolve(request)
                 if (ipAddress != null) {
-                    geoLocationService.get(ipAddress)
-                        .doOnSuccess { geoLocation ->
-                            shortUrlRepositoryService.updateGeolocation(shortUrlModel.hash, geoLocation).subscribe()
-                        }.subscribe()
+                    geolocationChannelService.enqueue(HashEvent(ip=ipAddress, hash=shortUrlModel.hash))
                 }
 
                 Mono.just(ShortUrlDataOut(shortUrl, qrCodeUrl))

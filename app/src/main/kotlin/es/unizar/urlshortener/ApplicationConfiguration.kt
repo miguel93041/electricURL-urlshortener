@@ -5,6 +5,9 @@ import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.zxing.qrcode.QRCodeWriter
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.queues.CoroutineScopeManager
+import es.unizar.urlshortener.core.queues.GeolocationChannelService
+import es.unizar.urlshortener.core.queues.GeolocationConsumerService
 import es.unizar.urlshortener.core.services.*
 import es.unizar.urlshortener.core.usecases.*
 import es.unizar.urlshortener.infrastructure.delivery.HashServiceImpl
@@ -151,7 +154,7 @@ class ApplicationConfiguration(
     }
 
     /**
-     * Provides an implementation of the GeoLocationService.
+     * Provides an implementation of thez GeoLocationService.
      * @return an instance of GeoLocationServiceImpl.
      */
     @Bean
@@ -161,6 +164,7 @@ class ApplicationConfiguration(
     ): GeoLocationService {
         return GeoLocationServiceImpl(webClient, dotEnv, cache)
     }
+
 
     /**
      * Provides a Parser.
@@ -214,16 +218,16 @@ class ApplicationConfiguration(
     fun generateShortUrlService(
         urlValidatorService: UrlValidatorService,
         createShortUrlUseCase: CreateShortUrlUseCase,
-        geoLocationService: GeoLocationService,
         shortUrlRepositoryService: ShortUrlRepositoryService,
-        baseUrlProvider: BaseUrlProvider
+        baseUrlProvider: BaseUrlProvider,
+        geolocationChannelService: GeolocationChannelService
     ): GenerateShortUrlService {
         return GenerateShortUrlServiceImpl(
             urlValidatorService,
             createShortUrlUseCase,
-            geoLocationService,
             shortUrlRepositoryService,
-            baseUrlProvider
+            baseUrlProvider,
+            geolocationChannelService,
         )
     }
 
@@ -316,4 +320,20 @@ class ApplicationConfiguration(
             .maximumSize(1000)
             .buildAsync()
     }
+
+    @Bean
+    fun coroutineScopeManager() = CoroutineScopeManager()
+
+    @Bean
+    fun geolocationChannelService() = GeolocationChannelService(queueCapacity=10000)
+
+    @Bean
+    fun geolocationConsumerService(
+        channelService: GeolocationChannelService,
+        geoLocationService: GeoLocationService,
+        clickRepositoryService: ClickRepositoryService,
+        shortUrlRepositoryService: ShortUrlRepositoryService,
+        coroutineScopeManager: CoroutineScopeManager) =
+        GeolocationConsumerService(channelService,
+        geoLocationService, clickRepositoryService, shortUrlRepositoryService, coroutineScopeManager)
 }

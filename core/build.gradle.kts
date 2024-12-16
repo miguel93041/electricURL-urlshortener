@@ -23,6 +23,7 @@ dependencies {
     // kotlin-result for functional programming support
     implementation(libs.kotlin.result)
     implementation(libs.caffeine)
+    implementation(libs.kotlinx.coroutines.core)
 
     // Test dependencies
     testImplementation(libs.kotlin.test)               // Kotlin test utilities
