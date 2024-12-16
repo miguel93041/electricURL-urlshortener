@@ -41,10 +41,12 @@ class UrlSafetyServiceImpl(
         }
     }
 
+    /**
+     * Clears all entries from the cache by invalidating them synchronously.
+     */
     fun clearCache() {
         cache.synchronous().invalidateAll()
     }
-
 
     /**
      * Fetches the safety status of a URL from the Google Safe Browsing API.

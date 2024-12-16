@@ -102,7 +102,7 @@ class HashValidatorServiceImplTest {
         val result = validator.validate(hash).block()
         assertTrue(result!!.isOk && result.value == Unit)
     }
-    
+
     companion object {
         const val URL = "http://example.com"
     }

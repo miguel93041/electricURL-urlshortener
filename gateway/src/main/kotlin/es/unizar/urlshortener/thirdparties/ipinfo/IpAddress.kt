@@ -1,5 +1,15 @@
 package es.unizar.urlshortener.thirdparties.ipinfo
 
+/**
+ * [IpAddress] is a utility class that represents an IP address and provides methods
+ * to validate its format and classify it as IPv4, IPv6, or bogon.
+ *
+ * @property ip The string representation of the IP address.
+ * @property isValid Indicates whether the IP address is valid as either IPv4 or IPv6.
+ * @property isIPv4 Checks if the IP address matches the IPv4 format.
+ * @property isIPv6 Checks if the IP address matches the IPv6 format.
+ * @property isBogon Identifies if the IP address is a bogon (special-use address).
+ */
 class IpAddress(
     val ip: String
 ) {

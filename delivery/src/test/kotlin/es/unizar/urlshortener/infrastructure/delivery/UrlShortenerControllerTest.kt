@@ -219,7 +219,7 @@ class UrlShortenerControllerTest {
     @Test
     fun `redirectToQrCode - returns png`() {
         val shortId = "abc123"
-        val qrBytes = byteArrayOf(1, 2, 3, 4) // contenido simulado
+        val qrBytes = byteArrayOf(1, 2, 3, 4)
 
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Ok(qrBytes)))
 
@@ -231,7 +231,6 @@ class UrlShortenerControllerTest {
             .expectHeader().contentType("image/png")
             .expectBody()
             .consumeWith { response ->
-                // verificar el contenido (opcional)
                 assert(response.responseBody!!.isNotEmpty())
             }
     }

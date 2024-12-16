@@ -14,6 +14,16 @@ import reactor.core.publisher.Mono
 import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
 
+/**
+ * [ClickRepositoryServiceImpl] is an implementation of the [ClickRepositoryService] interface.
+ * It manages operations related to [Click] entities, such as retrieving, saving,
+ * and updating details like geolocation and browser/platform data.
+ * This class uses a database repository and a cache to optimize performance.
+ *
+ * @property clickEntityRepository The repository for database access to [Click] entities.
+ * @property entityTemplate A reactive template for custom database queries.
+ * @property cache An asynchronous cache for storing and retrieving click data efficiently.
+ */
 class ClickRepositoryServiceImpl(
     private val clickEntityRepository: ClickEntityRepository,
     private val entityTemplate: R2dbcEntityTemplate,
@@ -81,7 +91,7 @@ class ClickRepositoryServiceImpl(
      *
      * @param id The unique id identifying the [Click] to be updated.
      * @param geolocation The [GeoLocation] object containing the new geolocation details (IP and country).
-     * @return A [Mono<Unit>] indicating the completion of the operation.
+     * @return A [Mono<Void>] indicating the completion of the operation.
      */
     override fun updateGeolocation(id: Long, geolocation: GeoLocation): Mono<Void> {
         return entityTemplate.update(ClickEntity::class.java)
@@ -116,8 +126,8 @@ class ClickRepositoryServiceImpl(
      * This method updates the fields `browser` and `platform` of a [Click] identified by its `id` in the database.
      *
      * @param id The unique id identifying the [Click] to be updated.
-     * @param geolocation The [GeoLocation] object containing the new browser and platform details.
-     * @return A [Mono<Unit>] indicating the completion of the operation.
+     * @param browserPlatform The [BrowserPlatform] object containing the new browser and platform details.
+     * @return A [Mono<Void>] indicating the completion of the operation.
      */
     override fun updateBrowserPlatform(id: Long, browserPlatform: BrowserPlatform): Mono<Void> {
         return entityTemplate.update(ClickEntity::class.java)
@@ -147,11 +157,24 @@ class ClickRepositoryServiceImpl(
             .then()
     }
 
+    /**
+     * Clears all entries from the cache by invalidating them synchronously.
+     */
     fun clearCache() {
         cache.synchronous().invalidateAll()
     }
 }
 
+/**
+ * [ShortUrlRepositoryServiceImpl] is an implementation of the [ShortUrlRepositoryService] interface.
+ * It handles operations related to [ShortUrl] entities, including fetching by key,
+ * creating new entries, and updating validation or geolocation details.
+ * The class leverages a database repository and an asynchronous cache for performance.
+ *
+ * @property shortUrlEntityRepository The repository for database access to [ShortUrl] entities.
+ * @property entityTemplate A reactive template for executing custom database operations.
+ * @property cache An asynchronous cache for quick access to [ShortUrl] data.
+ */
 class ShortUrlRepositoryServiceImpl(
     private val shortUrlEntityRepository: ShortUrlEntityRepository,
     private val entityTemplate: R2dbcEntityTemplate,
@@ -207,7 +230,7 @@ class ShortUrlRepositoryServiceImpl(
      *
      * @param hash The unique hash identifying the [ShortUrl] to be updated.
      * @param validation The [ShortUrlValidation] object containing the new validation status.
-     * @return A [Mono<Unit>] indicating the completion of the operation.
+     * @return A [Mono<Void>] indicating the completion of the operation.
      */
     override fun updateValidation(hash: String, validation: ShortUrlValidation): Mono<Void> {
          return entityTemplate.update(ShortUrlEntity::class.java)
@@ -234,7 +257,7 @@ class ShortUrlRepositoryServiceImpl(
      *
      * @param hash The unique hash identifying the [ShortUrl] to be updated.
      * @param geolocation The [GeoLocation] object containing the new geolocation details (IP and country).
-     * @return A [Mono<Unit>] indicating the completion of the operation.
+     * @return A [Mono<Void>] indicating the completion of the operation.
      */
     override fun updateGeolocation(hash: String, geolocation: GeoLocation): Mono<Void> {
         return entityTemplate.update(ShortUrlEntity::class.java)
@@ -251,7 +274,10 @@ class ShortUrlRepositoryServiceImpl(
             .then()
     }
 
+    /**
+     * Clears all entries from the cache by invalidating them synchronously.
+     */
     fun clearCache() {
-        cache.synchronous().invalidateAll() // Invalida toda la caché
+        cache.synchronous().invalidateAll()
     }
 }

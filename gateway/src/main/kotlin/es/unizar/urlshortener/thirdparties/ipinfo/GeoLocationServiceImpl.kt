@@ -1,4 +1,4 @@
-@file:Suppress("ForbiddenComment", "ReturnCount")
+@file:Suppress("ReturnCount")
 package es.unizar.urlshortener.thirdparties.ipinfo
 
 import com.github.benmanes.caffeine.cache.AsyncCache
@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture
  *
  * @property webClient The WebClient instance used for HTTP communication.
  * @param dotenv The dotenv library instance for loading API keys and other configurations.
+ * @param cache The cache used to store geographical information associated with IP addresses.
  */
 class GeoLocationServiceImpl(
     private val webClient: WebClient,
@@ -43,6 +44,9 @@ class GeoLocationServiceImpl(
         }
     }
 
+    /**
+     * Clears all entries from the cache by invalidating them synchronously.
+     */
     fun clearCache() {
         cache.synchronous().invalidateAll()
     }

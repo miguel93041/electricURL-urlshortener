@@ -27,7 +27,7 @@ interface UrlShortenerController {
      *
      * @param id Identifier of the short URL.
      * @param request The HTTP request containing client details.
-     * @return A [ResponseEntity] with redirection information.
+     * @return A [Mono] emitting a [ResponseEntity] with redirection information.
      */
     fun redirectTo(id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>>
 
@@ -36,7 +36,7 @@ interface UrlShortenerController {
      *
      * @param data Input data containing the original URL and optional metadata.
      * @param request The HTTP request for capturing client context.
-     * @return A [ResponseEntity] with the details of the created short URL.
+     * @return A [Mono] emitting a [ResponseEntity] with the details of the created short URL.
      */
     fun shortener(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ResponseEntity<ShortUrlDataOut>>
 
@@ -45,16 +45,16 @@ interface UrlShortenerController {
      *
      * @param id Identifier of the short URL.
      * @param request The HTTP request.
-     * @return A [ResponseEntity] with the QR code image as a PNG image in a byte array format.
+     * @return A [Mono] emitting a [ResponseEntity] with the QR code image as a PNG image in a byte array format.
      */
     fun redirectToQrCode(id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>>
 
     /**
      * Processes a CSV file containing URLs and generates a CSV with shortened URLs and its QR code URLs if requested.
      *
-     * @param file The uploaded CSV file containing URLs.
+     * @param data The uploaded CSV file containing URLs.
      * @param request The HTTP request.
-     * @return A [ResponseEntity] with the processed CSV file as a downloadable response.
+     * @return A [Mono] emitting a [ResponseEntity] with the processed CSV file as a downloadable response.
      */
     fun shortenUrlsFromCsv(data: CsvDataIn, request: ServerHttpRequest): Mono<ResponseEntity<Flux<DataBuffer>>>
 
@@ -75,7 +75,14 @@ interface UrlShortenerController {
 }
 
 /**
- * The implementation of the controller.
+ * [UrlShortenerControllerImpl] is an implementation of the [UrlShortenerController] interface.
+ * This controller handles URL shortening, redirection, QR code generation, CSV processing, and analytics.
+ *
+ * @param csvService The service responsible for processing CSV files with URLs.
+ * @param analyticsService The service for handling analytics data related to shortened URLs.
+ * @param generateShortUrlServiceImpl The service for generating shortened URLs.
+ * @param redirectService The service managing URL redirection and click logging.
+ * @param qrService The service for generating QR codes associated with shortened URLs.
  */
 @Suppress("LongParameterList")
 @RestController
@@ -92,7 +99,7 @@ class UrlShortenerControllerImpl(
      *
      * @param id the identifier of the short url
      * @param request the HTTP request
-     * @return a ResponseEntity with the redirection details
+     * @return A [Mono] emitting a [ResponseEntity] with redirection information.
      */
     @GetMapping("/{id:(?!api|index|favicon\\.ico).*}")
     override fun redirectTo(@PathVariable id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>> {
@@ -128,7 +135,7 @@ class UrlShortenerControllerImpl(
      *
      * @param id Identifier of the short URL.
      * @param request The HTTP request.
-     * @return A [ResponseEntity] with the QR code image as a PNG image in a byte array format.
+     * @return A [Mono] emitting a [ResponseEntity] with the QR code image as a PNG image in a byte array format.
      */
     @GetMapping("/api/qr", produces = [MediaType.IMAGE_PNG_VALUE])
     override fun redirectToQrCode(@RequestParam id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>> {
@@ -160,9 +167,9 @@ class UrlShortenerControllerImpl(
     /**
      * Processes a CSV file containing URLs and generates a CSV with shortened URLs and its QR code URLs if requested.
      *
-     * @param file The uploaded CSV file containing URLs.
+     * @param data The uploaded CSV file containing URLs.
      * @param request The HTTP request.
-     * @return A [ResponseEntity] with the processed CSV file as a downloadable response.
+     * @return A [Mono] emitting a [ResponseEntity] with the processed CSV file as a downloadable response.
      */
     @PostMapping("/api/upload-csv", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     override fun shortenUrlsFromCsv(
@@ -251,7 +258,7 @@ class UrlShortenerControllerImpl(
                 )
             }
     }
-    
+
     companion object {
         const val INVALID_HASH_FORMAT = "Invalid shortened hash format"
         const val HASH_DONT_EXIST = "The given shortened hash does not exist"
