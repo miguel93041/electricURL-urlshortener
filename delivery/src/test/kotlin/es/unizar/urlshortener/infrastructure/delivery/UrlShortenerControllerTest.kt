@@ -2,7 +2,6 @@
 
 package es.unizar.urlshortener.infrastructure.delivery
 
-
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import es.unizar.urlshortener.core.*
@@ -82,7 +81,7 @@ class UrlShortenerControllerTest {
             .exchange()
             .expectStatus().isNotFound
             .expectBody(String::class.java)
-            .isEqualTo("The given shortened hash does not exist")
+            .isEqualTo(HASH_DONT_EXIST)
     }
 
     @Test
@@ -96,7 +95,7 @@ class UrlShortenerControllerTest {
             .uri("/$shortId")
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody(String::class.java).isEqualTo("Invalid shortened hash format")
+            .expectBody(String::class.java).isEqualTo(INVALID_HASH_FORMAT)
     }
 
     @Test
@@ -125,7 +124,7 @@ class UrlShortenerControllerTest {
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
-            .isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
+            .isEqualTo(HASH_VALIDATING)
     }
 
     @Test
@@ -139,7 +138,7 @@ class UrlShortenerControllerTest {
             .uri("/$shortId")
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody(String::class.java).isEqualTo("The original url is unreachable")
+            .expectBody(String::class.java).isEqualTo(ORIGINAL_URL_UNREACHABLE)
     }
 
     @Test
@@ -153,7 +152,7 @@ class UrlShortenerControllerTest {
             .uri("/$shortId")
             .exchange()
             .expectStatus().isForbidden
-            .expectBody(String::class.java).isEqualTo("The original url is unsafe")
+            .expectBody(String::class.java).isEqualTo(ORIGINAL_URL_UNSAFE)
     }
 
     @Test
@@ -170,61 +169,61 @@ class UrlShortenerControllerTest {
 
     @Test
     fun `shortener - creates a shortUrl without QR`() {
-        val inputData = ShortUrlDataIn(rawUrl = "http://validurl.com")
-        val outputData = ShortUrlDataOut(shortUrl = URI("http://localhost/abc123"))
+        val inputData = ShortUrlDataIn(rawUrl = VALID_URL)
+        val outputData = ShortUrlDataOut(shortUrl = URI(LOCALHOST_URL))
 
         `when`(generateShortUrlServiceImpl.generate(eq(inputData), any())).thenReturn(Mono.just(outputData))
 
         webTestClient.post()
-            .uri("/api/link")
+            .uri(LINK_ENDPOINT)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .bodyValue("rawUrl=http://validurl.com")
             .exchange()
             .expectStatus().isCreated
-            .expectHeader().valueEquals(HttpHeaders.LOCATION, "http://localhost/abc123")
+            .expectHeader().valueEquals(HttpHeaders.LOCATION, LOCALHOST_URL)
             .expectBody()
-            .jsonPath("$.shortUrl").isEqualTo("http://localhost/abc123")
-            .jsonPath("$.qrCodeUrl").doesNotExist()
+            .jsonPath(SHORTURL_PATH).isEqualTo(LOCALHOST_URL)
+            .jsonPath(QRCODEURL_PATH).doesNotExist()
     }
 
     @Test
     fun `shortener - creates a shortUrl without QR explicitly`() {
-        val inputData = ShortUrlDataIn(rawUrl = "http://validurl.com", qrRequested = false)
-        val outputData = ShortUrlDataOut(shortUrl = URI("http://localhost/abc123"))
+        val inputData = ShortUrlDataIn(rawUrl = VALID_URL, qrRequested = false)
+        val outputData = ShortUrlDataOut(shortUrl = URI(LOCALHOST_URL))
 
         `when`(generateShortUrlServiceImpl.generate(eq(inputData), any())).thenReturn(Mono.just(outputData))
 
         webTestClient.post()
-            .uri("/api/link")
+            .uri(LINK_ENDPOINT)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .bodyValue("rawUrl=http://validurl.com&qrRequested=false")
             .exchange()
             .expectStatus().isCreated
-            .expectHeader().valueEquals(HttpHeaders.LOCATION, "http://localhost/abc123")
+            .expectHeader().valueEquals(HttpHeaders.LOCATION, LOCALHOST_URL)
             .expectBody()
-            .jsonPath("$.shortUrl").isEqualTo("http://localhost/abc123")
-            .jsonPath("$.qrCodeUrl").doesNotExist()
+            .jsonPath(SHORTURL_PATH).isEqualTo(LOCALHOST_URL)
+            .jsonPath(QRCODEURL_PATH).doesNotExist()
     }
 
     @Test
     fun `shortener - creates a shortUrl with QR url`() {
-        val inputData = ShortUrlDataIn(rawUrl = "http://validurl.com", qrRequested = true)
+        val inputData = ShortUrlDataIn(rawUrl = VALID_URL, qrRequested = true)
         val outputData = ShortUrlDataOut(
-            shortUrl = URI("http://localhost/abc123"), qrCodeUrl = URI("http://localhost/api/qr?id=abc123")
+            shortUrl = URI(LOCALHOST_URL), qrCodeUrl = URI("http://localhost/api/qr?id=abc123")
         )
 
         `when`(generateShortUrlServiceImpl.generate(eq(inputData), any())).thenReturn(Mono.just(outputData))
 
         webTestClient.post()
-            .uri("/api/link")
+            .uri(LINK_ENDPOINT)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .bodyValue("rawUrl=http://validurl.com&qrRequested=true")
             .exchange()
             .expectStatus().isCreated
-            .expectHeader().valueEquals(HttpHeaders.LOCATION, "http://localhost/abc123")
+            .expectHeader().valueEquals(HttpHeaders.LOCATION, LOCALHOST_URL)
             .expectBody()
-            .jsonPath("$.shortUrl").isEqualTo("http://localhost/abc123")
-            .jsonPath("$.qrCodeUrl").isEqualTo("http://localhost/api/qr?id=abc123")
+            .jsonPath(SHORTURL_PATH).isEqualTo(LOCALHOST_URL)
+            .jsonPath(QRCODEURL_PATH).isEqualTo("http://localhost/api/qr?id=abc123")
     }
 
     @Test
@@ -232,15 +231,15 @@ class UrlShortenerControllerTest {
         `when`(generateShortUrlServiceImpl.generate(any(), any())).thenReturn(Mono.error(Exception("Error")))
 
         webTestClient.post()
-            .uri("/api/link")
+            .uri(LINK_ENDPOINT)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .bodyValue("rawUrl=http://validurl.com&qrRequested=true")
             .exchange()
             .expectStatus().is5xxServerError
             .expectHeader().doesNotExist(HttpHeaders.LOCATION)
             .expectBody()
-            .jsonPath("$.shortUrl").doesNotExist()
-            .jsonPath("$.qrCodeUrl").doesNotExist()
+            .jsonPath(SHORTURL_PATH).doesNotExist()
+            .jsonPath(QRCODEURL_PATH).doesNotExist()
     }
 
     @Test
@@ -251,7 +250,7 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Ok(qrBytes)))
 
         webTestClient.get().uri { uriBuilder ->
-            uriBuilder.path("/api/qr").queryParam("id", shortId).build()
+            uriBuilder.path(QR_ENDPOINT).queryParam("id", shortId).build()
         }
             .exchange()
             .expectStatus().isOk
@@ -269,10 +268,10 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.NotFound)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(QR_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isNotFound
-            .expectBody(String::class.java).isEqualTo("The given shortened hash does not exist")
+            .expectBody(String::class.java).isEqualTo(HASH_DONT_EXIST)
     }
 
     @Test
@@ -281,10 +280,10 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.InvalidFormat)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(QR_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody(String::class.java).isEqualTo("Invalid shortened hash format")
+            .expectBody(String::class.java).isEqualTo(INVALID_HASH_FORMAT)
     }
 
     @Test
@@ -293,11 +292,11 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.NotValidated)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(QR_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
-            .isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
+            .isEqualTo(HASH_VALIDATING)
     }
 
     @Test
@@ -306,10 +305,10 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.Unreachable)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(QR_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody(String::class.java).isEqualTo("The original url is unreachable")
+            .expectBody(String::class.java).isEqualTo(ORIGINAL_URL_UNREACHABLE)
     }
 
     @Test
@@ -318,10 +317,10 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.Unsafe)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(QR_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isForbidden
-            .expectBody(String::class.java).isEqualTo("The original url is unsafe")
+            .expectBody(String::class.java).isEqualTo(ORIGINAL_URL_UNSAFE)
     }
 
     @Test
@@ -330,7 +329,7 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.error(Exception("Error")))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(QR_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().is5xxServerError
     }
@@ -376,20 +375,6 @@ class UrlShortenerControllerTest {
             .isEqualTo("Invalid CSV format")
     }
 
-    companion object {
-        @JvmStatic
-        fun booleanPermutations(): Stream<Arguments> = Stream.of(
-            arguments(false, false, false),
-            arguments(false, false, true),
-            arguments(false, true, false),
-            arguments(false, true, true),
-            arguments(true, false, false),
-            arguments(true, false, true),
-            arguments(true, true, false),
-            arguments(true, true, true)
-        )
-    }
-
     @ParameterizedTest(name = "getAnalytics with browser={0}, country={1}, platform={2}")
     @MethodSource("booleanPermutations")
     fun `getAnalytics - all boolean permutations`(browser: Boolean, country: Boolean, platform: Boolean) {
@@ -411,7 +396,7 @@ class UrlShortenerControllerTest {
 
         webTestClient.get()
             .uri { builder ->
-                builder.path("/api/analytics")
+                builder.path(ANALYTICS_ENDPOINT)
                     .queryParam("id", shortId)
                     .queryParam("browser", browser)
                     .queryParam("country", country)
@@ -451,10 +436,10 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.NotFound)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isNotFound
-            .expectBody(String::class.java).isEqualTo("The given shortened hash does not exist")
+            .expectBody(String::class.java).isEqualTo(HASH_DONT_EXIST)
     }
 
     @Test
@@ -463,10 +448,10 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.InvalidFormat)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody(String::class.java).isEqualTo("Invalid shortened hash format")
+            .expectBody(String::class.java).isEqualTo(INVALID_HASH_FORMAT)
     }
 
     @Test
@@ -475,11 +460,11 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.NotValidated)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
-            .isEqualTo("This shortened hash is still being validated. Wait a few seconds and try again")
+            .isEqualTo(HASH_VALIDATING)
     }
 
     @Test
@@ -488,10 +473,10 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.Unreachable)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
-            .expectBody(String::class.java).isEqualTo("The original url is unreachable")
+            .expectBody(String::class.java).isEqualTo(ORIGINAL_URL_UNREACHABLE)
     }
 
     @Test
@@ -500,9 +485,36 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.Unsafe)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(ANALYTICS_ENDPOINT).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isForbidden
-            .expectBody(String::class.java).isEqualTo("The original url is unsafe")
+            .expectBody(String::class.java).isEqualTo(ORIGINAL_URL_UNSAFE)
+    }
+
+    companion object {
+        @JvmStatic
+        fun booleanPermutations(): Stream<Arguments> = Stream.of(
+            arguments(false, false, false),
+            arguments(false, false, true),
+            arguments(false, true, false),
+            arguments(false, true, true),
+            arguments(true, false, false),
+            arguments(true, false, true),
+            arguments(true, true, false),
+            arguments(true, true, true)
+        )
+
+        const val LINK_ENDPOINT = "/api/link"
+        const val QR_ENDPOINT = "/api/qr"
+        const val ANALYTICS_ENDPOINT = "/api/analytics"
+        const val INVALID_HASH_FORMAT = "Invalid shortened hash format"
+        const val HASH_DONT_EXIST = "The given shortened hash does not exist"
+        const val HASH_VALIDATING = "This shortened hash is still being validated. Wait a few seconds and try again"
+        const val ORIGINAL_URL_UNREACHABLE = "The original url is unreachable"
+        const val ORIGINAL_URL_UNSAFE = "The original url is unsafe"
+        const val VALID_URL = "http://validurl.com"
+        const val LOCALHOST_URL = "http://localhost/abc123"
+        const val SHORTURL_PATH = "$.shortUrl"
+        const val QRCODEURL_PATH = "$.qrCodeUrl"
     }
 }

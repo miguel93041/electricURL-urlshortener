@@ -21,7 +21,7 @@ class CreateQRUseCaseTest {
 
     @Test
     fun `should create QR code successfully when given a valid URL and size`() {
-        val url = "https://example.com"
+        val url = URL
         val size = 300
 
         val bitMatrix = BitMatrix(size, size)
@@ -37,7 +37,7 @@ class CreateQRUseCaseTest {
 
     @Test
     fun `should generate a PNG format QR code`() {
-        val url = "https://example.com"
+        val url = URL
         val size = 300
 
         val bitMatrix = BitMatrix(size, size)
@@ -56,7 +56,7 @@ class CreateQRUseCaseTest {
 
     @Test
     fun `should return QR code with correct size`() {
-        val url = "https://example.com"
+        val url = URL
         val size = 300
 
         val bitMatrix = BitMatrix(size, size)
@@ -67,5 +67,9 @@ class CreateQRUseCaseTest {
         val image = ImageIO.read(qrCodeBytes.inputStream())
         assertEquals(size, image.width)
         assertEquals(size, image.height)
+    }
+
+    companion object {
+        const val URL = "https://example.com"
     }
 }

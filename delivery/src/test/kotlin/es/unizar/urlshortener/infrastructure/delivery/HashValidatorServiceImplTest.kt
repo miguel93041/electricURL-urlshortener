@@ -52,7 +52,7 @@ class HashValidatorServiceImplTest {
         val hash = "abcdef12"
         val shortUrl = ShortUrl(
             hash = hash,
-            redirection = Redirection("http://example.com"),
+            redirection = Redirection(URL),
             properties = ShortUrlProperties(validation = ShortUrlValidation(false, false, false))
         )
         `when`(shortUrlRepositoryService.findByKey(hash)).thenReturn(Mono.just(shortUrl))
@@ -66,7 +66,7 @@ class HashValidatorServiceImplTest {
         val hash = "abcdef12"
         val shortUrl = ShortUrl(
             hash = hash,
-            redirection = Redirection("http://example.com"),
+            redirection = Redirection(URL),
             properties = ShortUrlProperties(validation = ShortUrlValidation(false, false, true))
         )
         `when`(shortUrlRepositoryService.findByKey(hash)).thenReturn(Mono.just(shortUrl))
@@ -80,7 +80,7 @@ class HashValidatorServiceImplTest {
         val hash = "abcdef12"
         val shortUrl = ShortUrl(
             hash = hash,
-            redirection = Redirection("http://example.com"),
+            redirection = Redirection(URL),
             properties = ShortUrlProperties(validation = ShortUrlValidation(true, false, true))
         )
         `when`(shortUrlRepositoryService.findByKey(hash)).thenReturn(Mono.just(shortUrl))
@@ -94,12 +94,16 @@ class HashValidatorServiceImplTest {
         val hash = "abcdef12"
         val shortUrl = ShortUrl(
             hash = hash,
-            redirection = Redirection("http://example.com"),
+            redirection = Redirection(URL),
             properties = ShortUrlProperties(validation = ShortUrlValidation(true, true, true))
         )
         `when`(shortUrlRepositoryService.findByKey(hash)).thenReturn(Mono.just(shortUrl))
 
         val result = validator.validate(hash).block()
         assertTrue(result!!.isOk && result.value == Unit)
+    }
+    
+    companion object {
+        const val URL = "http://example.com"
     }
 }

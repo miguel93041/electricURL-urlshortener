@@ -106,16 +106,16 @@ class UrlShortenerControllerImpl(
                     },
                     failure = { error ->
                         val (status, message) = when (error) {
-                            RedirectionError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
+                            RedirectionError.InvalidFormat -> HttpStatus.BAD_REQUEST to INVALID_HASH_FORMAT
                             RedirectionError.NotFound ->
-                                HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                                HttpStatus.NOT_FOUND to HASH_DONT_EXIST
                             RedirectionError.TooManyRequests ->
                                 HttpStatus.TOO_MANY_REQUESTS to "This shortened hash is under load"
                             RedirectionError.NotValidated ->
                                 HttpStatus.BAD_REQUEST to
-                                        "This shortened hash is still being validated. Wait a few seconds and try again"
-                            RedirectionError.Unreachable -> HttpStatus.BAD_REQUEST to "The original url is unreachable"
-                            RedirectionError.Unsafe -> HttpStatus.FORBIDDEN to "The original url is unsafe"
+                                        HASH_VALIDATING
+                            RedirectionError.Unreachable -> HttpStatus.BAD_REQUEST to ORIGINAL_URL_UNREACHABLE
+                            RedirectionError.Unsafe -> HttpStatus.FORBIDDEN to ORIGINAL_URL_UNSAFE
                         }
                         ResponseEntity<Any>(message, null, status)
                     }
@@ -142,13 +142,13 @@ class UrlShortenerControllerImpl(
                     },
                     failure = { error ->
                         val (status, message) = when (error) {
-                            HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
-                            HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                            HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to INVALID_HASH_FORMAT
+                            HashError.NotFound -> HttpStatus.NOT_FOUND to HASH_DONT_EXIST
                             HashError.NotValidated ->
                                 HttpStatus.BAD_REQUEST to
-                                        "This shortened hash is still being validated. Wait a few seconds and try again"
-                            HashError.Unreachable -> HttpStatus.BAD_REQUEST to "The original url is unreachable"
-                            HashError.Unsafe -> HttpStatus.FORBIDDEN to "The original url is unsafe"
+                                        HASH_VALIDATING
+                            HashError.Unreachable -> HttpStatus.BAD_REQUEST to ORIGINAL_URL_UNREACHABLE
+                            HashError.Unsafe -> HttpStatus.FORBIDDEN to ORIGINAL_URL_UNSAFE
                         }
                         ResponseEntity.status(status).body(message)
                     }
@@ -238,17 +238,25 @@ class UrlShortenerControllerImpl(
                     },
                     failure = { error ->
                         val (status, message) = when (error) {
-                            HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to "Invalid shortened hash format"
-                            HashError.NotFound -> HttpStatus.NOT_FOUND to "The given shortened hash does not exist"
+                            HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to INVALID_HASH_FORMAT
+                            HashError.NotFound -> HttpStatus.NOT_FOUND to HASH_DONT_EXIST
                             HashError.NotValidated ->
                                 HttpStatus.BAD_REQUEST to
-                                        "This shortened hash is still being validated. Wait a few seconds and try again"
-                            HashError.Unreachable -> HttpStatus.BAD_REQUEST to "The original url is unreachable"
-                            HashError.Unsafe -> HttpStatus.FORBIDDEN to "The original url is unsafe"
+                                        HASH_VALIDATING
+                            HashError.Unreachable -> HttpStatus.BAD_REQUEST to ORIGINAL_URL_UNREACHABLE
+                            HashError.Unsafe -> HttpStatus.FORBIDDEN to ORIGINAL_URL_UNSAFE
                         }
                         ResponseEntity.status(status).body(message)
                     }
                 )
             }
+    }
+    
+    companion object {
+        const val INVALID_HASH_FORMAT = "Invalid shortened hash format"
+        const val HASH_DONT_EXIST = "The given shortened hash does not exist"
+        const val HASH_VALIDATING = "This shortened hash is still being validated. Wait a few seconds and try again"
+        const val ORIGINAL_URL_UNREACHABLE = "The original url is unreachable"
+        const val ORIGINAL_URL_UNSAFE = "The original url is unsafe"
     }
 }

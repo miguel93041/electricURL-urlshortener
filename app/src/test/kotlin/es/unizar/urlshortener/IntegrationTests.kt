@@ -484,7 +484,7 @@ class ReactiveIntegrationTest(
             .expectBody(String::class.java)
             .consumeWith { response ->
                 assertThat(response.responseBody).isEqualTo(
-                    "The given shortened hash does not exist"
+                    HASH_DONT_EXIST
                 )
             }
     }
@@ -567,7 +567,7 @@ class ReactiveIntegrationTest(
             .expectStatus().isNotFound
             .expectBody(String::class.java)
             .consumeWith { response ->
-                assertThat(response.responseBody).isEqualTo("The given shortened hash does not exist")
+                assertThat(response.responseBody).isEqualTo(HASH_DONT_EXIST)
             }
     }
 
