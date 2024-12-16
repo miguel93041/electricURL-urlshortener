@@ -57,6 +57,10 @@ class UrlShortenerControllerTest {
     @MockBean
     private lateinit var qrService: QrService
 
+    private var analytics = "/api/analytics"
+
+    private var qr = "/api/qr"
+
     @Test
     fun `redirectTo - redirects with 301`() {
         val shortId = "abc123"
@@ -251,7 +255,7 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Ok(qrBytes)))
 
         webTestClient.get().uri { uriBuilder ->
-            uriBuilder.path("/api/qr").queryParam("id", shortId).build()
+            uriBuilder.path(qr).queryParam("id", shortId).build()
         }
             .exchange()
             .expectStatus().isOk
@@ -269,7 +273,7 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.NotFound)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(qr).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isNotFound
             .expectBody(String::class.java).isEqualTo("The given shortened hash does not exist")
@@ -281,7 +285,7 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.InvalidFormat)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(qr).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java).isEqualTo("Invalid shortened hash format")
@@ -293,7 +297,7 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.NotValidated)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(qr).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
@@ -306,7 +310,7 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.Unreachable)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(qr).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java).isEqualTo("The original url is unreachable")
@@ -318,7 +322,7 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.just(Err(HashError.Unsafe)))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(qr).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isForbidden
             .expectBody(String::class.java).isEqualTo("The original url is unsafe")
@@ -330,7 +334,7 @@ class UrlShortenerControllerTest {
         `when`(qrService.getQrImage(eq(shortId), any())).thenReturn(Mono.error(Exception("Error")))
 
         webTestClient.get()
-            .uri { it.path("/api/qr").queryParam("id", shortId).build() }
+            .uri { it.path(qr).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().is5xxServerError
     }
@@ -411,7 +415,7 @@ class UrlShortenerControllerTest {
 
         webTestClient.get()
             .uri { builder ->
-                builder.path("/api/analytics")
+                builder.path(analytics)
                     .queryParam("id", shortId)
                     .queryParam("browser", browser)
                     .queryParam("country", country)
@@ -451,7 +455,7 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.NotFound)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(analytics).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isNotFound
             .expectBody(String::class.java).isEqualTo("The given shortened hash does not exist")
@@ -463,7 +467,7 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.InvalidFormat)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(analytics).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java).isEqualTo("Invalid shortened hash format")
@@ -475,7 +479,7 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.NotValidated)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(analytics).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
@@ -488,7 +492,7 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.Unreachable)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(analytics).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java).isEqualTo("The original url is unreachable")
@@ -500,7 +504,7 @@ class UrlShortenerControllerTest {
         `when`(analyticsService.get(shortId, false, false, false)).thenReturn(Mono.just(Err(HashError.Unsafe)))
 
         webTestClient.get()
-            .uri { it.path("/api/analytics").queryParam("id", shortId).build() }
+            .uri { it.path(analytics).queryParam("id", shortId).build() }
             .exchange()
             .expectStatus().isForbidden
             .expectBody(String::class.java).isEqualTo("The original url is unsafe")

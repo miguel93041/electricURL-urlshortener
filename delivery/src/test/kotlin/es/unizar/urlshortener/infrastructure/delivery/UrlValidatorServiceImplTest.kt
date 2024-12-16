@@ -29,6 +29,10 @@ class UrlValidatorServiceImplTest {
 
     private lateinit var validator: UrlValidatorServiceImpl
 
+    private val url = "http://example.com"
+
+
+
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)
@@ -44,7 +48,6 @@ class UrlValidatorServiceImplTest {
 
     @Test
     fun `validate - returns Unsafe if url is not safe`() {
-        val url = "http://example.com"
         `when`(urlSafetyService.isSafe(url)).thenReturn(Mono.just(false))
 
         val result = validator.validate(url).block()
@@ -53,7 +56,6 @@ class UrlValidatorServiceImplTest {
 
     @Test
     fun `validate - returns Unreachable if url is safe but not reachable`() {
-        val url = "http://example.com"
         `when`(urlSafetyService.isSafe(url)).thenReturn(Mono.just(true))
         `when`(urlAccessibilityCheckUseCase.isUrlReachable(url)).thenReturn(Mono.just(false))
 
@@ -63,7 +65,6 @@ class UrlValidatorServiceImplTest {
 
     @Test
     fun `validate - returns Ok if url is safe and reachable`() {
-        val url = "http://example.com"
         `when`(urlSafetyService.isSafe(url)).thenReturn(Mono.just(true))
         `when`(urlAccessibilityCheckUseCase.isUrlReachable(url)).thenReturn(Mono.just(true))
 
