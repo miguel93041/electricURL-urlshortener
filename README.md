@@ -169,10 +169,10 @@ Redirects a user to the target URL identified by the provided `id` (shortened UR
 
 - **Responses:**
     - `301 Moved Permanently`: Successfully redirects to the target URL.
-    - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
-    - `403 Forbidden`: The `url` is unsafe.
+    - `400 Bad Request`: The `id` does not meet the required format or the original URL is not reachable.
+    - `403 Forbidden`: The original URL is unsafe.
     - `404 Not Found`: The provided `id` does not exist.
-    - `429 TOO MANY REQUESTS`: Redirection limit reached for the given URL.
+    - `429 Too Many Requests`: Redirection limit reached for the given URL.
     - `500 Internal Server Error`: Unexpected server error.
 
 ### 3. **Generate QR Code**
@@ -187,8 +187,8 @@ Generates a QR code for the shortened URL identified by id.
 
 - **Responses:**
   - `200 OK`: The QR code image is successfully generated and returned.
-  - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
-  - `403 Forbidden`: The `url` is unsafe.
+  - `400 Bad Request`: The `id` does not meet the required format or the original URL is not reachable.
+  - `403 Forbidden`: The original URL is unsafe.
   - `404 Not Found`: The provided `id` does not exist.
   - `406 Not Acceptable`: The client requested an invalid format for the QR.
   - `500 Internal Server Error`: Unexpected server error.
@@ -207,8 +207,8 @@ Retrieves aggregated analytics data for a shortened URL. You can request breakdo
 
 - **Responses:**
     - `200 OK`: The analytics data is successfully returned.
-    - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
-    - `403 Forbidden`: The `url` is unsafe.
+    - `400 Bad Request`: The `id` does not meet the required format or the original URL is not reachable.
+    - `403 Forbidden`: The original URL is unsafe.
     - `404 Not Found`: The provided `id` does not exist.
     - `406 Not Acceptable`: The client requested an invalid format for the analytics.
     - `500 Internal Server Error`: Unexpected server error.
@@ -464,9 +464,11 @@ To enhance performance, caching has been added to all requests made to external 
 
 Additionally, the Result pattern has been implemented to handle request outcomes more robustly. This approach avoids the unnecessary throwing of unchecked exceptions, improving error management predictability and maintaining a smoother flow of operations.
 
-Regarding code quality, validation tools like SonarCloud and PMD have been integrated. These tools ensure the project meets high standards of quality and best practices. SonarLint, included within SonarCloud, is also used for local analysis during development.
+Regarding code quality, validation tools like SonarCloud have been integrated. These tools ensure the project meets high standards of quality and best practices. SonarLint, included within SonarCloud, is also used for local analysis during development.
 
 Finally, the geolocation logic has been significantly improved. The system can now extract IP addresses from requests more accurately, validate their authenticity, and detect bogon addresses (IPs invalid for public use). These adjustments ensure greater reliability in geolocation-related functionalities.
+
+Another critical improvement is the expansion of the test suites. The integration tests now comprehensively cover all use cases, ensuring robustness and reliability. Furthermore, all HTTP error codes that the controllers are expected to return have been tested to confirm correct behavior under various scenarios. This thorough testing guarantees that the application handles all edge cases effectively.
 
 These changes not only strengthen the system's performance but also enhance code quality and improve the overall user experience.
 
