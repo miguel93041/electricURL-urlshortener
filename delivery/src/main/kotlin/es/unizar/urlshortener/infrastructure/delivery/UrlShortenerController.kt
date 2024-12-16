@@ -68,8 +68,9 @@ interface UrlShortenerController {
      * @param browser Indicates whether to include a breakdown of clicks by browser. Defaults to false. (Optional)
      * @param country Indicates whether to include a breakdown of clicks by country. Defaults to false. (Optional)
      * @param platform Indicates whether to include a breakdown of clicks by platform. Defaults to false. (Optional)
-     * @return A ResponseEntity containing the analytics data. Returns 200 OK with the data on success,
-     *         or 404 NOT FOUND if hash is invalid.
+     * @return A [Mono] emitting a [ResponseEntity] containing the analytics data. Returns 200 OK with the data
+     *         on success, 404 NOT FOUND if the hash is invalid, or other appropriate error codes such as
+     *         400 BAD REQUEST or 403 FORBIDDEN for validation or security-related issues.
      */
     fun getAnalytics(id: String, browser: Boolean, country: Boolean, platform: Boolean): Mono<ResponseEntity<Any>>
 }
@@ -120,7 +121,7 @@ class UrlShortenerControllerImpl(
                                 HttpStatus.TOO_MANY_REQUESTS to "This shortened hash is under load"
                             RedirectionError.NotValidated ->
                                 HttpStatus.BAD_REQUEST to
-                                        HASH_VALIDATING
+                                    HASH_VALIDATING
                             RedirectionError.Unreachable -> HttpStatus.BAD_REQUEST to ORIGINAL_URL_UNREACHABLE
                             RedirectionError.Unsafe -> HttpStatus.FORBIDDEN to ORIGINAL_URL_UNSAFE
                         }
@@ -153,7 +154,7 @@ class UrlShortenerControllerImpl(
                             HashError.NotFound -> HttpStatus.NOT_FOUND to HASH_DONT_EXIST
                             HashError.NotValidated ->
                                 HttpStatus.BAD_REQUEST to
-                                        HASH_VALIDATING
+                                    HASH_VALIDATING
                             HashError.Unreachable -> HttpStatus.BAD_REQUEST to ORIGINAL_URL_UNREACHABLE
                             HashError.Unsafe -> HttpStatus.FORBIDDEN to ORIGINAL_URL_UNSAFE
                         }
@@ -162,7 +163,6 @@ class UrlShortenerControllerImpl(
                 )
             }
     }
-
 
     /**
      * Processes a CSV file containing URLs and generates a CSV with shortened URLs and its QR code URLs if requested.
@@ -227,8 +227,9 @@ class UrlShortenerControllerImpl(
      * @param browser Indicates whether to include a breakdown of clicks by browser. Defaults to false. (Optional)
      * @param country Indicates whether to include a breakdown of clicks by country. Defaults to false. (Optional)
      * @param platform Indicates whether to include a breakdown of clicks by platform. Defaults to false. (Optional)
-     * @return A ResponseEntity containing the analytics data. Returns 200 OK with the data on success,
-     *         or 404 NOT FOUND if hash is invalid.
+     * @return A [Mono] emitting a [ResponseEntity] containing the analytics data. Returns 200 OK with the data
+     *          on success, 404 NOT FOUND if the hash is invalid, or other appropriate error codes such as
+     *          400 BAD REQUEST or 403 FORBIDDEN for validation or security-related issues.
      */
     @GetMapping("/api/analytics", produces = [MediaType.APPLICATION_JSON_VALUE])
     override fun getAnalytics(
@@ -249,7 +250,7 @@ class UrlShortenerControllerImpl(
                             HashError.NotFound -> HttpStatus.NOT_FOUND to HASH_DONT_EXIST
                             HashError.NotValidated ->
                                 HttpStatus.BAD_REQUEST to
-                                        HASH_VALIDATING
+                                    HASH_VALIDATING
                             HashError.Unreachable -> HttpStatus.BAD_REQUEST to ORIGINAL_URL_UNREACHABLE
                             HashError.Unsafe -> HttpStatus.FORBIDDEN to ORIGINAL_URL_UNSAFE
                         }

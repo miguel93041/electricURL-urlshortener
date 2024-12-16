@@ -21,15 +21,23 @@ fun interface RedirectService {
      *
      * @param hash The identifier of the short url.
      * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
-     * @return A data object containing the generated short URL and optional QR code URL.
+     * @return A [Mono] emitting a [Result] containing the [Redirection] or a [RedirectionError].
      */
     fun getRedirectionAndLogClick(hash: String, request: ServerHttpRequest): Mono<Result<Redirection, RedirectionError>>
 }
 
 /**
- * Implementation of the `GenerateEnhancedShortUrlUseCase` interface.
+ * [RedirectServiceImpl] is an implementation of the [RedirectService] interface.
  *
  * This class acts as the controller to handle requests for generating enhanced short URLs.
+ *
+ * @property hashValidatorService Service for validating hash formats and existence.
+ * @property redirectUseCase Use case for handling URL redirection based on a hash.
+ * @property logClickUseCase Use case for logging click events.
+ * @property geoLocationService Service for retrieving geolocation data based on IP addresses.
+ * @property browserPlatformIdentificationUseCase Use case for identifying the browser and platform from the user agent.
+ * @property redirectionLimitUseCase Use case for checking if redirection limits are reached.
+ * @property clickRepositoryService Service for managing click-related data.
  */
 class RedirectServiceImpl(
     private val hashValidatorService: HashValidatorService,
@@ -46,7 +54,7 @@ class RedirectServiceImpl(
      *
      * @param hash The identifier of the short URL.
      * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
-     * @return A Mono emitting a Result containing the Redirection or a RedirectionError.
+     * @return A [Mono] emitting a [Result] containing the [Redirection] or a [RedirectionError].
      */
     override fun getRedirectionAndLogClick(
         hash: String,
@@ -62,6 +70,12 @@ class RedirectServiceImpl(
             }
     }
 
+    /**
+     * Handles the validation error when the hash format is invalid or the hash is not found.
+     *
+     * @param error The type of hash error.
+     * @return A [Mono] emitting a [Result] containing the appropriate [RedirectionError].
+     */
     private fun handleValidationError(error: HashError): Mono<Result<Redirection, RedirectionError>> {
         val mappedError = when (error) {
             is HashError.InvalidFormat -> RedirectionError.InvalidFormat
@@ -73,6 +87,15 @@ class RedirectServiceImpl(
         return Mono.just(Err(mappedError))
     }
 
+    /**
+     * Handles the redirection process, including checking redirection limits,
+     * performing the redirection, logging the click, and capturing additional data
+     * (e.g., geolocation, browser platform).
+     *
+     * @param hash The identifier of the short URL.
+     * @param request The HTTP request, used to extract contextual information such as IP address and user-agent.
+     * @return A [Mono] emitting a [Result] containing the [Redirection] or a [RedirectionError].
+     */
     private fun handleRedirection(
         hash: String,
         request: ServerHttpRequest

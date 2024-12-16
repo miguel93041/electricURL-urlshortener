@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono
 import java.util.*
 
 /**
- * Implementation of the ValidatorService interface.
+ * [UrlValidatorServiceImpl] is an implementation of the [UrlValidatorService] interface.
  *
  * Validates URLs to ensure they follow the correct format, are safe, and are reachable.
  *
@@ -30,7 +30,7 @@ class UrlValidatorServiceImpl(
      * Validates the given URL.
      *
      * @param url The URL to validate.
-     * @return A [Result] indicating the validation result.
+     * @return A [Mono] emitting the [Result] indicating the validation result.
      */
     override fun validate(url: String): Mono<Result<Unit, UrlError>> {
         if (!urlValidator.isValid(url)) {
@@ -59,11 +59,12 @@ class UrlValidatorServiceImpl(
 }
 
 /**
- * Implementation of the ValidatorService interface.
+ * [HashValidatorServiceImpl] is an implementation of the [HashValidatorService] interface.
  *
- * Validates URLs to ensure they follow the correct format, are safe, and are reachable.
+ * Validates hashes to ensure they follow the correct format, are associated with valid URLs,
+ * and check if the URLs are safe and reachable.
  *
- * @param shortUrlRepositoryService The [ShortUrl] repository.
+ * @param shortUrlRepositoryService The [ShortUrlRepositoryService] used to interact with the shortened URL data.
  */
 class HashValidatorServiceImpl(
     private val shortUrlRepositoryService: ShortUrlRepositoryService
@@ -73,7 +74,7 @@ class HashValidatorServiceImpl(
      * Validates if the given hash is valid.
      *
      * @param hash The hash to be validated.
-     * @return A Mono emitting the result of the validation.
+     * @return A [Mono] emitting a [Result] indicating the validation result.
      */
     override fun validate(hash: String): Mono<Result<Unit, HashError>> {
         if (!isValidHash(hash)) {
@@ -105,9 +106,10 @@ class HashValidatorServiceImpl(
 }
 
 /**
- * Implementation of the port [HashService].
+ * [HashServiceImpl] is an implementation of the port [HashService].
  */
 class HashServiceImpl : HashService {
+
     /**
      * Generates a random hash using a UUID and the Murmur3 32-bit hashing algorithm.
      *

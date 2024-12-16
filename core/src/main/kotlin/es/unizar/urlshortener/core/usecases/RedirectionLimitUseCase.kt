@@ -13,13 +13,13 @@ interface RedirectionLimitUseCase {
      * Checks whether the redirection limit has been reached for a specific URL identifier.
      *
      * @param urlId The identifier of the shortened URL.
-     * @throws TooManyRequestsException if limit is reached
+     * @return A [Mono] emitting true if the limit is reached, or false otherwise.
      */
     fun isRedirectionLimit(urlId: String): Mono<Boolean>
 }
 
 /**
- * Implementation of [RedirectionLimitUseCase].
+ * [RedirectionLimitUseCaseImpl] is an implementation of [RedirectionLimitUseCase].
  *
  * Checks and updates the redirection count for shortened URLs within a time frame using the ClickRepositoryService.
  *
@@ -38,7 +38,7 @@ class RedirectionLimitUseCaseImpl(
      * within the defined time frame.
      *
      * @param urlId The identifier of the shortened URL.
-     * @return A Mono emitting true if the limit is reached, or false otherwise.
+     * @return A [Mono] emitting true if the limit is reached, or false otherwise.
      */
     override fun isRedirectionLimit(urlId: String): Mono<Boolean> {
         val now = OffsetDateTime.now()

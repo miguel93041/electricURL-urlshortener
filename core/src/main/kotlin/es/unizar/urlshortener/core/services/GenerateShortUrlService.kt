@@ -11,24 +11,30 @@ import reactor.core.publisher.Mono
 import java.net.URI
 
 /**
- * Defines the specification for the use case responsible for generating
- * enhanced short URLs with additional properties like geolocation data.
+ * Defines the specification for generating short URLs.
  */
 fun interface GenerateShortUrlService {
     /**
-     * Generates a short URL based on the input data and the HTTP request context.
+     * Generates a shortened URL.
      *
-     * @param data The input data containing the original URL and optional settings.
-     * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
-     * @return A [Mono] emitting a [Result] containing the generated short URL and optional QR code URL or an error.
+     * @param data The input data containing the original URL and optional QR code request.
+     * @param request The HTTP request, used for extracting contextual information (e.g., base URL).
+     * @return A [Mono] emitting the output data containing the shortened URL and optional QR code URL.
      */
     fun generate(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ShortUrlDataOut>
 }
 
 /**
- * Implementation of the `GenerateEnhancedShortUrlUseCase` interface.
+ * [GenerateShortUrlServiceImpl] is an implementation of the [GenerateShortUrlService] interface.
  *
- * This class acts as the controller to handle requests for generating enhanced short URLs.
+ * This class handles the creation of shortened URLs with additional features such as QR code generation
+ * and geolocation enrichment.
+ *
+ * @property urlValidatorService Service for validating URLs.
+ * @property createShortUrlUseCase Use case for creating short URLs.
+ * @property geoLocationService Service for retrieving geolocation data.
+ * @property shortUrlRepositoryService Service for managing short URL repository data.
+ * @property baseUrlProvider Service for providing the base URL.
  */
 class GenerateShortUrlServiceImpl(
     private val urlValidatorService: UrlValidatorService,
@@ -39,11 +45,11 @@ class GenerateShortUrlServiceImpl(
 ) : GenerateShortUrlService {
 
     /**
-     * Generates an enhanced short URL using geolocation information and other properties.
+     * Generates a shortened URL based on the input data and the request context.
      *
-     * @param data The input data containing the original URL and a flag indicating whether a QR code is required.
-     * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
-     * @return A [Mono] emitting a [ShortUrlDataOut] and optionally a QR code URL or an error.
+     * @param data The input data containing the original URL and optional QR code request.
+     * @param request The HTTP request, used for extracting contextual information such as the base URL.
+     * @return A [Mono] emitting the output data containing the shortened URL and optional QR code URL.
      */
     override fun generate(data: ShortUrlDataIn, request: ServerHttpRequest): Mono<ShortUrlDataOut> {
         return createShortUrlUseCase.create(data.url)

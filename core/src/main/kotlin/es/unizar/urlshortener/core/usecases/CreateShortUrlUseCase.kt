@@ -10,11 +10,12 @@ import reactor.core.publisher.Mono
  * When the url is created optional data may be added.
  */
 interface CreateShortUrlUseCase {
+
     /**
      * Creates a short URL for the given URL.
      *
      * @param url The URL to be shortened.
-     * @return The created [ShortUrl] entity.
+     * @return A [Mono] emitting the created [ShortUrl] entity.
      */
     fun create(url: String): Mono<ShortUrl>
 }
@@ -32,11 +33,12 @@ class CreateShortUrlUseCaseImpl(
     private val shortUrlRepository: ShortUrlRepositoryService,
     private val hashService: HashService
 ) : CreateShortUrlUseCase {
+
     /**
      * Creates a short URL for the given URL.
      *
      * @param url The URL to be shortened.
-     * @return The created [ShortUrl] entity.
+     * @return A [Mono] emitting the created [ShortUrl] entity.
      */
     override fun create(url: String): Mono<ShortUrl> {
         val id = hashService.generateRandomHash()

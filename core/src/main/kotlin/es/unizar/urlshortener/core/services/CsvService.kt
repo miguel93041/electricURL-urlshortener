@@ -14,32 +14,35 @@ import reactor.core.publisher.Mono
 import java.io.*
 
 /**
- * Defines the specification for the use case responsible for generating
- * enhanced short URLs with additional properties like geolocation data.
+ * Defines the specification for processing CSV files.
  */
 fun interface CsvService {
+
     /**
-     * Obtains the original url of a short url.
+     * Processes the given CSV data.
      *
-     * @param hash The identifier of the short url.
-     * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
-     * @return A data object containing the generated short URL and optional QR code URL.
+     * @param data The input data containing the CSV file and optional QR code request.
+     * @param request The HTTP request used for contextual information.
+     * @return A [Mono] emitting a [Result] containing a [Flux] of [DataBuffer] or a [CsvError].
      */
     fun process(data: CsvDataIn, request: ServerHttpRequest): Mono<Result<Flux<DataBuffer>, CsvError>>
 }
 
 /**
- * Implementation of the `GenerateEnhancedShortUrlUseCase` interface.
+ * [CsvServiceImpl] is an implementation of the [CsvService] interface.
  *
- * This class acts as the controller to handle requests for generating enhanced short URLs.
+ * This class handles the processing of CSV files using the provided [ProcessCsvUseCase].
+ *
+ * @property processCsvUseCase Service for processing CSV data.
  */
-class CsvServiceImpl (private val processCsvUseCase: ProcessCsvUseCase) : CsvService {
+class CsvServiceImpl(private val processCsvUseCase: ProcessCsvUseCase) : CsvService {
+
     /**
-     * Generates an enhanced short URL using geolocation information and other properties.
+     * Processes the CSV file data.
      *
-     * @param hash The identifier of the short url.
-     * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
-     * @return A data object containing the short URL and optionally a QR code URL.
+     * @param data The input data containing the CSV file and optional QR code request.
+     * @param request The HTTP request used for contextual information, like IP address and other metadata.
+     * @return A [Mono] emitting a [Result] containing a [Flux] of [DataBuffer] or a [CsvError].
      */
     override fun process(data: CsvDataIn, request: ServerHttpRequest): Mono<Result<Flux<DataBuffer>, CsvError>> {
         if (data.file.filename().isBlank() || !data.file.filename().endsWith(".csv")) {

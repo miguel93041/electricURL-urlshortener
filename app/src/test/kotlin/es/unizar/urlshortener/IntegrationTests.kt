@@ -1,4 +1,5 @@
-@file:Suppress("WildcardImport", "LargeClass", "LongMethod", "LongParameterList")
+@file:Suppress("LargeClass", "LongMethod", "LongParameterList")
+
 package es.unizar.urlshortener
 
 import es.unizar.urlshortener.core.ShortUrlDataOut
@@ -91,7 +92,6 @@ class IntegrationTests(
                 assertThat(response.responseBody).contains("Shorten URLs or Upload a CSV File")
             }
     }
-
 
     @Test
     fun `main page includes jquery`() {
@@ -243,7 +243,7 @@ class IntegrationTests(
                 .expectStatus().isEqualTo(301)
                 .expectHeader().valueEquals(HttpHeaders.LOCATION, URL)
 
-            assertThat(countRowsInTable("click")).isEqualTo(i+1)
+            assertThat(countRowsInTable("click")).isEqualTo(i + 1)
         }
 
         val response = webTestClient.get()
@@ -664,7 +664,7 @@ class IntegrationTests(
         val csvContent = """
         http://example1.com
         http://example2.com
-    """.trimIndent()
+        """.trimIndent()
 
         val multipartData = MultipartBodyBuilder().apply {
             part("file", ByteArrayResource(csvContent.toByteArray()), MediaType.TEXT_PLAIN)
@@ -703,7 +703,6 @@ class IntegrationTests(
                 assert(lines[2].isEmpty())
             }
     }
-
 
     @Test
     fun `upload invalid non-CSV file and receive error`() {

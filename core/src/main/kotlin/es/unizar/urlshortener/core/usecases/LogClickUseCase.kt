@@ -6,20 +6,21 @@ import es.unizar.urlshortener.core.ClickRepositoryService
 import reactor.core.publisher.Mono
 
 /**
- * Log that somebody has requested the redirection identified by a key.
+ * Logs that a user has requested the redirection identified by a key.
  */
 interface LogClickUseCase {
+
     /**
-     * Logs a click event for the given key and click properties.
+     * Logs a click event for the given key.
      *
      * @param key The key associated with the redirection.
-     * @param data The properties of the click event.
+     * @return A [Mono] emitting the logged [Click] object.
      */
     fun logClick(key: String): Mono<Click>
 }
 
 /**
- * Implementation of [LogClickUseCase].
+ * [LogClickUseCaseImpl] is an implementation of [LogClickUseCase].
  *
  * Saves click events into a repository using [ClickRepositoryService].
  *
@@ -28,11 +29,12 @@ interface LogClickUseCase {
 class LogClickUseCaseImpl(
     private val clickRepository: ClickRepositoryService
 ) : LogClickUseCase {
+
     /**
-     * Logs a click event for the given key and click properties.
+     * Logs a click event for the specified key and saves it into the repository.
      *
      * @param key The key associated with the redirection.
-     * @param data The properties of the click event.
+     * @return A [Mono] emitting the saved [Click] object.
      */
     override fun logClick(key: String): Mono<Click> {
         val cl = Click(
