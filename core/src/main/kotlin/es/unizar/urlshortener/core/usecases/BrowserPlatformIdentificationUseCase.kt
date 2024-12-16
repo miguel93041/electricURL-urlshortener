@@ -1,7 +1,6 @@
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.BrowserPlatform
-import es.unizar.urlshortener.core.InvalidUrlException
 import ua_parser.Parser
 
 /**
@@ -16,7 +15,7 @@ interface BrowserPlatformIdentificationUseCase {
      * @return A BrowserPlatform object containing the identified browser and platform.
      * @throws InvalidUrlException if the provided user agent string is empty or invalid.
      */
-    fun parse(userAgent: String): BrowserPlatform
+    fun parse(userAgent: String?): BrowserPlatform
 }
 
 /**
@@ -35,17 +34,24 @@ class BrowserPlatformIdentificationUseCaseImpl(
      * @param userAgent The user agent header from the request.
      * @return A BrowserPlatform object containing the identified browser and platform or "Unknown Browser" as
      * the identified browser name and "Unknown Browser" as the identified platform name if not found.
-     * @throws InvalidUrlException if the provided user agent string is empty or invalid.
      */
-    override fun parse(userAgent: String): BrowserPlatform {
-        if (userAgent.isBlank()) {
-            throw InvalidUrlException("User-Agent header is invalid")
+    override fun parse(userAgent: String?): BrowserPlatform {
+        var browser = "Unknown"
+        var platform = "Unknown"
+
+        if (userAgent.isNullOrBlank()) {
+            return BrowserPlatform(browser, platform)
         }
 
         val client = parser.parse(userAgent)
 
-        val browser = client.userAgent.family ?: "Unknown Browser"
-        val platform = client.os.family ?: "Unknown Platform"
+        if (client.userAgent != null && !client.userAgent.family.isNullOrBlank()) {
+            browser = client.userAgent.family
+        }
+
+        if (client.os != null && !client.os.family.isNullOrBlank()) {
+            platform = client.os.family
+        }
 
         return BrowserPlatform(browser, platform)
     }

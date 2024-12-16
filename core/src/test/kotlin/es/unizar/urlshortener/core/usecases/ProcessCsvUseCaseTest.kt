@@ -1,172 +1,128 @@
 @file:Suppress("WildcardImport")
 package es.unizar.urlshortener.core.usecases
 
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
 import es.unizar.urlshortener.core.*
-import jakarta.servlet.http.HttpServletRequest
+import es.unizar.urlshortener.core.services.GenerateShortUrlService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.*
-import java.io.StringReader
-import java.io.StringWriter
+import org.springframework.core.io.buffer.DefaultDataBufferFactory
+import org.springframework.http.server.reactive.ServerHttpRequest
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import java.net.URI
 
 class ProcessCsvUseCaseTest {
 
     private lateinit var processCsvUseCase: ProcessCsvUseCase
-    private lateinit var generateEnhancedShortUrlUseCase: GenerateEnhancedShortUrlUseCase
-    private lateinit var mockRequest: HttpServletRequest
+    private lateinit var generateShortUrlService: GenerateShortUrlService
 
     @BeforeEach
     fun setup() {
-        generateEnhancedShortUrlUseCase = mock()
-        processCsvUseCase = ProcessCsvUseCaseImpl(generateEnhancedShortUrlUseCase)
-        mockRequest = mock()
+        generateShortUrlService = mock()
+        processCsvUseCase = ProcessCsvUseCaseImpl(generateShortUrlService)
+    }
 
-        `when`(mockRequest.remoteAddr).thenReturn("127.0.0.1")
+    private fun createTestCase(
+        inputUrls: List<String>,
+        shortUrls: List<ShortUrlDataOut>,
+        qrRequested: Boolean = false,
+        expectedOutput: String
+    ) {
+        // Create a mock sequence for short URL generation
+        val shortUrlGenerator = shortUrls.map { Mono.just(it) }.iterator()
+
+        // Prepare mock service to return short URLs sequentially
+        `when`(generateShortUrlService.generate(
+            any<ShortUrlDataIn>(),
+            any()
+        )).thenAnswer {
+            // Return the next short URL in the sequence
+            shortUrlGenerator.next()
+        }
+
+        // Prepare input buffer
+        val inputCsv = inputUrls.joinToString("\n")
+        val inputBuffer = DefaultDataBufferFactory().wrap(inputCsv.toByteArray())
+        val request = mock<ServerHttpRequest>()
+
+        // Process CSV
+        val result = processCsvUseCase.processCsv(Flux.just(inputBuffer), request, qrRequested)
+            .map { it.asByteBuffer().array().toString(Charsets.UTF_8) }
+            .collectList()
+            .block()
+        val resultText = result?.joinToString(separator = "")
+
+        // Assert
+        assertEquals(expectedOutput + "\n", resultText)
     }
 
     @Test
     fun `should process valid URLs correctly`() {
-        // Given
-        val inputCsv = "http://example.com\nhttp://another-example.com"
-        val reader = StringReader(inputCsv)
-        val writer = StringWriter()
-
-        val shortUrl1 = ShortUrlDataOut(
-            shortUrl = URI("http://short.ly/abc123"),
-            qrCodeUrl = null
+        createTestCase(
+            inputUrls = listOf("http://example.com", "http://another-example.com"),
+            shortUrls = listOf(
+                ShortUrlDataOut(shortUrl = URI("http://short.ly/abc123"), qrCodeUrl = null),
+                ShortUrlDataOut(shortUrl = URI("http://short.ly/xyz789"), qrCodeUrl = null)
+            ),
+            expectedOutput = """
+                http://example.com,http://short.ly/abc123,QR not generated
+                http://another-example.com,http://short.ly/xyz789,QR not generated
+            """.trimIndent()
         )
-        val shortUrl2 = ShortUrlDataOut(
-            shortUrl = URI("http://short.ly/xyz789"),
-            qrCodeUrl = null
-        )
-
-        `when`(generateEnhancedShortUrlUseCase.generate(any(), eq(mockRequest)))
-            .thenReturn(shortUrl1)
-            .thenReturn(shortUrl2)
-
-        // When
-        processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", false))
-
-        // Then
-        val expectedOutput = """
-            original-url,shortened-url
-            http://example.com,http://short.ly/abc123
-            http://another-example.com,http://short.ly/xyz789
-        """.trimIndent()
-
-        assertEquals(expectedOutput, writer.toString().trim())
-    }
-
-    @Test
-    fun `should handle invalid URLs`() {
-        // Given
-        val inputCsv = "invalid-url\nhttp://example.com"
-        val reader = StringReader(inputCsv)
-        val writer = StringWriter()
-
-        `when`(generateEnhancedShortUrlUseCase.generate(
-            eq(ShortUrlDataIn("invalid-url", false)),
-            eq(mockRequest)
-        )).thenThrow(InvalidUrlException("Invalid URL"))
-
-        val shortUrl = ShortUrlDataOut(
-            shortUrl = URI("http://short.ly/abc123"),
-            qrCodeUrl = null
-        )
-        `when`(generateEnhancedShortUrlUseCase.generate(
-            eq(ShortUrlDataIn("http://example.com", false)),
-            eq(mockRequest)
-        )).thenReturn(shortUrl)
-
-        // When
-        processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", false))
-
-        // Then
-        val expectedOutput = """
-            original-url,shortened-url
-            invalid-url,ERROR: Invalid URL,ERROR: QR not generated
-            http://example.com,http://short.ly/abc123
-        """.trimIndent()
-
-        assertEquals(expectedOutput, writer.toString().trim())
-    }
-
-    @Test
-    fun `should handle unsafe URLs`() {
-        // Given
-        val inputCsv = "http://unsafe-url.com"
-        val reader = StringReader(inputCsv)
-        val writer = StringWriter()
-
-        `when`(generateEnhancedShortUrlUseCase.generate(
-            eq(ShortUrlDataIn("http://unsafe-url.com", false)),
-            eq(mockRequest)
-        )).thenThrow(UnsafeUrlException("Unsafe URL"))
-
-        // When
-        processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", false))
-
-        // Then
-        val expectedOutput = """
-            original-url,shortened-url
-            http://unsafe-url.com,ERROR: Unsafe URL,ERROR: QR not generated
-        """.trimIndent()
-
-        assertEquals(expectedOutput, writer.toString().trim())
-    }
-
-    @Test
-    fun `should handle unreachable URLs`() {
-        // Given
-        val inputCsv = "http://unreachable-url.com"
-        val reader = StringReader(inputCsv)
-        val writer = StringWriter()
-
-        `when`(generateEnhancedShortUrlUseCase.generate(
-            eq(ShortUrlDataIn("http://unreachable-url.com", false)),
-            eq(mockRequest)
-        )).thenThrow(UrlUnreachableException("URL unreachable"))
-
-        // When
-        processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", false))
-
-        // Then
-        val expectedOutput = """
-            original-url,shortened-url
-            http://unreachable-url.com,ERROR: URL unreachable,ERROR: QR not generated
-        """.trimIndent()
-
-        assertEquals(expectedOutput, writer.toString().trim())
     }
 
     @Test
     fun `should generate QR code URLs if requested`() {
-        // Given
-        val inputCsv = "http://example.com"
-        val reader = StringReader(inputCsv)
-        val writer = StringWriter()
-
-        val shortUrl = ShortUrlDataOut(
-            shortUrl = URI("http://short.ly/abc123"),
-            qrCodeUrl = URI("http://short.ly/qr/abc123")
+        createTestCase(
+            inputUrls = listOf("http://example.com"),
+            shortUrls = listOf(
+                ShortUrlDataOut(
+                    shortUrl = URI("http://short.ly/abc123"),
+                    qrCodeUrl = URI("http://short.ly/qr/abc123")
+                )
+            ),
+            qrRequested = true,
+            expectedOutput = """
+                http://example.com,http://short.ly/abc123,http://short.ly/qr/abc123
+            """.trimIndent()
         )
-        `when`(generateEnhancedShortUrlUseCase.generate(
-            eq(ShortUrlDataIn("http://example.com", true)),
-            eq(mockRequest)
-        )).thenReturn(shortUrl)
+    }
 
-        // When
-        processCsvUseCase.processCsv(reader, writer, mockRequest, ShortUrlDataIn("", true))
+    @Test
+    fun `should process URLs with special characters correctly`() {
+        createTestCase(
+            inputUrls = listOf(
+                "http://example.com/?q=hello%20world",
+                "http://example.com/path/to/resource"
+            ),
+            shortUrls = listOf(
+                ShortUrlDataOut(shortUrl = URI("http://short.ly/special1"), qrCodeUrl = null),
+                ShortUrlDataOut(shortUrl = URI("http://short.ly/special2"), qrCodeUrl = null)
+            ),
+            expectedOutput = """
+                http://example.com/?q=hello%20world,http://short.ly/special1,QR not generated
+                http://example.com/path/to/resource,http://short.ly/special2,QR not generated
+            """.trimIndent()
+        )
+    }
 
-        // Then
-        val expectedOutput = """
-            original-url,shortened-url,qr-code-url
-            http://example.com,http://short.ly/abc123,http://short.ly/qr/abc123
-        """.trimIndent()
-
-        assertEquals(expectedOutput, writer.toString().trim())
+    @Test
+    fun `should process mix of http and https URLs`() {
+        createTestCase(
+            inputUrls = listOf("http://example.com", "https://secure-example.com"),
+            shortUrls = listOf(
+                ShortUrlDataOut(shortUrl = URI("http://short.ly/abc123"), qrCodeUrl = null),
+                ShortUrlDataOut(shortUrl = URI("http://short.ly/secure456"), qrCodeUrl = null)
+            ),
+            expectedOutput = """
+                http://example.com,http://short.ly/abc123,QR not generated
+                https://secure-example.com,http://short.ly/secure456,QR not generated
+            """.trimIndent()
+        )
     }
 }

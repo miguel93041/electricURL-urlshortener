@@ -5,7 +5,6 @@ package es.unizar.urlshortener.core.usecases
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.j2se.MatrixToImageWriter
 import com.google.zxing.qrcode.QRCodeWriter
-import es.unizar.urlshortener.core.InvalidUrlException
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 import java.io.ByteArrayOutputStream
@@ -44,10 +43,6 @@ class CreateQRUseCaseImpl(
      * @throws InvalidUrlException if the URL is invalid or empty.
      */
     override fun create(url: String, size: Int): ByteArray {
-        if (url.isEmpty()) {
-            throw InvalidUrlException("URL is invalid")
-        }
-
         val bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, size, size)
         val bufferedImage: BufferedImage = MatrixToImageWriter.toBufferedImage(bitMatrix)
         val outputByteArray = ByteArrayOutputStream()

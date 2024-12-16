@@ -1,77 +1,51 @@
 @file:Suppress("WildcardImport")
 package es.unizar.urlshortener.core.usecases
 
-import RedirectionLimitUseCase
 import es.unizar.urlshortener.core.*
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.*
+import reactor.core.publisher.Mono
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class RedirectUseCaseTest {
 
+    private val shortUrlService: ShortUrlRepositoryService = mock(ShortUrlRepositoryService::class.java)
+    private val redirectUseCase = RedirectUseCaseImpl(shortUrlService = shortUrlService)
+    private val redirection: Redirection = mock(Redirection::class.java)
+
     @Test
-    fun `redirectTo returns a redirect when the key exists and limit not exceeded`() {
-        val repository = mock<ShortUrlRepositoryService>()
-        val redirection = mock<Redirection>()
-        val redlimit = mock<RedirectionLimitUseCase>()
-        val shortUrl = ShortUrl("key", redirection)
-        whenever(repository.findByKey("key")).thenReturn(shortUrl)
-        doNothing().whenever(redlimit).checkRedirectionLimit("key")
-        val useCase = RedirectUseCaseImpl(repository, redlimit)
+    fun `redirectTo returns a redirect when the key exists`() {
+        val key = "key"
+        val shortUrl = ShortUrl(key, redirection)
+        whenever(shortUrlService.findByKey(key)).thenReturn(Mono.just(shortUrl))
 
-        val result = useCase.redirectTo("key")
+        val result = redirectUseCase.redirectTo(key).block()
 
+        assertNotNull(result)
         assertEquals(redirection, result)
-        verify(redlimit, times(1)).checkRedirectionLimit("key")
-        verify(repository, times(1)).findByKey("key")
-    }
-
-    @Test
-    fun `redirectTo throws TooManyRequestsException when redirection limit is exceeded`() {
-        val repository = mock<ShortUrlRepositoryService>()
-        val redlimit = mock<RedirectionLimitUseCase>()
-        doThrow(TooManyRequestsException("key")).whenever(redlimit).checkRedirectionLimit("key")
-        val useCase = RedirectUseCaseImpl(repository, redlimit)
-
-        assertThrows<TooManyRequestsException> {
-            useCase.redirectTo("key")
-        }
-
-        verify(redlimit, times(1)).checkRedirectionLimit("key")
-        verify(repository, never()).findByKey(any())
     }
 
     @Test
     fun `redirectTo throws RedirectionNotFound when the key does not exist`() {
-        val repository = mock<ShortUrlRepositoryService>()
-        val redlimit = mock<RedirectionLimitUseCase>()
-        doNothing().whenever(redlimit).checkRedirectionLimit("key")
-        whenever(repository.findByKey("key")).thenReturn(null)
-        val useCase = RedirectUseCaseImpl(repository, redlimit)
+        val key = "invalidKey"
+        whenever(shortUrlService.findByKey(key)).thenReturn(Mono.empty())
 
-        assertThrows<RedirectionNotFound> {
-            useCase.redirectTo("key")
+        assertThrows<Exception> {
+            redirectUseCase.redirectTo(key).block()
         }
-
-        verify(redlimit, times(1)).checkRedirectionLimit("key")
-        verify(repository, times(1)).findByKey("key")
     }
 
     @Test
-    fun `redirectTo throws InternalError when repository throws an exception`() {
-        val repository = mock<ShortUrlRepositoryService>()
-        val redlimit = mock<RedirectionLimitUseCase>()
-        doNothing().whenever(redlimit).checkRedirectionLimit("key")
-        whenever(repository.findByKey("key")).thenThrow(RuntimeException())
-        val useCase = RedirectUseCaseImpl(repository, redlimit)
+    fun `should handle service error gracefully`() {
+        val key = "errorKey"
 
-        assertThrows<InternalError> {
-            useCase.redirectTo("key")
+        whenever(shortUrlService.findByKey(key)).thenReturn(Mono.error(RuntimeException("Service error")))
+
+        assertThrows<RuntimeException> {
+            redirectUseCase.redirectTo(key).block()
         }
-
-        verify(redlimit, times(1)).checkRedirectionLimit("key")
-        verify(repository, times(1)).findByKey("key")
     }
 }

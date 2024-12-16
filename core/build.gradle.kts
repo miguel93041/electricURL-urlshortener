@@ -7,31 +7,28 @@ plugins {
     alias(libs.plugins.spring.boot)
     // Applies the Spring Dependency Management plugin using an alias from the version catalog.
     alias(libs.plugins.spring.dependency.management)
+
+    // Apply jacoco plugin
+    id("jacoco")
 }
 
 dependencies {
-    // Adds the Spring Boot starter Web as an implementation dependency.
-    implementation(libs.spring.boot.starter.web)
-    // Adds the Spring Boot starter WebFlux as an implementation dependency.
+    // Spring Boot WebFlux for reactive web capabilities
     implementation(libs.spring.boot.starter.webflux)
-    // Adds UA-Parser as an implementation dependency.
+    // UA-Parser for user-agent parsing
     implementation(libs.uap.java)
-    // Adds ZXing Core as an implementation dependency.
+    // ZXing for QR code generation
     implementation(libs.zxing.core)
-    // Adds ZXing JavaSE as an implementation dependency.
     implementation(libs.zxing.javase)
+    // kotlin-result for functional programming support
+    implementation(libs.kotlin.result)
+    implementation(libs.caffeine)
 
-    // Add Kotlin test library for unit testing
-    testImplementation(libs.kotlin.test)
-
-    // Add Mockito Kotlin library for mocking in tests
-    testImplementation(libs.mockito.kotlin)
-
-    // Add JUnit Jupiter library for writing and running tests
-    testImplementation(libs.junit.jupiter)
-
-    // Add JUnit Platform Launcher for launching tests
-    testRuntimeOnly(libs.junit.platform.launcher)
+    // Test dependencies
+    testImplementation(libs.kotlin.test)               // Kotlin test utilities
+    testImplementation(libs.mockito.kotlin)            // Mockito Kotlin
+    testImplementation(libs.junit.jupiter)             // JUnit Jupiter for tests
+    testRuntimeOnly(libs.junit.platform.launcher)       // JUnit platform launcher
 }
 
 dependencyManagement {

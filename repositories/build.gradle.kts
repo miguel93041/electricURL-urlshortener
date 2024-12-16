@@ -2,11 +2,8 @@ plugins {
     // Apply the common conventions plugin for the URL shortener project
     id("urlshortener-common-conventions")
 
-    // Apply the Kotlin JPA plugin
-    alias(libs.plugins.kotlin.jpa)
-
-    // Apply the Spring Boot plugin without automatically applying it
-    alias(libs.plugins.spring.boot) apply false
+    // Apply the Spring Boot plugin
+    alias(libs.plugins.spring.boot)
 
     // Apply the Spring Dependency Management plugin
     alias(libs.plugins.spring.dependency.management)
@@ -16,8 +13,17 @@ dependencies {
     // Add the core project as an implementation dependency
     implementation(project(":core"))
 
-    // Add the Spring Boot Starter Data JPA library as an implementation dependency
-    implementation(libs.spring.boot.starter.data.jpa)
+    // Add R2DBC for reactive database access
+    implementation(libs.spring.boot.starter.data.r2dbc)
+
+    // Add the R2DBC driver for H2 (in-memory database)
+    implementation(libs.r2dbc.h2)
+
+    // Cache
+    implementation(libs.caffeine)
+
+    // Add WebFlux for reactive web capabilities
+    implementation(libs.spring.boot.starter.webflux)
 }
 
 dependencyManagement {
@@ -34,4 +40,8 @@ configurations.matching { it.name == "detekt" }.all {
             useVersion("1.9.23")
         }
     }
+}
+
+tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    enabled = false
 }

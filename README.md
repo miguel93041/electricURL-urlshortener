@@ -60,7 +60,7 @@ Now you have a shortener service running at port 8080. You can test that
 it works as follows:
 
 ``` bash
-$ curl -v -d "url=http://www.unizar.es/" http://localhost:8080/api/link
+$ curl -v -d "rawUrl=http://www.unizar.es/" http://localhost:8080/api/link
 *   Trying ::1:8080...
 * Connected to localhost (::1) port 8080 (#0)
 > POST /api/link HTTP/1.1
@@ -131,7 +131,7 @@ The project offers a set of functionalities:
 - **Google Safe Browsing Check**. URLs are checked for safety before shortening them.
 - **CSV Upload for Bulk URL Shortening**. Allows users to upload a CSV file containing URLs and download a new CSV with the shortened URLs.
 - **Redirection Limits**. Imposes a limit of 10 redirections per URL, preventing further redirects once the limit is reached.
-- **Analytics**. Retrieves aggregated analytics data for a given URL (total clicks, browser, platform, country and referrer).
+- **Analytics**. Retrieves aggregated analytics data for a given URL (total clicks, browser, platform and country).
 
 The objects in the domain are:
 
@@ -142,7 +142,7 @@ The objects in the domain are:
 - `ClickProperties`: a handy way to extend data about a click
 - `GeoLocation`: IP address and its country
 - `BrowserPlatform`: user`s browser and platform
-- `AnalyticsData`: total clicks, browser, platform, country and referrer of a shortened URL
+- `AnalyticsData`: total clicks, browser, platform and country of a shortened URL
 
 ## Delivery
 
@@ -169,6 +169,8 @@ Redirects a user to the target URL identified by the provided `id` (shortened UR
 
 - **Responses:**
     - `301 Moved Permanently`: Successfully redirects to the target URL.
+    - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
+    - `403 Forbidden`: The `url` is unsafe.
     - `404 Not Found`: The provided `id` does not exist.
     - `429 TOO MANY REQUESTS`: Redirection limit reached for the given URL.
     - `500 Internal Server Error`: Unexpected server error.
@@ -185,6 +187,8 @@ Generates a QR code for the shortened URL identified by id.
 
 - **Responses:**
   - `200 OK`: The QR code image is successfully generated and returned.
+  - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
+  - `403 Forbidden`: The `url` is unsafe.
   - `404 Not Found`: The provided `id` does not exist.
   - `406 Not Acceptable`: The client requested an invalid format for the QR.
   - `500 Internal Server Error`: Unexpected server error.
@@ -193,18 +197,18 @@ Generates a QR code for the shortened URL identified by id.
 
 `GET /api/analytics`
 
-Retrieves aggregated analytics data for a shortened URL. You can request breakdowns by browser, country, platform, and referrer.
+Retrieves aggregated analytics data for a shortened URL. You can request breakdowns by browser, country and platform.
 
 - **Parameters:**
     - `id` (Required): The identifier of the shortened URL.
     - `browser` (Optional, Default: `false`): Include breakdown by browser.
     - `country` (Optional, Default: `false`): Include breakdown by country.
     - `platform` (Optional, Default: `false`): Include breakdown by platform.
-    - `referrer` (Optional, Default: `false`): Include breakdown by referrer.
-
 
 - **Responses:**
     - `200 OK`: The analytics data is successfully returned.
+    - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
+    - `403 Forbidden`: The `url` is unsafe.
     - `404 Not Found`: The provided `id` does not exist.
     - `406 Not Acceptable`: The client requested an invalid format for the analytics.
     - `500 Internal Server Error`: Unexpected server error.
@@ -216,14 +220,12 @@ Retrieves aggregated analytics data for a shortened URL. You can request breakdo
 Creates a shortened URL from the data sent by a form.
 
 - **Parameters:**
-    - `url` (Required): The original URL to shorten.
+    - `rawUrl` (Required): The original URL to shorten.
     - `qrRequested` (Optional, Default: false): Whether to generate a QR code for the shortened URL.
 
 
 - **Responses:**
-    - `200 OK`: The `url` was successfully processed.
-    - `400 Bad Request`: The `url` does not meet the required format or is not reachable.
-    - `403 Forbidden`: The `url` is unsafe.
+    - `200 CREATED`: The `url` was successfully processed.
     - `500 Internal Server Error`: Unexpected server error.
 
 ### 6. **Upload CSV and Shorten URLs**
@@ -402,7 +404,7 @@ New tests implemented:
 Analytics functionality has been added to provide insights into the usage of shortened URLs. A new endpoint `GET /api/analytics` allows users to retrieve aggregated analytics data based on specified parameters, including:
 
 - Total Clicks: The total number of times the shortened URL was accessed.
-- Detailed Breakdown: Click data categorized by browser, referrer, country, and platform.
+- Detailed Breakdown: Click data categorized by browser, country, and platform.
 
 The endpoint supports flexible queries, enabling users to request analytics for specific categories (e.g., browser data, country data, or both simultaneously) based on their needs.
 
@@ -450,3 +452,38 @@ New tests implemented:
 - checkRedirectionLimit throws when count equals limit 
 - checkRedirectionLimit throws when count exceeds limit 
 - checkRedirectionLimit throws InternalError when an exception occurs inside the service
+
+
+# Third Project Report
+
+Several significant improvements and changes have been implemented in the project to optimize its performance and quality. One of the key updates is that the shortened URL is now generated and returned instantly upon creation, prioritizing response speed. Validation and geolocation tasks are processed asynchronously in the background, ensuring that the user experience is not affected by these additional operations.
+
+Another major change is the migration to a reactive programming model using Spring WebFlux, replacing the previous synchronous logic. This transition involved moving from JPA to R2DBC, a reactive database. This adjustment also required a complete refactoring of the tests to align with the reactive approach.
+
+To enhance performance, caching has been added to all requests made to external APIs and the database. This reduces latency and optimizes resource usage, particularly for recurring or high-demand operations.
+
+Additionally, the Result pattern has been implemented to handle request outcomes more robustly. This approach avoids the unnecessary throwing of unchecked exceptions, improving error management predictability and maintaining a smoother flow of operations.
+
+Regarding code quality, validation tools like SonarCloud and PMD have been integrated. These tools ensure the project meets high standards of quality and best practices. SonarLint, included within SonarCloud, is also used for local analysis during development.
+
+Finally, the geolocation logic has been significantly improved. The system can now extract IP addresses from requests more accurately, validate their authenticity, and detect bogon addresses (IPs invalid for public use). These adjustments ensure greater reliability in geolocation-related functionalities.
+
+These changes not only strengthen the system's performance but also enhance code quality and improve the overall user experience.
+
+# Issues Found
+
+1. **Webflux and testing issues**
+
+   The integration with WebFlux and testing proved to be challenging. When errors occurred, it was difficult to trace their origin because the stack trace was often unclear or incomplete. Additionally, integration tests were being cached inadvertently, which was not intended and caused further complications.
+
+2. **Exceptions**  
+
+   To fully transition away from the exception-based paradigm and implement the Result pattern, large portions of the code had to be rewritten to align with this new approach.
+
+3. **Database issues**
+
+   For the reactive database, it became necessary to create a schema.sql file to define and generate the database schema, as it was not being generated automatically.
+
+4. **Caching**
+
+    Caching was initially implemented using Spring Boot’s default caching library. However, it was eventually rolled back upon discovering that the library operated synchronously. As a result, Caffeine was adopted to provide an asynchronous caching solution.

@@ -7,32 +7,33 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.*
+import reactor.core.publisher.Flux
 
 class GetAnalyticsUseCaseImplTest {
 
     private lateinit var clickRepository: ClickRepositoryService
-    private lateinit var shortUrlRepository: ShortUrlRepositoryService
     private lateinit var getAnalyticsUseCase: GetAnalyticsUseCase
 
     @BeforeEach
     fun setUp() {
         clickRepository = mock()
-        shortUrlRepository = mock()
-        getAnalyticsUseCase = GetAnalyticsUseCaseImpl(clickRepository, shortUrlRepository)
+        getAnalyticsUseCase = GetAnalyticsUseCaseImpl(clickRepository)
     }
 
     @Test
-    fun `should throw RedirectionNotFound when ShortUrl does not exist`() {
-        // Configuración
-        val id = "nonexistent"
-        whenever(shortUrlRepository.findByKey(id)).thenReturn(null)
+    fun `should handle non-existent id gracefully`() {
+        val id = "nonExistentId"
 
-        // Ejecución y verificación
-        assertThrows<RedirectionNotFound> {
-            getAnalyticsUseCase.getAnalytics(id)
-        }
+        whenever(clickRepository.findAllByHash(id)).thenReturn(Flux.empty())
+
+        val analyticsData = getAnalyticsUseCase.getAnalytics(id).block()
+
+        assertNotNull(analyticsData)
+        assertEquals(0, analyticsData?.totalClicks)
+        assertNull(analyticsData?.byBrowser)
+        assertNull(analyticsData?.byCountry)
+        assertNull(analyticsData?.byPlatform)
     }
 
     @ParameterizedTest
@@ -40,69 +41,65 @@ class GetAnalyticsUseCaseImplTest {
     fun `should return correct analytics data for all parameter permutations`(
         includeBrowser: Boolean,
         includeCountry: Boolean,
-        includePlatform: Boolean,
-        includeReferrer: Boolean
+        includePlatform: Boolean
     ) {
-        // Configuración
-        val id = "abc123"
-        val shortUrl = mock<ShortUrl>()
-        whenever(shortUrlRepository.findByKey(id)).thenReturn(shortUrl)
-
-        val click1 = Click(
-            hash = id,
-            properties = ClickProperties(
-                browser = "Chrome",
-                country = "Spain",
-                platform = "Windows",
-                referrer = "Google"
+        val id = "testId"
+        val clicks = listOf(
+            Click(hash = id, properties = ClickProperties(
+                    browserPlatform = BrowserPlatform(
+                        browser = "Chrome",
+                        platform = "Windows"
+                    ),
+                    geoLocation = GeoLocation(
+                        country = "Spain"
+                    )
+                )
+            ),
+            Click(hash = id, properties = ClickProperties(
+                    browserPlatform = BrowserPlatform(
+                        browser = "Firefox",
+                        platform = "Linux"
+                    ),
+                    geoLocation = GeoLocation(
+                        country = "France"
+                    )
+                )
+            ),
+            Click(hash = id, properties = ClickProperties(
+                    browserPlatform = BrowserPlatform(),
+                    geoLocation = GeoLocation()
+                )
             )
         )
-        val click2 = Click(
-            hash = id,
-            properties = ClickProperties(
-                browser = "Firefox",
-                country = "France",
-                platform = "Linux",
-                referrer = "Bing"
-            )
-        )
-        val clicks = listOf(click1, click2)
-        whenever(clickRepository.findAllByHash(id)).thenReturn(clicks)
 
-        // Ejecución
+        whenever(clickRepository.findAllByHash(id)).thenReturn(Flux.fromIterable(clicks))
+
         val analyticsData = getAnalyticsUseCase.getAnalytics(
             id,
-            includeBrowser = includeBrowser,
-            includeCountry = includeCountry,
-            includePlatform = includePlatform,
-            includeReferrer = includeReferrer
-        )
+            includeBrowser,
+            includeCountry,
+            includePlatform
+        ).block()
 
-        // Verificación
-        assertEquals(2, analyticsData.totalClicks)
+        kotlin.test.assertNotNull(analyticsData)
+        assertEquals(3, analyticsData.totalClicks)
 
         if (includeBrowser) {
-            assertEquals(mapOf("Chrome" to 1, "Firefox" to 1), analyticsData.byBrowser)
+            assertEquals(mapOf("Chrome" to 1, "Firefox" to 1, "Unknown" to 1), analyticsData.byBrowser)
         } else {
             assertNull(analyticsData.byBrowser)
         }
 
         if (includeCountry) {
-            assertEquals(mapOf("Spain" to 1, "France" to 1), analyticsData.byCountry)
+            assertEquals(mapOf("Spain" to 1, "France" to 1, "Unknown" to 1), analyticsData.byCountry)
         } else {
             assertNull(analyticsData.byCountry)
         }
 
         if (includePlatform) {
-            assertEquals(mapOf("Windows" to 1, "Linux" to 1), analyticsData.byPlatform)
+            assertEquals(mapOf("Windows" to 1, "Linux" to 1, "Unknown" to 1), analyticsData.byPlatform)
         } else {
             assertNull(analyticsData.byPlatform)
-        }
-
-        if (includeReferrer) {
-            assertEquals(mapOf("Google" to 1, "Bing" to 1), analyticsData.byReferrer)
-        } else {
-            assertNull(analyticsData.byReferrer)
         }
     }
 
@@ -115,9 +112,7 @@ class GetAnalyticsUseCaseImplTest {
             for (browser in booleans) {
                 for (country in booleans) {
                     for (platform in booleans) {
-                        for (referrer in booleans) {
-                            permutations.add(arrayOf(browser, country, platform, referrer))
-                        }
+                        permutations.add(arrayOf(browser, country, platform))
                     }
                 }
             }

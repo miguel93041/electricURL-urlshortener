@@ -8,14 +8,18 @@ import es.unizar.urlshortener.core.*
  * Extension method to convert a [ClickEntity] into a domain [Click].
  */
 fun ClickEntity.toDomain() = Click(
+    id = id,
     hash = hash,
     created = created,
     properties = ClickProperties(
-        ip = ip,
-        referrer = referrer,
-        browser = browser,
-        platform = platform,
-        country = country
+        geoLocation = GeoLocation(
+            ip = ip,
+            country = country
+        ),
+        browserPlatform = BrowserPlatform(
+            browser = browser,
+            platform = platform
+        )
     )
 )
 
@@ -23,14 +27,13 @@ fun ClickEntity.toDomain() = Click(
  * Extension method to convert a domain [Click] into a [ClickEntity].
  */
 fun Click.toEntity() = ClickEntity(
-    id = null,
+    id = id,
     hash = hash,
     created = created,
-    ip = properties.ip,
-    referrer = properties.referrer,
-    browser = properties.browser,
-    platform = properties.platform,
-    country = properties.country
+    ip = properties.geoLocation.ip,
+    browser = properties.browserPlatform.browser,
+    platform = properties.browserPlatform.platform,
+    country = properties.geoLocation.country
 )
 
 /**
@@ -44,10 +47,15 @@ fun ShortUrlEntity.toDomain() = ShortUrl(
     ),
     created = created,
     properties = ShortUrlProperties(
-        owner = owner,
-        safe = safe,
-        ip = ip,
-        country = country
+        geoLocation = GeoLocation(
+            ip = ip,
+            country = country
+        ),
+        validation = ShortUrlValidation(
+            reachable = reachable,
+            safe = safe,
+            validated = validated
+        )
     )
 )
 
@@ -57,10 +65,11 @@ fun ShortUrlEntity.toDomain() = ShortUrl(
 fun ShortUrl.toEntity() = ShortUrlEntity(
     hash = hash,
     target = redirection.target,
-    mode = redirection.mode,
     created = created,
-    owner = properties.owner,
-    safe = properties.safe,
-    ip = properties.ip,
-    country = properties.country
+    mode = redirection.mode,
+    ip = properties.geoLocation.ip,
+    country = properties.geoLocation.country,
+    reachable = properties.validation.reachable,
+    safe = properties.validation.safe,
+    validated = properties.validation.validated
 )
