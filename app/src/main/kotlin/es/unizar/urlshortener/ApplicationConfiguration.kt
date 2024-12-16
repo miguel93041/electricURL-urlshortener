@@ -349,6 +349,7 @@ class ApplicationConfiguration(
      * Provides an asynchronous cache for click data.
      * @return an instance of [AsyncCache<String, List<Click>>].
      */
+    @Bean
     fun clickCache(): AsyncCache<String, List<Click>> {
         return Caffeine.newBuilder()
             .expireAfterWrite(15, TimeUnit.MINUTES)
@@ -360,6 +361,7 @@ class ApplicationConfiguration(
      * Provides an asynchronous cache for short URLs.
      * @return an instance of [AsyncCache<String, ShortUrl>].
      */
+    @Bean
     fun shortUrlCache(): AsyncCache<String, ShortUrl> {
         return Caffeine.newBuilder()
             .expireAfterAccess(12, TimeUnit.HOURS)
