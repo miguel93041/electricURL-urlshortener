@@ -20,7 +20,11 @@ class ProcessCsvUseCaseTest {
 
     private lateinit var processCsvUseCase: ProcessCsvUseCase
     private lateinit var generateShortUrlService: GenerateShortUrlService
-
+    companion object {
+        const val urls1 = "http://short.ly/abc123"
+        const val urls2 = "http://short.ly/xyz789"
+        const val url1 = "http://example.com"
+    }
     @BeforeEach
     fun setup() {
         generateShortUrlService = mock()
@@ -64,14 +68,14 @@ class ProcessCsvUseCaseTest {
     @Test
     fun `should process valid URLs correctly`() {
         createTestCase(
-            inputUrls = listOf("http://example.com", "http://another-example.com"),
+            inputUrls = listOf(url1, "http://another-example.com"),
             shortUrls = listOf(
-                ShortUrlDataOut(shortUrl = URI("http://short.ly/abc123"), qrCodeUrl = null),
-                ShortUrlDataOut(shortUrl = URI("http://short.ly/xyz789"), qrCodeUrl = null)
+                ShortUrlDataOut(shortUrl = URI(urls1), qrCodeUrl = null),
+                ShortUrlDataOut(shortUrl = URI(urls2), qrCodeUrl = null)
             ),
             expectedOutput = """
-                http://example.com,http://short.ly/abc123,QR not generated
-                http://another-example.com,http://short.ly/xyz789,QR not generated
+                http://example.com,$urls1,QR not generated
+                http://another-example.com,$urls2,QR not generated
             """.trimIndent()
         )
     }
@@ -79,16 +83,16 @@ class ProcessCsvUseCaseTest {
     @Test
     fun `should generate QR code URLs if requested`() {
         createTestCase(
-            inputUrls = listOf("http://example.com"),
+            inputUrls = listOf(url1),
             shortUrls = listOf(
                 ShortUrlDataOut(
-                    shortUrl = URI("http://short.ly/abc123"),
+                    shortUrl = URI(urls1),
                     qrCodeUrl = URI("http://short.ly/qr/abc123")
                 )
             ),
             qrRequested = true,
             expectedOutput = """
-                http://example.com,http://short.ly/abc123,http://short.ly/qr/abc123
+                http://example.com,$urls1,http://short.ly/qr/abc123
             """.trimIndent()
         )
     }
@@ -114,13 +118,13 @@ class ProcessCsvUseCaseTest {
     @Test
     fun `should process mix of http and https URLs`() {
         createTestCase(
-            inputUrls = listOf("http://example.com", "https://secure-example.com"),
+            inputUrls = listOf(url1, "https://secure-example.com"),
             shortUrls = listOf(
-                ShortUrlDataOut(shortUrl = URI("http://short.ly/abc123"), qrCodeUrl = null),
+                ShortUrlDataOut(shortUrl = URI(urls1), qrCodeUrl = null),
                 ShortUrlDataOut(shortUrl = URI("http://short.ly/secure456"), qrCodeUrl = null)
             ),
             expectedOutput = """
-                http://example.com,http://short.ly/abc123,QR not generated
+                http://example.com,$urls1,QR not generated
                 https://secure-example.com,http://short.ly/secure456,QR not generated
             """.trimIndent()
         )
