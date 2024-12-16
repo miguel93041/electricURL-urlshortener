@@ -7,6 +7,25 @@ plugins {
     alias(libs.plugins.spring.boot)
     // Applies the Spring Dependency Management plugin using an alias from the version catalog.
     alias(libs.plugins.spring.dependency.management)
+    // Applies the JaCoCo plugin
+    id("jacoco")
+}
+
+subprojects {
+    apply(plugin = "jacoco")
+
+    tasks.withType<Test> {
+        useJUnitPlatform()
+        finalizedBy("jacocoTestReport")
+    }
+
+    tasks.register<JacocoReport>("jacocoTestReport") {
+        dependsOn("test")
+        reports {
+            xml.required.set(true)
+            html.required.set(false)
+        }
+    }
 }
 
 dependencies {
@@ -60,5 +79,40 @@ configurations.matching { it.name == "detekt" }.all {
         if (requested.group == "org.jetbrains.kotlin") {
             useVersion("1.9.23")
         }
+    }
+}
+
+val manualSubprojects = listOf(":core", ":delivery", ":gateway")
+
+tasks.register<JacocoReport>("jacocoMergedReport") {
+    dependsOn(manualSubprojects.map { project(it).tasks.withType<JacocoReport>() })
+    dependsOn("test")
+    dependsOn(manualSubprojects.map { project(it).tasks.named("test") })
+
+    mustRunAfter(manualSubprojects.map { project(it).tasks.named("compileKotlin") })
+    mustRunAfter("compileKotlin")
+
+    executionData.setFrom(
+        files(
+            manualSubprojects.map { project(it).layout.buildDirectory.file("jacoco/test.exec") },
+            layout.buildDirectory.file("jacoco/test.exec")
+        )
+    )
+
+    sourceDirectories.setFrom(manualSubprojects.map { project(it).layout.projectDirectory.dir("src/main/kotlin") })
+    classDirectories.setFrom(manualSubprojects.map { project(it).layout.buildDirectory.dir("classes/kotlin/main") })
+
+    sourceDirectories.from(layout.projectDirectory.dir("src/main/kotlin"))
+    classDirectories.from(layout.buildDirectory.dir("classes/kotlin/main"))
+
+    reports {
+        xml.required.set(true)
+        xml.outputLocation.set(file("${buildDir}/reports/jacoco/merged/jacocoMergedReport.xml"))
+        html.required.set(true)
+        html.outputLocation.set(file("${buildDir}/reports/jacoco/merged/html"))
+    }
+
+    doFirst {
+        println("Merging JaCoCo reports from projects: $manualSubprojects and :app")
     }
 }

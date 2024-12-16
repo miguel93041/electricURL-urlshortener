@@ -1,4 +1,4 @@
-@file:Suppress("MatchingDeclarationName", "WildcardImport", "LargeClass", "LongMethod", "LongParameterList")
+@file:Suppress("WildcardImport", "LargeClass", "LongMethod", "LongParameterList")
 package es.unizar.urlshortener
 
 import es.unizar.urlshortener.core.ShortUrlDataOut
@@ -30,7 +30,7 @@ import org.springframework.web.reactive.function.BodyInserters
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
-class ReactiveIntegrationTest(
+class IntegrationTests(
     @Autowired val webTestClient: WebTestClient,
     @Autowired val r2dbcEntityTemplate: R2dbcEntityTemplate,
     @Autowired var clickRepositoryService: ClickRepositoryServiceImpl,

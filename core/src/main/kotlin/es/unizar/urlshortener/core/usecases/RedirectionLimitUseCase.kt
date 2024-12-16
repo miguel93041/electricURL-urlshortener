@@ -1,3 +1,5 @@
+package es.unizar.urlshortener.core.usecases
+
 import es.unizar.urlshortener.core.ClickRepositoryService
 import reactor.core.publisher.Mono
 import java.time.OffsetDateTime

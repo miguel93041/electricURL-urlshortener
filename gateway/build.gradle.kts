@@ -10,6 +10,9 @@ plugins {
 
     // Apply the Spring Dependency Management plugin
     alias(libs.plugins.spring.dependency.management)
+
+    // Apply jacoco plugin
+    id("jacoco")
 }
 
 dependencies {
