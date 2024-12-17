@@ -147,8 +147,8 @@ class UrlShortenerControllerImpl(
      * @param request The HTTP request.
      * @return A [Mono] emitting a [ResponseEntity] with the QR code image as a PNG image in a byte array format.
      */
-    @GetMapping("/api/qr", produces = [MediaType.IMAGE_PNG_VALUE])
-    override fun redirectToQrCode(@RequestParam id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>> {
+    @GetMapping("/api/qr/{id}", produces = [MediaType.IMAGE_PNG_VALUE])
+    override fun redirectToQrCode(@PathVariable id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>> {
         return qrService.getQrImage(id, request)
             .map { result ->
                 result.fold(
