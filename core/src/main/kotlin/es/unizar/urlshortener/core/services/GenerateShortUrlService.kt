@@ -56,7 +56,7 @@ class GenerateShortUrlServiceImpl(
             .flatMap { shortUrlModel ->
                 val shortUrl = URI.create("${baseUrlProvider.get(request)}/${shortUrlModel.hash}")
                 val qrCodeUrl = if (data.qrRequested) {
-                    URI.create("${baseUrlProvider.get(request)}/api/qr?id=${shortUrlModel.hash}")
+                    URI.create("${baseUrlProvider.get(request)}/api/qr/${shortUrlModel.hash}")
                 } else null
 
                 // Validate URL in a background task
@@ -70,7 +70,7 @@ class GenerateShortUrlServiceImpl(
                                         shortUrlModel.hash,
                                         ShortUrlValidation(safe = true, reachable = false, validated = true)
                                     ).subscribe()
-                                UrlError.Unsafe ->  shortUrlRepositoryService.updateValidation(
+                                UrlError.Unsafe -> shortUrlRepositoryService.updateValidation(
                                     shortUrlModel.hash,
                                     ShortUrlValidation(safe = false, reachable = true, validated = true)
                                 ).subscribe()

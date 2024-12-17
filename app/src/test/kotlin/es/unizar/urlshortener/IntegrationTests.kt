@@ -344,7 +344,7 @@ class IntegrationTests(
         val shortUrlRegexPattern = Regex(REGEX_PATTERN).toPattern()
         assertThat(response.body!!.shortUrl.toString()).matches(shortUrlRegexPattern)
 
-        val qrCodeUrlRegexPattern = Regex(".*/api/qr\\?id=[a-zA-Z0-9]{8}$").toPattern()
+        val qrCodeUrlRegexPattern = Regex(".*/api/qr/[a-zA-Z0-9]{8}$").toPattern()
         assertThat(response.body!!.qrCodeUrl.toString()).matches(qrCodeUrlRegexPattern)
 
         assertThat(countRowsInTable("shorturl")).isEqualTo(1)
@@ -562,7 +562,7 @@ class IntegrationTests(
     @Test
     fun `qr page - returns 404 when the id does not exist`() {
         webTestClient.get()
-            .uri("/api/qr?id=fa123456")
+            .uri("/api/qr/fa123456")
             .exchange()
             .expectStatus().isNotFound
             .expectBody(String::class.java)
@@ -574,7 +574,7 @@ class IntegrationTests(
     @Test
     fun `qr page - returns 400 when the id format is invalid`() {
         webTestClient.get()
-            .uri("/api/qr?id=fa123456789")
+            .uri("/api/qr/fa123456789")
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
@@ -593,7 +593,7 @@ class IntegrationTests(
         Thread.sleep(1000)
 
         webTestClient.get()
-            .uri("/api/qr?id=$hash")
+            .uri("/api/qr/$hash")
             .exchange()
             .expectStatus().isForbidden
             .expectBody(String::class.java)
@@ -611,7 +611,7 @@ class IntegrationTests(
         Thread.sleep(1000)
 
         webTestClient.get()
-            .uri("/api/qr?id=$hash")
+            .uri("/api/qr/$hash")
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
@@ -626,7 +626,7 @@ class IntegrationTests(
         val hash = response.body!!.shortUrl.path.split("/").last()
 
         webTestClient.get()
-            .uri("/api/qr?id=$hash")
+            .uri("/api/qr/$hash")
             .exchange()
             .expectStatus().isBadRequest
             .expectBody(String::class.java)
@@ -691,13 +691,13 @@ class IntegrationTests(
                 val line0Parts = lines[0].split(",")
                 assert(line0Parts[0] == "http://example1.com")
                 assert(line0Parts[1].matches(Regex(".*/[a-zA-Z0-9]{8}"))) // Hash validation
-                assert(line0Parts[2].matches(Regex(".*/api/qr\\?id=[a-zA-Z0-9]{8}"))) // QR code URL validation
+                assert(line0Parts[2].matches(Regex(".*/api/qr/[a-zA-Z0-9]{8}"))) // QR code URL validation
 
                 // Validate line 1
                 val line1Parts = lines[1].split(",")
                 assert(line1Parts[0] == "http://example2.com")
                 assert(line1Parts[1].matches(Regex(".*/[a-zA-Z0-9]{8}"))) // Hash validation
-                assert(line1Parts[2].matches(Regex(".*/api/qr\\?id=[a-zA-Z0-9]{8}"))) // QR code URL validation
+                assert(line1Parts[2].matches(Regex(".*/api/qr/[a-zA-Z0-9]{8}"))) // QR code URL validation
 
                 // Validate the last line is empty
                 assert(lines[2].isEmpty())

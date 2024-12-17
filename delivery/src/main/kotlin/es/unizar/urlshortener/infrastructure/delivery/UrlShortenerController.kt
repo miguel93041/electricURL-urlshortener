@@ -113,19 +113,28 @@ class UrlShortenerControllerImpl(
                         ResponseEntity<Any>(null, headers, HttpStatus.valueOf(redirection.mode))
                     },
                     failure = { error ->
-                        val (status, message) = when (error) {
-                            RedirectionError.InvalidFormat -> HttpStatus.BAD_REQUEST to INVALID_HASH_FORMAT
-                            RedirectionError.NotFound ->
-                                HttpStatus.NOT_FOUND to HASH_DONT_EXIST
-                            RedirectionError.TooManyRequests ->
-                                HttpStatus.TOO_MANY_REQUESTS to "This shortened hash is under load"
-                            RedirectionError.NotValidated ->
-                                HttpStatus.BAD_REQUEST to
-                                    HASH_VALIDATING
-                            RedirectionError.Unreachable -> HttpStatus.BAD_REQUEST to ORIGINAL_URL_UNREACHABLE
-                            RedirectionError.Unsafe -> HttpStatus.FORBIDDEN to ORIGINAL_URL_UNSAFE
+                        val (status, message, headers) = when (error) {
+                            RedirectionError.InvalidFormat -> Triple(HttpStatus.BAD_REQUEST, INVALID_HASH_FORMAT, null)
+                            RedirectionError.NotFound -> Triple(HttpStatus.NOT_FOUND, HASH_DONT_EXIST, null)
+                            RedirectionError.TooManyRequests -> Triple(
+                                HttpStatus.TOO_MANY_REQUESTS,
+                                "This shortened hash is under load",
+                                null
+                            )
+                            RedirectionError.NotValidated -> {
+                                val retryAfterSeconds = 10
+                                val headers = HttpHeaders()
+                                headers.add(HttpHeaders.RETRY_AFTER, retryAfterSeconds.toString())
+                                Triple(HttpStatus.BAD_REQUEST, HASH_VALIDATING, headers)
+                            }
+                            RedirectionError.Unreachable -> Triple(
+                                HttpStatus.BAD_REQUEST,
+                                ORIGINAL_URL_UNREACHABLE,
+                                null
+                            )
+                            RedirectionError.Unsafe -> Triple(HttpStatus.FORBIDDEN, ORIGINAL_URL_UNSAFE, null)
                         }
-                        ResponseEntity<Any>(message, null, status)
+                        ResponseEntity<Any>(message, headers, status)
                     }
                 )
             }
@@ -138,8 +147,8 @@ class UrlShortenerControllerImpl(
      * @param request The HTTP request.
      * @return A [Mono] emitting a [ResponseEntity] with the QR code image as a PNG image in a byte array format.
      */
-    @GetMapping("/api/qr", produces = [MediaType.IMAGE_PNG_VALUE])
-    override fun redirectToQrCode(@RequestParam id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>> {
+    @GetMapping("/api/qr/{id}", produces = [MediaType.IMAGE_PNG_VALUE])
+    override fun redirectToQrCode(@PathVariable id: String, request: ServerHttpRequest): Mono<ResponseEntity<Any>> {
         return qrService.getQrImage(id, request)
             .map { result ->
                 result.fold(
@@ -149,16 +158,19 @@ class UrlShortenerControllerImpl(
                             .body(qr)
                     },
                     failure = { error ->
-                        val (status, message) = when (error) {
-                            HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to INVALID_HASH_FORMAT
-                            HashError.NotFound -> HttpStatus.NOT_FOUND to HASH_DONT_EXIST
-                            HashError.NotValidated ->
-                                HttpStatus.BAD_REQUEST to
-                                    HASH_VALIDATING
-                            HashError.Unreachable -> HttpStatus.BAD_REQUEST to ORIGINAL_URL_UNREACHABLE
-                            HashError.Unsafe -> HttpStatus.FORBIDDEN to ORIGINAL_URL_UNSAFE
+                        val (status, message, headers) = when (error) {
+                            HashError.InvalidFormat -> Triple(HttpStatus.BAD_REQUEST, INVALID_HASH_FORMAT, null)
+                            HashError.NotFound -> Triple(HttpStatus.NOT_FOUND, HASH_DONT_EXIST, null)
+                            HashError.NotValidated -> {
+                                val retryAfterSeconds = 10
+                                val headers = HttpHeaders()
+                                headers.add(HttpHeaders.RETRY_AFTER, retryAfterSeconds.toString())
+                                Triple(HttpStatus.BAD_REQUEST, HASH_VALIDATING, headers)
+                            }
+                            HashError.Unreachable -> Triple(HttpStatus.BAD_REQUEST, ORIGINAL_URL_UNREACHABLE, null)
+                            HashError.Unsafe -> Triple(HttpStatus.FORBIDDEN, ORIGINAL_URL_UNSAFE, null)
                         }
-                        ResponseEntity.status(status).body(message)
+                        ResponseEntity.status(status).headers(headers).body(message)
                     }
                 )
             }
@@ -245,16 +257,19 @@ class UrlShortenerControllerImpl(
                         ResponseEntity.ok(analytics)
                     },
                     failure = { error ->
-                        val (status, message) = when (error) {
-                            HashError.InvalidFormat -> HttpStatus.BAD_REQUEST to INVALID_HASH_FORMAT
-                            HashError.NotFound -> HttpStatus.NOT_FOUND to HASH_DONT_EXIST
-                            HashError.NotValidated ->
-                                HttpStatus.BAD_REQUEST to
-                                    HASH_VALIDATING
-                            HashError.Unreachable -> HttpStatus.BAD_REQUEST to ORIGINAL_URL_UNREACHABLE
-                            HashError.Unsafe -> HttpStatus.FORBIDDEN to ORIGINAL_URL_UNSAFE
+                        val (status, message, headers) = when (error) {
+                            HashError.InvalidFormat -> Triple(HttpStatus.BAD_REQUEST, INVALID_HASH_FORMAT, null)
+                            HashError.NotFound -> Triple(HttpStatus.NOT_FOUND, HASH_DONT_EXIST, null)
+                            HashError.NotValidated -> {
+                                val retryAfterSeconds = 10
+                                val headers = HttpHeaders()
+                                headers.add(HttpHeaders.RETRY_AFTER, retryAfterSeconds.toString())
+                                Triple(HttpStatus.BAD_REQUEST, HASH_VALIDATING, headers)
+                            }
+                            HashError.Unreachable -> Triple(HttpStatus.BAD_REQUEST, ORIGINAL_URL_UNREACHABLE, null)
+                            HashError.Unsafe -> Triple(HttpStatus.FORBIDDEN, ORIGINAL_URL_UNSAFE, null)
                         }
-                        ResponseEntity.status(status).body(message)
+                        ResponseEntity.status(status).headers(headers).body(message)
                     }
                 )
             }
