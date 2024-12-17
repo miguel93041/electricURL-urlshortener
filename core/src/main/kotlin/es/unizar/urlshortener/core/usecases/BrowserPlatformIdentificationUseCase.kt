@@ -45,11 +45,11 @@ class BrowserPlatformIdentificationUseCaseImpl(
 
         val client = parser.parse(userAgent)
 
-        if (client.userAgent != null && !client.userAgent.family.isNullOrBlank()) {
+        if (!client.userAgent?.family.isNullOrBlank()) {
             browser = client.userAgent.family
         }
 
-        if (client.os != null && !client.os.family.isNullOrBlank()) {
+        if (!client.os?.family.isNullOrBlank()) {
             platform = client.os.family
         }
 
