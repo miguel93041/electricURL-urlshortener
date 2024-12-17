@@ -1,6 +1,7 @@
 @file:Suppress("WildcardImport")
 package es.unizar.urlshortener.core.usecases
 
+import es.unizar.urlshortener.core.ShortUrlDataIn
 import es.unizar.urlshortener.core.ShortUrlDataOut
 import es.unizar.urlshortener.core.services.GenerateShortUrlService
 import org.junit.jupiter.api.Assertions.assertEquals
