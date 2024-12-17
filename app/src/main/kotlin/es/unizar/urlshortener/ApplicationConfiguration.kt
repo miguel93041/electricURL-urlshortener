@@ -5,9 +5,7 @@ import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.zxing.qrcode.QRCodeWriter
 import es.unizar.urlshortener.core.*
-import es.unizar.urlshortener.core.queues.CoroutineScopeManager
-import es.unizar.urlshortener.core.queues.GeolocationChannelService
-import es.unizar.urlshortener.core.queues.GeolocationConsumerService
+import es.unizar.urlshortener.core.queues.*
 import es.unizar.urlshortener.core.services.*
 import es.unizar.urlshortener.core.usecases.*
 import es.unizar.urlshortener.infrastructure.delivery.HashServiceImpl
@@ -216,18 +214,16 @@ class ApplicationConfiguration(
 
     @Bean
     fun generateShortUrlService(
-        urlValidatorService: UrlValidatorService,
         createShortUrlUseCase: CreateShortUrlUseCase,
-        shortUrlRepositoryService: ShortUrlRepositoryService,
         baseUrlProvider: BaseUrlProvider,
-        geolocationChannelService: GeolocationChannelService
+        geolocationChannelService: GeolocationChannelService,
+        urlValidationChannelService: UrlValidationChannelService
     ): GenerateShortUrlService {
         return GenerateShortUrlServiceImpl(
-            urlValidatorService,
             createShortUrlUseCase,
-            shortUrlRepositoryService,
             baseUrlProvider,
             geolocationChannelService,
+            urlValidationChannelService,
         )
     }
 
@@ -267,19 +263,19 @@ class ApplicationConfiguration(
         hashValidatorService: HashValidatorService,
         redirectUseCase: RedirectUseCase,
         logClickUseCase: LogClickUseCase,
-        geoLocationService: GeoLocationService,
         browserPlatformIdentificationUseCase: BrowserPlatformIdentificationUseCase,
         redirectionLimitUseCase: RedirectionLimitUseCase,
         clickRepositoryService: ClickRepositoryService,
+        geolocationChannelService: GeolocationChannelService
     ): RedirectService {
         return RedirectServiceImpl(
             hashValidatorService,
             redirectUseCase,
             logClickUseCase,
-            geoLocationService,
             browserPlatformIdentificationUseCase,
             redirectionLimitUseCase,
-            clickRepositoryService
+            clickRepositoryService,
+            geolocationChannelService,
         )
     }
 
@@ -336,4 +332,16 @@ class ApplicationConfiguration(
         coroutineScopeManager: CoroutineScopeManager) =
         GeolocationConsumerService(channelService,
         geoLocationService, clickRepositoryService, shortUrlRepositoryService, coroutineScopeManager)
+
+    @Bean
+    fun urlValidationChannelService() = UrlValidationChannelService(queueCapacity=10000)
+
+    @Bean
+    fun urlValidationConsumerService(
+        channelService: UrlValidationChannelService,
+        urlValidatorService: UrlValidatorService,
+        shortUrlRepositoryService: ShortUrlRepositoryService,
+        coroutineScopeManager: CoroutineScopeManager) =
+        UrlValidationConsumerService(channelService,
+            urlValidatorService, shortUrlRepositoryService, coroutineScopeManager)
 }

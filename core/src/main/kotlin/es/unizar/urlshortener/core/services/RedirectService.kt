@@ -4,6 +4,7 @@ package es.unizar.urlshortener.core.services
 
 import com.github.michaelbull.result.*
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.queues.GeolocationChannelService
 import es.unizar.urlshortener.core.usecases.BrowserPlatformIdentificationUseCase
 import es.unizar.urlshortener.core.usecases.LogClickUseCase
 import es.unizar.urlshortener.core.usecases.RedirectUseCase
@@ -35,10 +36,11 @@ class RedirectServiceImpl(
     private val hashValidatorService: HashValidatorService,
     private val redirectUseCase: RedirectUseCase,
     private val logClickUseCase: LogClickUseCase,
-    private val geoLocationService: GeoLocationService,
     private val browserPlatformIdentificationUseCase: BrowserPlatformIdentificationUseCase,
     private val redirectionLimitUseCase: RedirectionLimitUseCase,
-    private val clickRepositoryService: ClickRepositoryService
+    private val clickRepositoryService: ClickRepositoryService,
+    private val geolocationChannelService: GeolocationChannelService
+
 ) : RedirectService {
 
     /**
@@ -88,11 +90,7 @@ class RedirectServiceImpl(
                                 .flatMap { click ->
                                     val ipAddress = ClientHostResolver.resolve(request)
                                     if (ipAddress != null) {
-                                        geoLocationService.get(ipAddress)
-                                            .doOnSuccess { geoLocation ->
-                                                clickRepositoryService
-                                                    .updateGeolocation(click.id!!, geoLocation).subscribe()
-                                            }.subscribe()
+                                        geolocationChannelService.enqueue(ClickEvent(ip=ipAddress, clickId=click.id!!))
                                     }
 
                                     val userAgent = request.headers.getFirst("User-Agent")

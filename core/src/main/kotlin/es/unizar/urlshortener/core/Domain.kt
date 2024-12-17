@@ -134,3 +134,8 @@ data class HashEvent(
     override val ip: String,
     val hash: String
 ) : GeoLocationEvent()
+
+data class UrlValidationEvent(
+    val url: String,
+    val hash: String
+)

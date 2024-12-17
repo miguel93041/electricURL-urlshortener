@@ -6,6 +6,7 @@ import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrapError
 import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.queues.GeolocationChannelService
+import es.unizar.urlshortener.core.queues.UrlValidationChannelService
 import es.unizar.urlshortener.core.usecases.CreateShortUrlUseCase
 import org.springframework.http.server.reactive.ServerHttpRequest
 import reactor.core.publisher.Mono
@@ -32,11 +33,10 @@ fun interface GenerateShortUrlService {
  * This class acts as the controller to handle requests for generating enhanced short URLs.
  */
 class GenerateShortUrlServiceImpl(
-    private val urlValidatorService: UrlValidatorService,
     private val createShortUrlUseCase: CreateShortUrlUseCase,
-    private val shortUrlRepositoryService: ShortUrlRepositoryService,
     private val baseUrlProvider: BaseUrlProvider,
-    private val geolocationChannelService: GeolocationChannelService
+    private val geolocationChannelService: GeolocationChannelService,
+    private val urlValidationChannelService: UrlValidationChannelService
 ) : GenerateShortUrlService {
 
     /**
@@ -55,28 +55,12 @@ class GenerateShortUrlServiceImpl(
                 } else null
 
                 // Validate URL in a background task
-                urlValidatorService.validate(data.url)
-                    .doOnSuccess { validationResult ->
-                        if (validationResult.isErr) {
-                            val error = validationResult.unwrapError()
-                            when (error) {
-                                UrlError.InvalidFormat, UrlError.Unreachable ->
-                                    shortUrlRepositoryService.updateValidation(
-                                        shortUrlModel.hash,
-                                        ShortUrlValidation(safe = true, reachable = false, validated = true)
-                                    ).subscribe()
-                                UrlError.Unsafe ->  shortUrlRepositoryService.updateValidation(
-                                    shortUrlModel.hash,
-                                    ShortUrlValidation(safe = false, reachable = true, validated = true)
-                                ).subscribe()
-                            }
-                        } else {
-                            shortUrlRepositoryService.updateValidation(
-                                shortUrlModel.hash,
-                                ShortUrlValidation(safe = true, reachable = true, validated = true)
-                            ).subscribe()
-                        }
-                    }.subscribe()
+                urlValidationChannelService.enqueue(
+                    UrlValidationEvent(
+                        url = data.url,
+                        hash = shortUrlModel.hash
+                    )
+                )
 
                 // Enrich Shortened URL in a background task
                 val ipAddress = ClientHostResolver.resolve(request)
