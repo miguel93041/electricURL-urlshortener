@@ -2,32 +2,32 @@
 package es.unizar.urlshortener.core.queues
 
 import es.unizar.urlshortener.core.*
-import jakarta.annotation.PostConstruct
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import reactor.core.publisher.Mono
 
 class GeolocationConsumerService(
-    private val channelService: GeolocationChannelService,
     private val geoLocationService: GeoLocationService,
     private val clickRepositoryService: ClickRepositoryService,
-    private val shortUrlRepositoryService: ShortUrlRepositoryService,
-    private val coroutineScopeManager: CoroutineScopeManager
-) {
+    private val shortUrlRepositoryService: ShortUrlRepositoryService
+): CoroutineScope {
+    override val coroutineContext = Dispatchers.Default
 
-    @PostConstruct
-    fun startConsuming() {
-        coroutineScopeManager.applicationScope.launch {
-            for (event in channelService.getChannel()) {
-                val geoLocationMono = geoLocationService.get(event.ip)
-                val updateMono = when (event) {
-                    is ClickEvent -> geoLocationMono.flatMap { geo ->
-                        clickRepositoryService.updateGeolocation(event.clickId, geo)
-                    }
-                    is HashEvent -> geoLocationMono.flatMap { geo ->
-                        shortUrlRepositoryService.updateGeolocation(event.hash, geo)
-                    }
+    fun startProcessing(channel: Channel<GeoLocationEvent>): Job = launch {
+        for (event in channel) {
+            val geoLocationMono: Mono<GeoLocation> = geoLocationService.get(event.ip)
+            val updateMono: Mono<Void> = when (event) {
+                is ClickEvent -> geoLocationMono.flatMap { geo ->
+                    clickRepositoryService.updateGeolocation(event.clickId, geo)
                 }
-                updateMono.subscribe()
+                is HashEvent -> geoLocationMono.flatMap { geo ->
+                    shortUrlRepositoryService.updateGeolocation(event.hash, geo)
+                }
             }
+            updateMono.subscribe()
         }
     }
 }

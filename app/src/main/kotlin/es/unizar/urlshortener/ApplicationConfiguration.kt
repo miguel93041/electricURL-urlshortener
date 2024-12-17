@@ -18,6 +18,7 @@ import es.unizar.urlshortener.infrastructure.repositories.ShortUrlRepositoryServ
 import es.unizar.urlshortener.thirdparties.ipinfo.GeoLocationServiceImpl
 import es.unizar.urlshortener.thirdparties.ipinfo.UrlSafetyServiceImpl
 import io.github.cdimascio.dotenv.Dotenv
+import kotlinx.coroutines.Job
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
@@ -26,6 +27,7 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.web.reactive.function.client.WebClient
 import ua_parser.Parser
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.channels.Channel
 
 /**
  * Wires use cases with service implementations, and services implementations with repositories.
@@ -318,30 +320,35 @@ class ApplicationConfiguration(
     }
 
     @Bean
-    fun coroutineScopeManager() = CoroutineScopeManager()
+    fun urlValidationChannel() = Channel<UrlValidationEvent>()
 
     @Bean
-    fun geolocationChannelService() = GeolocationChannelService(queueCapacity=10000)
+    fun geolocationChannel() = Channel<GeoLocationEvent>()
+
+    @Bean
+    fun geolocationChannelService(geolocationChannel: Channel<GeoLocationEvent>) =
+        GeolocationChannelService(geolocationChannel)
 
     @Bean
     fun geolocationConsumerService(
-        channelService: GeolocationChannelService,
         geoLocationService: GeoLocationService,
         clickRepositoryService: ClickRepositoryService,
         shortUrlRepositoryService: ShortUrlRepositoryService,
-        coroutineScopeManager: CoroutineScopeManager) =
-        GeolocationConsumerService(channelService,
-        geoLocationService, clickRepositoryService, shortUrlRepositoryService, coroutineScopeManager)
+        geolocationChannel: Channel<GeoLocationEvent>
+    ) =
+        GeolocationConsumerService(geoLocationService, clickRepositoryService, shortUrlRepositoryService)
+            .startProcessing(geolocationChannel)
 
     @Bean
-    fun urlValidationChannelService() = UrlValidationChannelService(queueCapacity=10000)
+    fun urlValidationChannelService(urlValidationChannel: Channel<UrlValidationEvent>) =
+        UrlValidationChannelService(urlValidationChannel)
 
     @Bean
     fun urlValidationConsumerService(
-        channelService: UrlValidationChannelService,
         urlValidatorService: UrlValidatorService,
         shortUrlRepositoryService: ShortUrlRepositoryService,
-        coroutineScopeManager: CoroutineScopeManager) =
-        UrlValidationConsumerService(channelService,
-            urlValidatorService, shortUrlRepositoryService, coroutineScopeManager)
+        urlValidationChannel: Channel<UrlValidationEvent>
+    ): Job =
+        UrlValidationConsumerService(urlValidatorService, shortUrlRepositoryService)
+            .startProcessing(urlValidationChannel)
 }
