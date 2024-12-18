@@ -16,16 +16,20 @@ import java.net.InetSocketAddress
 import java.net.URI
 
 class ClientHostResolverTest {
+    companion object {
+        const val IP = "192.168.1.1"
+        const val IP2 = "10.0.0.1"
+    }
 
     @Test
     fun `resolve should return X-Real-IP if present`() {
         val request = mockServerHttpRequest(
-            headers = HttpHeaders().apply { set("X-Real-IP", "192.168.1.1") }
+            headers = HttpHeaders().apply { set("X-Real-IP", IP) }
         )
 
         val result = ClientHostResolver.resolve(request)
 
-        assertEquals("192.168.1.1", result)
+        assertEquals(IP, result)
     }
 
     @Test
@@ -41,26 +45,26 @@ class ClientHostResolverTest {
 
     @Test
     fun `resolve should return remote address if no headers are present`() {
-        val request = mockServerHttpRequest(remoteAddress = InetSocketAddress("10.0.0.1", 8080))
+        val request = mockServerHttpRequest(remoteAddress = InetSocketAddress(IP2, 8080))
 
         val result = ClientHostResolver.resolve(request)
 
-        assertEquals("10.0.0.1", result)
+        assertEquals(IP2, result)
     }
 
     @Test
     fun `resolve should prioritize X-Real-IP over X-Forwarded-For and remote address`() {
         val request = mockServerHttpRequest(
             headers = HttpHeaders().apply {
-                set("X-Real-IP", "192.168.1.1")
+                set("X-Real-IP", IP)
                 set("X-Forwarded-For", "203.0.113.195, 70.41.3.18")
             },
-            remoteAddress = InetSocketAddress("10.0.0.1", 8080)
+            remoteAddress = InetSocketAddress(IP2, 8080)
         )
 
         val result = ClientHostResolver.resolve(request)
 
-        assertEquals("192.168.1.1", result)
+        assertEquals(IP, result)
     }
 
     @Test
