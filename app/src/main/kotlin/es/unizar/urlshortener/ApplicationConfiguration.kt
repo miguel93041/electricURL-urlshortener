@@ -6,6 +6,7 @@ import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.zxing.qrcode.QRCodeWriter
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.queues.*
 import es.unizar.urlshortener.core.services.*
 import es.unizar.urlshortener.core.usecases.*
 import es.unizar.urlshortener.infrastructure.delivery.HashServiceImpl
@@ -18,6 +19,7 @@ import es.unizar.urlshortener.infrastructure.repositories.ShortUrlRepositoryServ
 import es.unizar.urlshortener.thirdparties.ipinfo.GeoLocationServiceImpl
 import es.unizar.urlshortener.thirdparties.ipinfo.UrlSafetyServiceImpl
 import io.github.cdimascio.dotenv.Dotenv
+import kotlinx.coroutines.Job
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
@@ -26,6 +28,7 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.web.reactive.function.client.WebClient
 import ua_parser.Parser
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.channels.Channel
 
 /**
  * Wires use cases with service implementations, and services implementations with repositories.
@@ -222,18 +225,16 @@ class ApplicationConfiguration(
      */
     @Bean
     fun generateShortUrlService(
-        urlValidatorService: UrlValidatorService,
         createShortUrlUseCase: CreateShortUrlUseCase,
-        geoLocationService: GeoLocationService,
-        shortUrlRepositoryService: ShortUrlRepositoryService,
-        baseUrlProvider: BaseUrlProvider
+        baseUrlProvider: BaseUrlProvider,
+        geolocationChannelService: GeolocationChannelService,
+        urlValidationChannelService: UrlValidationChannelService
     ): GenerateShortUrlService {
         return GenerateShortUrlServiceImpl(
-            urlValidatorService,
             createShortUrlUseCase,
-            geoLocationService,
-            shortUrlRepositoryService,
-            baseUrlProvider
+            baseUrlProvider,
+            geolocationChannelService,
+            urlValidationChannelService,
         )
     }
 
@@ -293,19 +294,19 @@ class ApplicationConfiguration(
         hashValidatorService: HashValidatorService,
         redirectUseCase: RedirectUseCase,
         logClickUseCase: LogClickUseCase,
-        geoLocationService: GeoLocationService,
         browserPlatformIdentificationUseCase: BrowserPlatformIdentificationUseCase,
         redirectionLimitUseCase: RedirectionLimitUseCase,
         clickRepositoryService: ClickRepositoryService,
+        geolocationChannelService: GeolocationChannelService
     ): RedirectService {
         return RedirectServiceImpl(
             hashValidatorService,
             redirectUseCase,
             logClickUseCase,
-            geoLocationService,
             browserPlatformIdentificationUseCase,
             redirectionLimitUseCase,
-            clickRepositoryService
+            clickRepositoryService,
+            geolocationChannelService,
         )
     }
 
@@ -368,4 +369,64 @@ class ApplicationConfiguration(
             .maximumSize(1000)
             .buildAsync()
     }
+
+    /**
+     * Creates an asynchronous channel for URL validation.
+     * @return A [Channel<UrlValidationEvent>] where URL validation events can be received.
+     */
+    @Bean
+    fun urlValidationChannel() = Channel<UrlValidationEvent>()
+
+    /**
+     * Creates an asynchronous channel for geolocation.
+     * @return A [Channel<GeoLocationEvent>] where geolocation events can be received.
+     */
+    @Bean
+    fun geolocationChannel() = Channel<GeoLocationEvent>()
+
+    /**
+     * Initializes the channel service for geolocation events.
+     * @param geolocationChannel The channel from which geolocation events will be received.
+     * @return A [GeolocationChannelService] instance that handles the channelization of these events.
+     */
+    @Bean
+    fun geolocationChannelService(geolocationChannel: Channel<GeoLocationEvent>) =
+        GeolocationChannelService(geolocationChannel)
+
+    /**
+     * Initializes and starts processing geo-location events.
+     * @param geolocationChannel The channel from which geo-location events will be received.
+     * @return An instance of [GeolocationConsumerService] that handles the processing.
+     */
+    @Bean
+    fun geolocationConsumerService(
+        geoLocationService: GeoLocationService,
+        clickRepositoryService: ClickRepositoryService,
+        shortUrlRepositoryService: ShortUrlRepositoryService,
+        geolocationChannel: Channel<GeoLocationEvent>
+    ) =
+        GeolocationConsumerService(geoLocationService, clickRepositoryService, shortUrlRepositoryService)
+            .startProcessing(geolocationChannel)
+
+    /**
+     * Initializes the URL validation channel service.
+     * @param urlValidationChannel The channel from which URL validation events will be received.
+     * @return An instance of [UrlValidationChannelService] that handles the processing.
+     */
+    @Bean
+    fun urlValidationChannelService(urlValidationChannel: Channel<UrlValidationEvent>) =
+        UrlValidationChannelService(urlValidationChannel)
+
+    /**
+     * Initializes and starts processing URL validation events.
+     * @return A [Job] that manages the processing of URL validation events.
+     */
+    @Bean
+    fun urlValidationConsumerService(
+        urlValidatorService: UrlValidatorService,
+        shortUrlRepositoryService: ShortUrlRepositoryService,
+        urlValidationChannel: Channel<UrlValidationEvent>
+    ): Job =
+        UrlValidationConsumerService(urlValidatorService, shortUrlRepositoryService)
+            .startProcessing(urlValidationChannel)
 }

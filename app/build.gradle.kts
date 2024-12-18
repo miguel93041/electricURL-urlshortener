@@ -46,6 +46,8 @@ dependencies {
     // Cache
     implementation(libs.caffeine) // Caffeine
 
+    implementation(libs.kotlinx.coroutines.core)
+
     // Third-party libraries
     implementation(libs.bootstrap)         // Bootstrap for front-end
     implementation(libs.jquery)            // jQuery for front-end

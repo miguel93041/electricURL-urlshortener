@@ -5,6 +5,8 @@ package es.unizar.urlshortener.core.services
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.unwrapError
 import es.unizar.urlshortener.core.*
+import es.unizar.urlshortener.core.queues.GeolocationChannelService
+import es.unizar.urlshortener.core.queues.UrlValidationChannelService
 import es.unizar.urlshortener.core.usecases.CreateShortUrlUseCase
 import org.springframework.http.server.reactive.ServerHttpRequest
 import reactor.core.publisher.Mono
@@ -37,11 +39,10 @@ fun interface GenerateShortUrlService {
  * @property baseUrlProvider Service for providing the base URL.
  */
 class GenerateShortUrlServiceImpl(
-    private val urlValidatorService: UrlValidatorService,
     private val createShortUrlUseCase: CreateShortUrlUseCase,
-    private val geoLocationService: GeoLocationService,
-    private val shortUrlRepositoryService: ShortUrlRepositoryService,
-    private val baseUrlProvider: BaseUrlProvider
+    private val baseUrlProvider: BaseUrlProvider,
+    private val geolocationChannelService: GeolocationChannelService,
+    private val urlValidationChannelService: UrlValidationChannelService
 ) : GenerateShortUrlService {
 
     /**
@@ -60,36 +61,17 @@ class GenerateShortUrlServiceImpl(
                 } else null
 
                 // Validate URL in a background task
-                urlValidatorService.validate(data.url)
-                    .doOnSuccess { validationResult ->
-                        if (validationResult.isErr) {
-                            val error = validationResult.unwrapError()
-                            when (error) {
-                                UrlError.InvalidFormat, UrlError.Unreachable ->
-                                    shortUrlRepositoryService.updateValidation(
-                                        shortUrlModel.hash,
-                                        ShortUrlValidation(safe = true, reachable = false, validated = true)
-                                    ).subscribe()
-                                UrlError.Unsafe -> shortUrlRepositoryService.updateValidation(
-                                    shortUrlModel.hash,
-                                    ShortUrlValidation(safe = false, reachable = true, validated = true)
-                                ).subscribe()
-                            }
-                        } else {
-                            shortUrlRepositoryService.updateValidation(
-                                shortUrlModel.hash,
-                                ShortUrlValidation(safe = true, reachable = true, validated = true)
-                            ).subscribe()
-                        }
-                    }.subscribe()
+                urlValidationChannelService.enqueue(
+                    UrlValidationEvent(
+                        url = data.url,
+                        hash = shortUrlModel.hash
+                    )
+                )
 
                 // Enrich Shortened URL in a background task
                 val ipAddress = ClientHostResolver.resolve(request)
                 if (ipAddress != null) {
-                    geoLocationService.get(ipAddress)
-                        .doOnSuccess { geoLocation ->
-                            shortUrlRepositoryService.updateGeolocation(shortUrlModel.hash, geoLocation).subscribe()
-                        }.subscribe()
+                    geolocationChannelService.enqueue(HashEvent(ip=ipAddress, hash=shortUrlModel.hash))
                 }
 
                 Mono.just(ShortUrlDataOut(shortUrl, qrCodeUrl))

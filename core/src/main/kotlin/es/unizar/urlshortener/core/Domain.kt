@@ -158,3 +158,22 @@ data class ShortUrlDataOut(
     val shortUrl: URI,
     val qrCodeUrl: URI? = null
 )
+
+sealed class GeoLocationEvent {
+    abstract val ip: String
+}
+
+data class ClickEvent(
+    override val ip: String,
+    val clickId: Long
+) : GeoLocationEvent()
+
+data class HashEvent(
+    override val ip: String,
+    val hash: String
+) : GeoLocationEvent()
+
+data class UrlValidationEvent(
+    val url: String,
+    val hash: String
+)

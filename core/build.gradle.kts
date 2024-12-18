@@ -23,7 +23,8 @@ dependencies {
     // kotlin-result for functional programming support
     implementation(libs.kotlin.result)
     implementation(libs.caffeine)
-
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.test)
     // Test dependencies
     testImplementation(libs.kotlin.test)               // Kotlin test utilities
     testImplementation(libs.mockito.kotlin)            // Mockito Kotlin
@@ -49,4 +50,9 @@ configurations.matching { it.name == "detekt" }.all {
 
 tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     enabled = false
+}
+tasks.withType<Test> {
+    useJUnitPlatform {
+        includeEngines("junit-jupiter")
+    }
 }
