@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono
  * Given an url returns the key that is used to create a short URL.
  * When the url is created optional data may be added.
  */
-interface CreateShortUrlUseCase {
+fun interface CreateShortUrlUseCase {
 
     /**
      * Creates a short URL for the given URL.

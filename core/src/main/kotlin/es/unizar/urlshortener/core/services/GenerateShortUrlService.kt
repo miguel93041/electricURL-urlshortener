@@ -2,8 +2,6 @@
 
 package es.unizar.urlshortener.core.services
 
-import com.github.michaelbull.result.Result
-import com.github.michaelbull.result.unwrapError
 import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.queues.GeolocationChannelService
 import es.unizar.urlshortener.core.queues.UrlValidationChannelService

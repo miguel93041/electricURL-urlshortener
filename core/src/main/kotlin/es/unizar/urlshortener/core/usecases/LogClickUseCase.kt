@@ -8,7 +8,7 @@ import reactor.core.publisher.Mono
 /**
  * Logs that a user has requested the redirection identified by a key.
  */
-interface LogClickUseCase {
+fun interface LogClickUseCase {
 
     /**
      * Logs a click event for the given key.

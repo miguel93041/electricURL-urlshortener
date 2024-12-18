@@ -6,7 +6,7 @@ import ua_parser.Parser
 /**
  * Interface for identifying the browser and platform from a user agent string.
  */
-interface BrowserPlatformIdentificationUseCase {
+fun interface BrowserPlatformIdentificationUseCase {
 
     /**
      * Parses the user agent string received in a redirection request to identify

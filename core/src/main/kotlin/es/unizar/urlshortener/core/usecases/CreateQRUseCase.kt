@@ -10,7 +10,7 @@ import java.io.ByteArrayOutputStream
 /**
  * Interface for generating a base64-encoded QR code for a shortened URL.
  */
-interface CreateQRUseCase {
+fun interface CreateQRUseCase {
 
     /**
      * Generates a QR code for a given shortened URL with specified size (in pixels).

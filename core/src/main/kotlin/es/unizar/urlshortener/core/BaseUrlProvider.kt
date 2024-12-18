@@ -8,7 +8,7 @@ import org.springframework.web.util.UriComponentsBuilder
 /**
  * Interface for providing the base URL used for generating shortened URLs.
  */
-interface BaseUrlProvider {
+fun interface BaseUrlProvider {
 
     /**
      * Returns the base URL for the current request context.

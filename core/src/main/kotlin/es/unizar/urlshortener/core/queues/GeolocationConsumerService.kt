@@ -30,7 +30,7 @@ class GeolocationConsumerService(
     fun startProcessing(channel: Channel<GeoLocationEvent>): Job = launch {
         for (event in channel) {
             val geoLocationMono: Mono<GeoLocation> = geoLocationService.get(event.ip)
-            val updateMono: Mono<Void> = when (event) {
+            val updateMono = when (event) {
                 is ClickEvent -> geoLocationMono.flatMap { geo ->
                     clickRepositoryService.updateGeolocation(event.clickId, geo)
                 }

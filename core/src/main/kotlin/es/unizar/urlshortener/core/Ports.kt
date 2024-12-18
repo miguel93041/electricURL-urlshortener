@@ -138,7 +138,7 @@ fun interface HashValidatorService {
 /**
  * [HashService] is the port to the service that creates a hash from a URL.
  */
-interface HashService {
+fun interface HashService {
 
     /**
      * Generates a random hash using a UUID and the Murmur3 32-bit hashing algorithm.
@@ -152,7 +152,7 @@ interface HashService {
  * [GeoLocationService] defines the contract for a service that retrieves geographical
  * information based on an IP address.
  */
-interface GeoLocationService {
+fun interface GeoLocationService {
 
     /**
      * Retrieves geolocation details for a given IP address.
@@ -169,7 +169,7 @@ interface GeoLocationService {
  * This service is responsible for validating if a URL is safe to access, ensuring that it does not pose
  * any security risks.
  */
-interface UrlSafetyService {
+fun interface UrlSafetyService {
 
     /**
      * Checks if a URL is safe.
