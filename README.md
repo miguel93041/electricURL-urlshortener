@@ -177,12 +177,12 @@ Redirects a user to the target URL identified by the provided `id` (shortened UR
 
 ### 3. **Generate QR Code**
 
-`GET /api/qr`
+`GET /api/qr/{id}`
 
 Generates a QR code for the shortened URL identified by id.
 
 - **Parameters:**
-  - `id` (Query Param): The identifier of the shortened URL.
+  - `id` (Path Param): The identifier of the shortened URL.
 
 
 - **Responses:**

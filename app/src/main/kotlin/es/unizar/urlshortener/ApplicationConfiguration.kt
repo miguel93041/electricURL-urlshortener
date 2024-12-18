@@ -1,4 +1,5 @@
 @file:Suppress("WildcardImport", "MagicNumber", "LongParameterList")
+
 package es.unizar.urlshortener
 
 import com.github.benmanes.caffeine.cache.AsyncCache
@@ -31,8 +32,6 @@ import kotlinx.coroutines.channels.Channel
 
 /**
  * Wires use cases with service implementations, and services implementations with repositories.
- *
- * **Note**: Spring Boot is able to discover this [Configuration] without further configuration.
  */
 @Suppress("TooManyFunctions")
 @Configuration
@@ -41,85 +40,85 @@ class ApplicationConfiguration(
     @Autowired val clickEntityRepository: ClickEntityRepository,
     @Autowired val r2dbcEntityTemplate: R2dbcEntityTemplate
 ) {
+
     /**
-     * Provides an implementation of the ClickRepositoryService.
-     * @return an instance of ClickRepositoryServiceImpl.
+     * Provides an implementation of the [ClickRepositoryService].
+     * @return an instance of [ClickRepositoryServiceImpl].
      */
     @Bean
     fun clickRepositoryService() = ClickRepositoryServiceImpl(clickEntityRepository, r2dbcEntityTemplate, clickCache())
 
     /**
-     * Provides an implementation of the ShortUrlRepositoryService.
-     * @return an instance of ShortUrlRepositoryServiceImpl.
+     * Provides an implementation of the [ShortUrlRepositoryService].
+     * @return an instance of [ShortUrlRepositoryServiceImpl].
      */
     @Bean
     fun shortUrlRepositoryService() =
         ShortUrlRepositoryServiceImpl(shortUrlEntityRepository, r2dbcEntityTemplate, shortUrlCache())
 
-
     /**
-     * Provides an implementation of the ValidatorService.
-     * @return an instance of ValidatorServiceImpl.
+     * Provides an implementation of the [UrlSafetyService].
+     * @return an instance of [UrlValidatorServiceImpl].
      */
     @Bean
-    fun validatorService(urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
-                         urlSafetyService: UrlSafetyService): UrlValidatorService =
+    fun validatorService(
+        urlAccessibilityCheckUseCase: UrlAccessibilityCheckUseCase,
+        urlSafetyService: UrlSafetyService
+    ): UrlValidatorService =
         UrlValidatorServiceImpl(urlAccessibilityCheckUseCase, urlSafetyService)
-    
+
     /**
-     * Provides an implementation of the HashService.
-     * @return an instance of HashServiceImpl.
+     * Provides an implementation of the [HashService].
+     * @return an instance of [HashServiceImpl].
      */
     @Bean
     fun hashService() = HashServiceImpl()
 
     /**
-    * Provides an implementation of the RedirectUseCase.
-    * @return an instance of RedirectUseCaseImpl.
-    */
+     * Provides an implementation of the [RedirectUseCase].
+     * @return an instance of [RedirectUseCaseImpl].
+     */
     @Bean
     fun redirectUseCase(
         shortUrlRepositoryService: ShortUrlRepositoryServiceImpl
     ): RedirectUseCase {
-        return RedirectUseCaseImpl(
-            shortUrlService = shortUrlRepositoryService
-        )
+        return RedirectUseCaseImpl(shortUrlService = shortUrlRepositoryService)
     }
 
     /**
-     * Provides an implementation of the LogClickUseCase.
-     * @return an instance of LogClickUseCaseImpl.
+     * Provides an implementation of the [LogClickUseCase].
+     * @return an instance of [LogClickUseCaseImpl].
      */
     @Bean
     fun logClickUseCase() = LogClickUseCaseImpl(clickRepositoryService())
 
     /**
-     * Provides an implementation of the CreateShortUrlUseCase.
-     * @return an instance of CreateShortUrlUseCaseImpl.
+     * Provides an implementation of the [CreateShortUrlUseCase].
+     * @return an instance of [CreateShortUrlUseCaseImpl].
      */
     @Bean
     fun createShortUrlUseCase(
         shortUrlRepositoryService: ShortUrlRepositoryServiceImpl,
         hashService: HashServiceImpl
     ) = CreateShortUrlUseCaseImpl(shortUrlRepositoryService, hashService)
-    
+
     /**
-     * Provides a QRCodeWriter.
-     * @return an instance of QRCodeWriter.
+     * Provides a [QRCodeWriter].
+     * @return an instance of [QRCodeWriter].
      */
     @Bean
     fun qrCodeWriter(): QRCodeWriter = QRCodeWriter()
 
     /**
-     * Provides an implementation of the CreateQRUseCase.
-     * @return an instance of CreateQRUseCaseImpl.
+     * Provides an implementation of the [CreateQRUseCase].
+     * @return an instance of [CreateQRUseCaseImpl].
      */
     @Bean
     fun createQRUseCase(qrCodeWriter: QRCodeWriter) = CreateQRUseCaseImpl(qrCodeWriter)
 
     /**
-     * Provides an implementation of the ProcessCsvUseCase.
-     * @return an instance of ProcessCsvUseCaseImpl.
+     * Provides an implementation of the [ProcessCsvUseCase].
+     * @return an instance of [ProcessCsvUseCaseImpl].
      */
     @Bean
     fun processCsvUseCase(generateShortUrlService: GenerateShortUrlService): ProcessCsvUseCase {
@@ -127,8 +126,8 @@ class ApplicationConfiguration(
     }
 
     /**
-     * Provides an implementation of the RedirectionLimitUseCase.
-     * @return an instance of RedirectionLimitUseCaseImpl.
+     * Provides an implementation of the [RedirectionLimitUseCase].
+     * @return an instance of [RedirectionLimitUseCaseImpl].
      */
     @Bean
     fun redirectionLimitUseCase(clickRepositoryService: ClickRepositoryService): RedirectionLimitUseCase {
@@ -136,15 +135,15 @@ class ApplicationConfiguration(
     }
 
     /**
-     * Provides a WebClient.
-     * @return an instance of WebClient.
+     * Provides a [WebClient].
+     * @return an instance of [WebClient].
      */
     @Bean
     fun webClient(): WebClient = WebClient.builder().build()
 
     /**
-     * Provides a DotEnv.
-     * @return an instance of DotEnv.
+     * Provides a [Dotenv].
+     * @return an instance of [Dotenv].
      */
     @Bean
     fun dotEnv(): Dotenv {
@@ -154,44 +153,49 @@ class ApplicationConfiguration(
     }
 
     /**
-     * Provides an implementation of thez GeoLocationService.
-     * @return an instance of GeoLocationServiceImpl.
+     * Provides an implementation of the [GeoLocationService].
+     * @return an instance of [GeoLocationServiceImpl].
      */
     @Bean
     fun geoLocationService(
         webClient: WebClient,
-        dotEnv: Dotenv, cache: AsyncCache<String, GeoLocation>
+        dotEnv: Dotenv,
+        cache: AsyncCache<String, GeoLocation>
     ): GeoLocationService {
         return GeoLocationServiceImpl(webClient, dotEnv, cache)
     }
 
-
     /**
-     * Provides a Parser.
-     * @return an instance of Parser.
+     * Provides an implementation of the [urlSafetyService].
+     * @return an instance of [UrlSafetyServiceImpl].
      */
     @Bean
     fun urlSafetyService(
         webClient: WebClient,
-        dotEnv: Dotenv, @Qualifier("urlSafeCache") cache: AsyncCache<String, Boolean>
+        dotEnv: Dotenv,
+        @Qualifier("urlSafeCache") cache: AsyncCache<String, Boolean>
     ): UrlSafetyService {
         return UrlSafetyServiceImpl(webClient, dotEnv, cache)
     }
 
+    /**
+     * Provides a [Parser].
+     * @return an instance of [Parser].
+     */
     @Bean
     fun uaParser(): Parser = Parser()
 
     /**
-     * Provides an implementation of the BrowserPlatformIdentificationUseCase.
-     * @return an instance of BrowserPlatformIdentificationUseCaseImpl.
+     * Provides an implementation of the [BrowserPlatformIdentificationUseCase].
+     * @return an instance of [BrowserPlatformIdentificationUseCaseImpl].
      */
     @Bean
     fun browserPlatformIdentificationUseCase(uaParser: Parser): BrowserPlatformIdentificationUseCase =
         BrowserPlatformIdentificationUseCaseImpl(uaParser)
 
     /**
-     * Provides an implementation of the UrlAccessibilityCheckUseCase.
-     * @return an instance of UrlAccessibilityCheckUseCaseImpl.
+     * Provides an implementation of the [UrlAccessibilityCheckUseCase].
+     * @return an instance of [UrlAccessibilityCheckUseCaseImpl].
      */
     @Bean
     fun urlAccesibilityCheckUseCase(
@@ -200,20 +204,25 @@ class ApplicationConfiguration(
     ): UrlAccessibilityCheckUseCase = UrlAccessibilityCheckUseCaseImpl(webClient, cache)
 
     /**
-     * Defines the [GetAnalyticsUseCase] bean.
-     *
-     * Creates an instance of [GetAnalyticsUseCaseImpl] with the required dependencies:
-     * [ClickRepositoryService] for click data and [ShortUrlRepositoryService] for URL validation.
+     * Provides an implementation of the [GetAnalyticsUseCase].
+     * @return an instance of [GetAnalyticsUseCaseImpl].
      */
     @Bean
     fun getAnalyticsUseCase(
         clickRepository: ClickRepositoryService
-    ): GetAnalyticsUseCase =
-        GetAnalyticsUseCaseImpl(clickRepository);
+    ): GetAnalyticsUseCase = GetAnalyticsUseCaseImpl(clickRepository)
 
+    /**
+     * Provides an implementation of the [BaseUrlProvider].
+     * @return an instance of [BaseUrlProviderImpl].
+     */
     @Bean
     fun baseUrlProvider(): BaseUrlProvider = BaseUrlProviderImpl()
 
+    /**
+     * Provides an implementation of the [GenerateShortUrlService].
+     * @return an instance of [GenerateShortUrlServiceImpl].
+     */
     @Bean
     fun generateShortUrlService(
         createShortUrlUseCase: CreateShortUrlUseCase,
@@ -229,6 +238,10 @@ class ApplicationConfiguration(
         )
     }
 
+    /**
+     * Provides an implementation of the [CsvService].
+     * @return an instance of [CsvServiceImpl].
+     */
     @Bean
     fun csvService(
         processCsvUseCase: ProcessCsvUseCase
@@ -236,6 +249,10 @@ class ApplicationConfiguration(
         return CsvServiceImpl(processCsvUseCase)
     }
 
+    /**
+     * Provides an implementation of the [HashValidatorService].
+     * @return an instance of [HashValidatorServiceImpl].
+     */
     @Bean
     fun hashValidatorService(
         shortUrlRepositoryService: ShortUrlRepositoryService
@@ -243,6 +260,10 @@ class ApplicationConfiguration(
         return HashValidatorServiceImpl(shortUrlRepositoryService)
     }
 
+    /**
+     * Provides an implementation of the [AnalyticsService].
+     * @return an instance of [AnalyticsServiceImpl].
+     */
     @Bean
     fun analyticsService(
         hashValidatorService: HashValidatorService,
@@ -251,6 +272,10 @@ class ApplicationConfiguration(
         return AnalyticsServiceImpl(hashValidatorService, analyticsUseCase)
     }
 
+    /**
+     * Provides an implementation of the [QrService].
+     * @return an instance of [QrServiceImpl].
+     */
     @Bean
     fun qrService(
         hashValidatorService: HashValidatorService,
@@ -260,6 +285,10 @@ class ApplicationConfiguration(
         return QrServiceImpl(hashValidatorService, qrUseCase, baseUrlProvider)
     }
 
+    /**
+     * Provides an implementation of the [RedirectService].
+     * @return an instance of [RedirectServiceImpl].
+     */
     @Bean
     fun redirectService(
         hashValidatorService: HashValidatorService,
@@ -281,6 +310,10 @@ class ApplicationConfiguration(
         )
     }
 
+    /**
+     * Provides an asynchronous cache for safe URLs.
+     * @return an instance of [AsyncCache<String, Boolean>].
+     */
     @Bean("urlSafeCache")
     fun urlSafeCache(): AsyncCache<String, Boolean> {
         return Caffeine.newBuilder()
@@ -289,6 +322,10 @@ class ApplicationConfiguration(
             .buildAsync()
     }
 
+    /**
+     * Provides an asynchronous cache for geographic locations.
+     * @return an instance of [AsyncCache<String, GeoLocation>].
+     */
     @Bean
     fun geoLocationCache(): AsyncCache<String, GeoLocation> {
         return Caffeine.newBuilder()
@@ -297,6 +334,10 @@ class ApplicationConfiguration(
             .buildAsync()
     }
 
+    /**
+     * Provides an asynchronous cache for reachable URLs.
+     * @return an instance of [AsyncCache<String, Boolean>].
+     */
     @Bean("urlReachableCache")
     fun urlReachableCache(): AsyncCache<String, Boolean> {
         return Caffeine.newBuilder()
@@ -305,6 +346,11 @@ class ApplicationConfiguration(
             .buildAsync()
     }
 
+    /**
+     * Provides an asynchronous cache for click data.
+     * @return an instance of [AsyncCache<String, List<Click>>].
+     */
+    @Bean
     fun clickCache(): AsyncCache<String, List<Click>> {
         return Caffeine.newBuilder()
             .expireAfterWrite(15, TimeUnit.MINUTES)
@@ -312,6 +358,11 @@ class ApplicationConfiguration(
             .buildAsync()
     }
 
+    /**
+     * Provides an asynchronous cache for short URLs.
+     * @return an instance of [AsyncCache<String, ShortUrl>].
+     */
+    @Bean
     fun shortUrlCache(): AsyncCache<String, ShortUrl> {
         return Caffeine.newBuilder()
             .expireAfterAccess(12, TimeUnit.HOURS)

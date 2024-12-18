@@ -31,8 +31,6 @@ class UrlValidatorServiceImplTest {
 
     private val url = "http://example.com"
 
-
-
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.openMocks(this)

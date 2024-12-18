@@ -1,4 +1,5 @@
-@file:Suppress("WildcardImport", "SwallowedException")
+@file:Suppress("WildcardImport")
+
 package es.unizar.urlshortener.core.usecases
 
 import es.unizar.urlshortener.core.*
@@ -14,6 +15,7 @@ import java.io.*
  * Interface defining the contract for processing CSV files containing URLs.
  */
 interface ProcessCsvUseCase {
+
     /**
      * Processes the input CSV from the provided Reader, creates shortened URLs for each entry and its QR code URLs
      * if requested, and writes the results in CSV format to the provided Writer.
@@ -21,37 +23,37 @@ interface ProcessCsvUseCase {
      * Each line of the input is expected to be a URL, which is processed to generate a short URL and its QR code URL
      * if requested. In case of an error, an error message is recorded for the respective URL.
      *
-     * @param reader The source of CSV data containing URLs.
-     * @param writer The destination to write the results of URL shortening or error messages.
-     * @param request The HTTP request providing client context
-     * @param data Data of the HTTP request
+     * @param inputBuffer The Flux stream of data buffers containing CSV lines.
+     * @param request The ServerHttpRequest for contextual information.
+     * @param qrRequested Flag indicating whether QR code generation is requested.
+     * @return A Flux of DataBuffer containing processed lines with original URLs, short URLs,
+     *          and optionally QR code URLs.
      */
     fun processCsv(inputBuffer: Flux<DataBuffer>, request: ServerHttpRequest, qrRequested: Boolean): Flux<DataBuffer>
 }
 
 /**
- * Implementation of [ProcessCsvUseCase].
+ * [ProcessCsvUseCaseImpl] is an implementation of the [ProcessCsvUseCase].
  *
- * Responsible for reading URLs from a CSV, creating short URLs and its QR code URLs if requested,
- * and writing the results or errors to the provided Writer.
+ * Processes CSV input by converting each line to a short URL using the GenerateShortUrlService.
  *
- * @param generateShortUrlServiceImpl A use case for creating short URLs.
+ * @property generateShortUrlServiceImpl The service used for generating short URLs.
  */
 @Suppress("TooGenericExceptionCaught")
-class ProcessCsvUseCaseImpl (
+class ProcessCsvUseCaseImpl(
     private val generateShortUrlServiceImpl: GenerateShortUrlService
 ) : ProcessCsvUseCase {
+
     /**
-     * Processes the input CSV from the provided Reader, creates shortened URLs for each entry and its QR code URLs
-     * if requested, and writes the results in CSV format to the provided Writer.
+     * Processes a CSV input stream by generating short URLs for each line.
      *
-     * Each line of the input is expected to be a URL, which is processed to generate a short URL and its QR code URL
-     * if requested. In case of an error, an error message is recorded for the respective URL.
+     * The original URLs are converted to short URLs, and if requested, QR codes are also generated.
      *
-     * @param reader The source of CSV data containing URLs.
-     * @param writer The destination to write the results of URL shortening or error messages.
-     * @param request The HTTP request providing client context
-     * @param data Data of the HTTP request
+     * @param inputBuffer The Flux stream of data buffers containing CSV lines.
+     * @param request The ServerHttpRequest for contextual information.
+     * @param qrRequested Flag indicating whether QR code generation is requested.
+     * @return A Flux of DataBuffer containing processed lines with original URLs, short URLs,
+     *          and optionally QR code URLs.
      */
     override fun processCsv(
         inputBuffer: Flux<DataBuffer>,
@@ -75,5 +77,4 @@ class ProcessCsvUseCaseImpl (
                     .map { newLine -> DefaultDataBufferFactory().wrap(newLine.toByteArray()) }
             }
     }
-
 }

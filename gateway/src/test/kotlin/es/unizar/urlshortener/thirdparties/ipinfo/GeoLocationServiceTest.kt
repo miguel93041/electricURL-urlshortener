@@ -1,4 +1,3 @@
-@file:Suppress("ForbiddenComment")
 package es.unizar.urlshortener.thirdparties.ipinfo
 
 import com.github.benmanes.caffeine.cache.AsyncCache

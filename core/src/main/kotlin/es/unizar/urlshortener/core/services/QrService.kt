@@ -12,24 +12,28 @@ import reactor.core.publisher.Mono
 import java.net.URI
 
 /**
- * Defines the specification for the use case responsible for generating
- * enhanced short URLs with additional properties like geolocation data.
+ * Defines the specification for generating QR codes.
  */
 fun interface QrService {
+
     /**
-     * Obtains the original url of a short url.
+     * Generates a QR image for a given short URL.
      *
-     * @param hash The identifier of the short url.
-     * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
-     * @return A data object containing the generated short URL and optional QR code URL.
+     * @param hash The identifier of the short URL.
+     * @param request The HTTP request, used for extracting contextual information.
+     * @return A [Mono] emitting a [Result] containing the QR image as a [ByteArray] or a [HashError].
      */
     fun getQrImage(hash: String, request: ServerHttpRequest): Mono<Result<ByteArray, HashError>>
 }
 
 /**
- * Implementation of the `GenerateEnhancedShortUrlUseCase` interface.
+ * [QrServiceImpl] is an implementation of the [QrService] interface.
  *
- * This class acts as the controller to handle requests for generating enhanced short URLs.
+ * This class handles the generation of QR codes for short URLs.
+ *
+ * @property hashValidatorService Service for validating hash formats and existence.
+ * @property qrUseCase Use case for creating QR codes from URLs.
+ * @property baseUrlProvider Service for obtaining the base URL from the request.
  */
 class QrServiceImpl(
     private val hashValidatorService: HashValidatorService,
@@ -38,11 +42,11 @@ class QrServiceImpl(
 ) : QrService {
 
     /**
-     * Generates an enhanced short URL using geolocation information and other properties.
+     * Generates a QR image for the given short URL hash.
      *
-     * @param hash The identifier of the short url.
-     * @param request The HTTP request, used to extract the client's IP address for geolocation purposes.
-     * @return A data object containing the short URL and optionally a QR code URL.
+     * @param hash The identifier of the short URL.
+     * @param request The HTTP request, used for extracting contextual information such as the base URL.
+     * @return A [Mono] emitting a [Result] containing the QR image as a [ByteArray] or a [HashError].
      */
     override fun getQrImage(hash: String, request: ServerHttpRequest): Mono<Result<ByteArray, HashError>> {
         return hashValidatorService.validate(hash)
