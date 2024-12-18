@@ -7,7 +7,7 @@ import java.time.OffsetDateTime
 /**
  * Interface for handling redirection limits for shortened URLs.
  */
-interface RedirectionLimitUseCase {
+fun interface RedirectionLimitUseCase {
 
     /**
      * Checks whether the redirection limit has been reached for a specific URL identifier.

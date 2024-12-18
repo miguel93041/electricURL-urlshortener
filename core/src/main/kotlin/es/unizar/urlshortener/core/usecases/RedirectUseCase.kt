@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono
  * Given a key returns a [Redirection] that contains a URI target ([Redirection.target])
  * and an HTTP redirection mode ([Redirection.mode]).
  */
-interface RedirectUseCase {
+fun interface RedirectUseCase {
 
     /**
      * Redirects to the target URL associated with the given key.

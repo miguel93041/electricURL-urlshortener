@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture
 /**
  * Interface for checking the accessibility of a given URL.
  */
-interface UrlAccessibilityCheckUseCase {
+fun interface UrlAccessibilityCheckUseCase {
 
     /**
      * Verifies if a URL is reachable.

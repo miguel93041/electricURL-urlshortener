@@ -14,7 +14,7 @@ import java.io.*
 /**
  * Interface defining the contract for processing CSV files containing URLs.
  */
-interface ProcessCsvUseCase {
+fun interface ProcessCsvUseCase {
 
     /**
      * Processes the input CSV from the provided Reader, creates shortened URLs for each entry and its QR code URLs
