@@ -3,7 +3,6 @@ package es.unizar.urlshortener.core.queues
 
 import com.github.michaelbull.result.unwrapError
 import es.unizar.urlshortener.core.*
-import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
