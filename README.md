@@ -253,31 +253,6 @@ tables.
 - **click** that represents clicks and encodes in each row `Click`
   related data.
 
-## Reference Documentation
-
-For further reference, please consider the following sections:
-
-- [Official Gradle documentation](https://docs.gradle.org)
-- [Spring Boot Gradle Plugin Reference
-  Guide](https://docs.spring.io/spring-boot/docs/current/gradle-plugin/reference/htmlsingle/)
-- [Spring
-  Web](https://docs.spring.io/spring-boot/reference/web/index.html)
-- [Spring SQL
-  Databases](https://docs.spring.io/spring-boot/reference/data/sql.html)
-
-## Guides
-
-The following guides illustrate how to use some features concretely:
-
-- [Building a RESTful Web
-  Service](https://spring.io/guides/gs/rest-service/)
-- [Serving Web Content with Spring
-  MVC](https://spring.io/guides/gs/serving-web-content/)
-- [Building REST services with
-  Spring](https://spring.io/guides/tutorials/rest/)
-- [Accessing Data with
-  JPA](https://spring.io/guides/gs/accessing-data-jpa/)
-
 # First Project Report
 ## QR Code Generation
 ### Description
@@ -456,36 +431,99 @@ New tests implemented:
 
 # Third Project Report
 
-Several significant improvements and changes have been implemented in the project to optimize its performance and quality. One of the key updates is that the shortened URL is now generated and returned instantly upon creation, prioritizing response speed. Validation and geolocation tasks are processed asynchronously in the background, ensuring that the user experience is not affected by these additional operations.
+## Project Update Report
 
-Another major change is the migration to a reactive programming model using Spring WebFlux, replacing the previous synchronous logic. This transition involved moving from JPA to R2DBC, a reactive database. This adjustment also required a complete refactoring of the tests to align with the reactive approach.
+The project has undergone substantial enhancements, introducing new features, improving performance, and refining code quality:
 
-To enhance performance, caching has been added to all requests made to external APIs and the database. This reduces latency and optimizes resource usage, particularly for recurring or high-demand operations.
+---
 
-Additionally, the Result pattern has been implemented to handle request outcomes more robustly. This approach avoids the unnecessary throwing of unchecked exceptions, improving error management predictability and maintaining a smoother flow of operations.
+### 1. Asynchronous Processing with Kotlin Channels and WebFlux
+- A **producer-consumer queue** using **Kotlin jobs and channels** has been implemented, combined with **WebFlux**. This architecture handles **geolocation and URL validation** asynchronously.
+- **Shortened URLs** are now created instantly and returned as unvalidated by default. Validation and geolocation occur in the background within seconds, greatly improving the user experience.
+- If a user attempts to access a URL before validation completes, the system returns an **error** with a `Retry-After` header indicating when the URL will be available.
 
-Regarding code quality, validation tools like SonarCloud have been integrated. These tools ensure the project meets high standards of quality and best practices. SonarLint, included within SonarCloud, is also used for local analysis during development.
+---
 
-Finally, the geolocation logic has been significantly improved. The system can now extract IP addresses from requests more accurately, validate their authenticity, and detect bogon addresses (IPs invalid for public use). These adjustments ensure greater reliability in geolocation-related functionalities.
+### 2. Migration to Reactive Programming
+- The entire codebase has been refactored to adopt a fully **reactive programming model** using **Spring WebFlux**.
+- **JPA** and synchronous database interactions have been replaced with **R2DBC** to support a non-blocking, reactive approach.
+- This migration required extensive updates to all logic and testing, aligning them with the reactive paradigm.
 
-Another critical improvement is the expansion of the test suites. The integration tests now comprehensively cover all use cases, ensuring robustness and reliability. Furthermore, all HTTP error codes that the controllers are expected to return have been tested to confirm correct behavior under various scenarios. This thorough testing guarantees that the application handles all edge cases effectively.
+---
 
-These changes not only strengthen the system's performance but also enhance code quality and improve the overall user experience.
+### 3. Caching for Performance
+- **Caching** mechanisms have been implemented to optimize performance for both **external API calls** and **database queries**. This reduces latency significantly for frequently accessed data or high-demand operations.
 
-# Issues Found
+---
 
-1. **Webflux and testing issues**
+### 4. Enhanced Error Handling with Result Pattern
+- The **Result pattern** has been implemented across the system, providing robust handling of operation outcomes.
+- This approach minimizes the use of unchecked exceptions, ensuring predictable error management and smoother application flow.
 
-   The integration with WebFlux and testing proved to be challenging. When errors occurred, it was difficult to trace their origin because the stack trace was often unclear or incomplete. Additionally, integration tests were being cached inadvertently, which was not intended and caused further complications.
+---
 
-2. **Exceptions**  
+### 5. Improved Geolocation Logic
+- The **geolocation logic** has been significantly refined to ensure accuracy and reliability:
+    - The system now extracts **IP addresses** from requests more effectively.
+    - Authenticity of IPs is validated, with checks to detect **bogon addresses** (invalid for public use).
+    - These enhancements ensure greater reliability in geolocation-related functionalities.
 
-   To fully transition away from the exception-based paradigm and implement the Result pattern, large portions of the code had to be rewritten to align with this new approach.
+---
 
-3. **Database issues**
+### 6. Accessible URL Validation Using HEAD Requests
+- The method for checking URL accessibility has been optimized by replacing **GET** requests with **HEAD** requests. This reduces bandwidth usage while maintaining accurate validation.
 
-   For the reactive database, it became necessary to create a schema.sql file to define and generate the database schema, as it was not being generated automatically.
+---
 
-4. **Caching**
+### 7. Endpoint Adjustment
+- The previously used endpoint `api/qr?id=...` has been streamlined to `api/qr/id`, offering a cleaner and more intuitive API design.
 
-    Caching was initially implemented using Spring Boot’s default caching library. However, it was eventually rolled back upon discovering that the library operated synchronously. As a result, Caffeine was adopted to provide an asynchronous caching solution.
+---
+
+### 8. Expanded Test Coverage
+- A comprehensive suite of **unit and integration tests** has been developed, ensuring robust validation of all use cases and edge cases.
+- All HTTP error codes expected from controllers have been tested, guaranteeing correct behavior under diverse scenarios.
+
+---
+
+### 9. Tooling and Documentation Enhancements
+- Standardized on **Detekt**, **SonarCloud**, and **SonarQube** to enforce and maintain high-quality code standards.
+- The **entire codebase has been documented**, ensuring maintainability and simplifying onboarding for developers.
+
+---
+
+### Summary of Benefits
+- **Improved user experience**: Instant URL creation with background validation.
+- **Enhanced performance**: Asynchronous processing, reactive programming, and caching ensure efficient operations.
+- **Greater reliability**: Accurate geolocation, optimized URL validation with HEAD requests, and robust error handling using the Result pattern.
+- **Code quality and maintainability**: Comprehensive tests, enhanced tooling, and detailed documentation.
+- **Modernized architecture**: Full transition to a reactive stack with WebFlux and R2DBC.
+
+---
+
+These updates mark a significant advancement in performance, scalability, and usability, providing a solid foundation for future development and scaling.
+
+
+### Issues Found
+
+1. **Initial Validation and Geolocation Challenges**
+    - Initially, **URL validation** and **geolocation** were handled asynchronously without proper coordination, which caused inconsistencies and inefficiencies.
+    - To address this, a **queue-based system** was implemented, requiring a steep learning curve for the team due to unfamiliarity with this approach. This significantly delayed the implementation.
+
+2. **PMD and CI/CD Challenges**
+    - Attempts to implement **PMD** for static code analysis were unsuccessful due to compatibility and configuration issues.
+    - Setting up **SonarQube** within the CI/CD pipeline was particularly problematic. Despite correct configurations, authentication errors persisted, making its integration impossible.
+
+3. **WebFlux and Testing Issues**
+    - The integration with WebFlux introduced difficulties in debugging. Stack traces for errors were often unclear or incomplete, complicating issue resolution.
+    - Integration tests were inadvertently being cached, leading to unpredictable test results and additional debugging effort.
+
+4. **Exceptions**
+    - Transitioning away from the exception-based paradigm to implement the **Result pattern** required extensive refactoring. This involved rewriting large portions of the code to align with the new approach.
+
+5. **Database Issues**
+    - The switch to the reactive database **R2DBC** required manual schema creation. A `schema.sql` file had to be introduced to define and generate the database schema, as automatic generation was not supported.
+
+6. **Caching**
+    - Initial caching was implemented using **Spring Boot’s default caching library**, which was later rolled back after discovering it operated synchronously.
+    - The solution was to adopt **Caffeine**, an asynchronous caching library, to better align with the reactive architecture.
