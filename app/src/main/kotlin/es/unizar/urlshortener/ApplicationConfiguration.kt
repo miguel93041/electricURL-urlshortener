@@ -370,16 +370,34 @@ class ApplicationConfiguration(
             .buildAsync()
     }
 
+    /**
+     * Creates an asynchronous channel for URL validation.
+     * @return A [Channel<UrlValidationEvent>] where URL validation events can be received.
+     */
     @Bean
     fun urlValidationChannel() = Channel<UrlValidationEvent>()
 
+    /**
+     * Creates an asynchronous channel for geolocation.
+     * @return A [Channel<GeoLocationEvent>] where geolocation events can be received.
+     */
     @Bean
     fun geolocationChannel() = Channel<GeoLocationEvent>()
 
+    /**
+     * Initializes the channel service for geolocation events.
+     * @param geolocationChannel The channel from which geolocation events will be received.
+     * @return A [GeolocationChannelService] instance that handles the channelization of these events.
+     */
     @Bean
     fun geolocationChannelService(geolocationChannel: Channel<GeoLocationEvent>) =
         GeolocationChannelService(geolocationChannel)
 
+    /**
+     * Initializes and starts processing geo-location events.
+     * @param geolocationChannel The channel from which geo-location events will be received.
+     * @return An instance of [GeolocationConsumerService] that handles the processing.
+     */
     @Bean
     fun geolocationConsumerService(
         geoLocationService: GeoLocationService,
@@ -390,10 +408,19 @@ class ApplicationConfiguration(
         GeolocationConsumerService(geoLocationService, clickRepositoryService, shortUrlRepositoryService)
             .startProcessing(geolocationChannel)
 
+    /**
+     * Initializes the URL validation channel service.
+     * @param urlValidationChannel The channel from which URL validation events will be received.
+     * @return An instance of [UrlValidationChannelService] that handles the processing.
+     */
     @Bean
     fun urlValidationChannelService(urlValidationChannel: Channel<UrlValidationEvent>) =
         UrlValidationChannelService(urlValidationChannel)
 
+    /**
+     * Initializes and starts processing URL validation events.
+     * @return A [Job] that manages the processing of URL validation events.
+     */
     @Bean
     fun urlValidationConsumerService(
         urlValidatorService: UrlValidatorService,
