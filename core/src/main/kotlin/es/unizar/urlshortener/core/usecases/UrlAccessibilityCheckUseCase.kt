@@ -61,13 +61,13 @@ class UrlAccessibilityCheckUseCaseImpl(
     }
 
     /**
-     * Performs an HTTP GET request to verify if the URL is reachable.
+     * Performs an HTTP HEAD request to verify if the URL is reachable.
      *
      * @param url The URL to check.
      * @return A [Mono] emitting true if the URL is reachable, false otherwise.
      */
     private fun fetchUrlAccessibility(url: String): Mono<Boolean> {
-        return webClient.get()
+        return webClient.head()
             .uri(url)
             .retrieve()
             .toBodilessEntity()
