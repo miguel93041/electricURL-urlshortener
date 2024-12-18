@@ -12,7 +12,13 @@ import java.net.URI
 class BaseUrlProviderImplTest {
 
     private lateinit var baseUrlProvider: BaseUrlProvider
-
+    companion object {
+        const val LOCAL = "http://localhost:8080"
+        const val PORT = "X-Forwarded-Port"
+        const val PROTO = "X-Forwarded-Proto"
+        const val HOST = "X-Forwarded-Host"
+        const val EXAMPLE = "example.com"
+    }
     @BeforeEach
     fun setUp() {
         baseUrlProvider = BaseUrlProviderImpl()
@@ -21,22 +27,22 @@ class BaseUrlProviderImplTest {
     @Test
     fun `get should return correct URL when no forwarded headers are present`() {
         val mockRequest = mock<ServerHttpRequest> {
-            `when`(it.uri).thenReturn(URI("http://localhost:8080"))
+            `when`(it.uri).thenReturn(URI(LOCAL))
             `when`(it.headers).thenReturn(HttpHeaders())
         }
 
         val result = baseUrlProvider.get(mockRequest)
 
-        assertEquals("http://localhost:8080", result)
+        assertEquals(LOCAL, result)
     }
 
     @Test
     fun `get should use X-Forwarded-Proto header if present`() {
         val headers = HttpHeaders().apply {
-            set("X-Forwarded-Proto", "https")
+            set(PROTO, "https")
         }
         val mockRequest = mock<ServerHttpRequest> {
-            `when`(it.uri).thenReturn(URI("http://localhost:8080"))
+            `when`(it.uri).thenReturn(URI(LOCAL))
             `when`(it.headers).thenReturn(headers)
         }
 
@@ -48,25 +54,25 @@ class BaseUrlProviderImplTest {
     @Test
     fun `get should use X-Forwarded-Host header if present`() {
         val headers = HttpHeaders().apply {
-            set("X-Forwarded-Host", "example.com")
+            set(HOST, "example.com")
         }
         val mockRequest = mock<ServerHttpRequest> {
-            `when`(it.uri).thenReturn(URI("http://localhost:8080"))
+            `when`(it.uri).thenReturn(URI(LOCAL))
             `when`(it.headers).thenReturn(headers)
         }
 
         val result = baseUrlProvider.get(mockRequest)
 
-        assertEquals("http://example.com:8080", result)
+        assertEquals("http://${EXAMPLE}:8080", result)
     }
 
     @Test
     fun `get should use X-Forwarded-Port header if present`() {
         val headers = HttpHeaders().apply {
-            set("X-Forwarded-Port", "443")
+            set(PORT, "443")
         }
         val mockRequest = mock<ServerHttpRequest> {
-            `when`(it.uri).thenReturn(URI("http://localhost:8080"))
+            `when`(it.uri).thenReturn(URI(LOCAL))
             `when`(it.headers).thenReturn(headers)
         }
 
@@ -78,51 +84,51 @@ class BaseUrlProviderImplTest {
     @Test
     fun `get should handle all forwarded headers together`() {
         val headers = HttpHeaders().apply {
-            set("X-Forwarded-Proto", "https")
-            set("X-Forwarded-Host", "example.com")
-            set("X-Forwarded-Port", "8443")
+            set(PROTO, "https")
+            set(HOST, EXAMPLE)
+            set(PORT, "8443")
         }
         val mockRequest = mock<ServerHttpRequest> {
-            `when`(it.uri).thenReturn(URI("http://localhost:8080"))
+            `when`(it.uri).thenReturn(URI(LOCAL))
             `when`(it.headers).thenReturn(headers)
         }
 
         val result = baseUrlProvider.get(mockRequest)
 
-        assertEquals("https://example.com:8443", result)
+        assertEquals("https://${EXAMPLE}:8443", result)
     }
 
     @Test
     fun `get should return URL without default port 80 for HTTP`() {
         val headers = HttpHeaders().apply {
-            set("X-Forwarded-Proto", "http")
-            set("X-Forwarded-Host", "example.com")
-            set("X-Forwarded-Port", "80")
+            set(PROTO, "http")
+            set(HOST, EXAMPLE)
+            set(PORT, "80")
         }
         val mockRequest = mock<ServerHttpRequest> {
-            `when`(it.uri).thenReturn(URI("http://localhost:8080"))
+            `when`(it.uri).thenReturn(URI(LOCAL))
             `when`(it.headers).thenReturn(headers)
         }
 
         val result = baseUrlProvider.get(mockRequest)
 
-        assertEquals("http://example.com", result)
+        assertEquals("http://${EXAMPLE}", result)
     }
 
     @Test
     fun `get should return URL without default port 443 for HTTPS`() {
         val headers = HttpHeaders().apply {
-            set("X-Forwarded-Proto", "https")
-            set("X-Forwarded-Host", "example.com")
-            set("X-Forwarded-Port", "443")
+            set(PROTO, "https")
+            set(HOST, EXAMPLE)
+            set(PORT, "443")
         }
         val mockRequest = mock<ServerHttpRequest> {
-            `when`(it.uri).thenReturn(URI("http://localhost:8080"))
+            `when`(it.uri).thenReturn(URI(LOCAL))
             `when`(it.headers).thenReturn(headers)
         }
 
         val result = baseUrlProvider.get(mockRequest)
 
-        assertEquals("https://example.com", result)
+        assertEquals("https://${EXAMPLE}", result)
     }
 }
