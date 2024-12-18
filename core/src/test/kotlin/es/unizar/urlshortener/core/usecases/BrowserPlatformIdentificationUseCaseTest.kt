@@ -119,4 +119,32 @@ class BrowserPlatformIdentificationUseCaseTest {
             )
         )
     }
+
+    @Test
+    fun `should handle null UserAgent but non-null OS`() {
+        val userAgentString = "SomeRandomUserAgentString"
+
+        val os = OS("Linux", null, "", "", "")
+        val client = Client(null, os, null)
+
+        whenever(parser.parse(userAgentString)).thenReturn(client)
+
+        val result = browserPlatformIdentificationUseCase.parse(userAgentString)
+
+        assertEquals(BrowserPlatform("Unknown", "Linux"), result)
+    }
+
+    @Test
+    fun `should handle null OS but non-null UserAgent`() {
+        val userAgentString = "SomeRandomUserAgentString"
+
+        val userAgent = UserAgent("Chrome", "91", "0", "4472")
+        val client = Client(userAgent, null, null)
+
+        whenever(parser.parse(userAgentString)).thenReturn(client)
+
+        val result = browserPlatformIdentificationUseCase.parse(userAgentString)
+
+        assertEquals(BrowserPlatform("Chrome", "Unknown"), result)
+    }
 }
