@@ -23,6 +23,7 @@ class GeolocationServiceTest {
     private lateinit var channel: Channel<GeoLocationEvent>
     private lateinit var geolocationChannelService: GeolocationChannelService
     private lateinit var geolocationConsumerService: GeolocationConsumerService
+    private var ip = "127.0.0.1"
 
     @BeforeEach
     fun setUp() {
@@ -42,7 +43,7 @@ class GeolocationServiceTest {
     @Test
     fun `enqueue should add a ClickEvent to the channel`() {
 
-        val event = ClickEvent(ip = "127.0.0.1", clickId = 123L)
+        val event = ClickEvent(ip = ip, clickId = 123L)
 
         val result = geolocationChannelService.enqueue(event)
 
@@ -71,12 +72,12 @@ class GeolocationServiceTest {
     @Test
     fun `startProcessing should process ClickEvent and update geolocation`() {
 
-        val event = ClickEvent(ip = "127.0.0.1", clickId = 123L)
+        val event = ClickEvent(ip = ip, clickId = 123L)
         channel.trySend(event)
 
-        whenever(geoLocationService.get("127.0.0.1"))
-            .thenReturn(Mono.just(GeoLocation(ip = "127.0.0.1", country = "Spain")))
-        whenever(clickRepositoryService.updateGeolocation(123L, GeoLocation("127.0.0.1", "Spain")))
+        whenever(geoLocationService.get(ip))
+            .thenReturn(Mono.just(GeoLocation(ip = ip, country = "Spain")))
+        whenever(clickRepositoryService.updateGeolocation(123L, GeoLocation(ip, "Spain")))
             .thenReturn(Mono.empty())
 
         // Start processing events
@@ -86,8 +87,8 @@ class GeolocationServiceTest {
         Thread.sleep(100)
 
         // Verify interactions
-        verify(geoLocationService).get("127.0.0.1")
-        verify(clickRepositoryService).updateGeolocation(123L, GeoLocation("127.0.0.1", "Spain"))
+        verify(geoLocationService).get(ip)
+        verify(clickRepositoryService).updateGeolocation(123L, GeoLocation(ip, "Spain"))
 
         // Assert that the event has been processed
         assertTrue(channel.isEmpty)
@@ -101,12 +102,12 @@ class GeolocationServiceTest {
     @Test
     fun `startProcessing should process HashEvent and update geolocation`() {
 
-        val event = HashEvent(ip = "127.0.0.1", hash = "hash123")
+        val event = HashEvent(ip = ip, hash = "hash123")
         channel.trySend(event)
 
-        whenever(geoLocationService.get("127.0.0.1"))
-            .thenReturn(Mono.just(GeoLocation(ip = "127.0.0.1", country = "USA")))
-        whenever(shortUrlRepositoryService.updateGeolocation("hash123", GeoLocation("127.0.0.1", "USA")))
+        whenever(geoLocationService.get(ip))
+            .thenReturn(Mono.just(GeoLocation(ip = ip, country = "USA")))
+        whenever(shortUrlRepositoryService.updateGeolocation("hash123", GeoLocation(ip, "USA")))
             .thenReturn(Mono.empty())
 
         // Start processing events
@@ -116,8 +117,8 @@ class GeolocationServiceTest {
         Thread.sleep(1000) // A small delay to allow processing
 
         // Verify interactions
-        verify(geoLocationService).get("127.0.0.1")
-        verify(shortUrlRepositoryService).updateGeolocation("hash123", GeoLocation("127.0.0.1", "USA"))
+        verify(geoLocationService).get(ip)
+        verify(shortUrlRepositoryService).updateGeolocation("hash123", GeoLocation(ip, "USA"))
 
         assertTrue(channel.isEmpty) // Ensure the channel has no pending events
 
