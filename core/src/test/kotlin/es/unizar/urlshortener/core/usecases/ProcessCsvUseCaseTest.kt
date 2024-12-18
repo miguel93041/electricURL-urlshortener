@@ -1,8 +1,7 @@
 @file:Suppress("WildcardImport")
 package es.unizar.urlshortener.core.usecases
 
-import es.unizar.urlshortener.core.ShortUrlDataIn
-import es.unizar.urlshortener.core.ShortUrlDataOut
+import es.unizar.urlshortener.core.*
 import es.unizar.urlshortener.core.services.GenerateShortUrlService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -64,9 +63,9 @@ class ProcessCsvUseCaseTest {
     @Test
     fun `should process valid URLs correctly`() {
         createTestCase(
-            inputUrls = listOf("http://example.com", "http://another-example.com"),
+            inputUrls = listOf(URL, "http://another-example.com"),
             shortUrls = listOf(
-                ShortUrlDataOut(shortUrl = URI("http://short.ly/abc123"), qrCodeUrl = null),
+                ShortUrlDataOut(shortUrl = URI(SHORT_URL), qrCodeUrl = null),
                 ShortUrlDataOut(shortUrl = URI("http://short.ly/xyz789"), qrCodeUrl = null)
             ),
             expectedOutput = """
@@ -79,10 +78,10 @@ class ProcessCsvUseCaseTest {
     @Test
     fun `should generate QR code URLs if requested`() {
         createTestCase(
-            inputUrls = listOf("http://example.com"),
+            inputUrls = listOf(URL),
             shortUrls = listOf(
                 ShortUrlDataOut(
-                    shortUrl = URI("http://short.ly/abc123"),
+                    shortUrl = URI(SHORT_URL),
                     qrCodeUrl = URI("http://short.ly/qr/abc123")
                 )
             ),
@@ -114,9 +113,9 @@ class ProcessCsvUseCaseTest {
     @Test
     fun `should process mix of http and https URLs`() {
         createTestCase(
-            inputUrls = listOf("http://example.com", "https://secure-example.com"),
+            inputUrls = listOf(URL, "https://secure-example.com"),
             shortUrls = listOf(
-                ShortUrlDataOut(shortUrl = URI("http://short.ly/abc123"), qrCodeUrl = null),
+                ShortUrlDataOut(shortUrl = URI(SHORT_URL), qrCodeUrl = null),
                 ShortUrlDataOut(shortUrl = URI("http://short.ly/secure456"), qrCodeUrl = null)
             ),
             expectedOutput = """
@@ -124,5 +123,10 @@ class ProcessCsvUseCaseTest {
                 https://secure-example.com,http://short.ly/secure456,QR not generated
             """.trimIndent()
         )
+    }
+
+    companion object {
+        const val URL = "http://example.com"
+        const val SHORT_URL = "http://short.ly/abc123"
     }
 }

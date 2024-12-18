@@ -1,4 +1,4 @@
-@file:Suppress("WildcardImport", "MatchingDeclarationName", "MagicNumber", "UnusedPrivateProperty")
+@file:Suppress("MatchingDeclarationName", "MagicNumber", "UnusedPrivateProperty")
 
 package es.unizar.urlshortener.infrastructure.delivery
 
@@ -12,10 +12,26 @@ import org.springframework.http.MediaType
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 
-
+/**
+ * [GlobalErrorHandler] is an implementation of the [ErrorWebExceptionHandler] interface.
+ * It is designed to handle exceptions globally and provide a consistent error response.
+ *
+ * This handler captures any exceptions thrown during the processing of requests and returns
+ * a standardized error response with appropriate HTTP status and message.
+ *
+ * @param objectMapper Used to serialize the error message to a JSON response.
+ */
 @Configuration
 @Order(-2)
 class GlobalErrorHandler(private val objectMapper: ObjectMapper) : ErrorWebExceptionHandler {
+
+    /**
+     * Handles exceptions that occur during the processing of a request.
+     *
+     * @param serverWebExchange The server exchange that encapsulates the request and response details.
+     * @param throwable The exception thrown during request processing.
+     * @return A Mono<Void> representing the completion of the error handling process.
+     */
     override fun handle(serverWebExchange: ServerWebExchange, throwable: Throwable): Mono<Void> {
         log.error("An error occurred while processing the request", throwable)
 

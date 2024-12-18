@@ -9,6 +9,7 @@ import reactor.core.publisher.Mono
  * Interface defining the contract for fetching analytics data for a shortened URL.
  */
 interface GetAnalyticsUseCase {
+
     /**
      * Retrieves aggregated analytics data for a given URL identified by its [id].
      *
@@ -16,8 +17,7 @@ interface GetAnalyticsUseCase {
      * @param includeBrowser Whether to include analytics data grouped by browser. Default is false.
      * @param includeCountry Whether to include analytics data grouped by country. Default is false.
      * @param includePlatform Whether to include analytics data grouped by platform. Default is false.
-     * @return An instance of [AnalyticsData] containing the requested analytics details.
-     * @throws RedirectionNotFound If no ShortUrl entity is found with the given [id].
+     * @return A [Mono] emitting the aggregated [AnalyticsData] containing click breakdowns.
      */
     fun getAnalytics(
         id: String,
@@ -29,7 +29,7 @@ interface GetAnalyticsUseCase {
 
 
 /**
- * Implementation of [GetAnalyticsUseCase].
+ * [GetAnalyticsUseCaseImpl] is an implementation of [GetAnalyticsUseCase].
  *
  * Fetches analytics data from a [ClickRepositoryService] and calculates the requested breakdowns
  * for a shortened URL.
@@ -38,6 +38,15 @@ interface GetAnalyticsUseCase {
  */
 class GetAnalyticsUseCaseImpl(private val clickRepository: ClickRepositoryService) : GetAnalyticsUseCase {
 
+    /**
+     * Retrieves analytics data based on the provided filters and breakdown options.
+     *
+     * @param id The unique identifier for the shortened URL.
+     * @param includeBrowser Whether to include analytics breakdown by browser.
+     * @param includeCountry Whether to include analytics breakdown by country.
+     * @param includePlatform Whether to include analytics breakdown by platform.
+     * @return A [Mono] emitting the computed [AnalyticsData].
+     */
     override fun getAnalytics(
         id: String,
         includeBrowser: Boolean,

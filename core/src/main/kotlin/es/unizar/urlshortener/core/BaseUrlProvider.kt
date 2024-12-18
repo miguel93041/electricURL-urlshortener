@@ -9,25 +9,27 @@ import org.springframework.web.util.UriComponentsBuilder
  * Interface for providing the base URL used for generating shortened URLs.
  */
 interface BaseUrlProvider {
+
     /**
      * Returns the base URL for the current request context.
      *
      * @param request The current server HTTP request.
-     * @return The base URL as a String.
+     * @return The base URL as a [String].
      */
     fun get(request: ServerHttpRequest): String
 }
 
 /**
- * Default implementation of the BaseUrlProvider interface.
+ * Default implementation of the [BaseUrlProvider] interface.
  * Provides the base URL for the current request using UriComponentsBuilder.
  */
 class BaseUrlProviderImpl : BaseUrlProvider {
+
     /**
      * Retrieves the base URL for the current request context.
      *
      * @param request The current server HTTP request.
-     * @return The base URL as a String.
+     * @return The base URL as a [String].
      */
     override fun get(request: ServerHttpRequest): String {
         val uri = request.uri

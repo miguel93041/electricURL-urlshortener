@@ -10,16 +10,18 @@ import es.unizar.urlshortener.core.usecases.GetAnalyticsUseCase
 import reactor.core.publisher.Mono
 
 /**
- * Defines the specification for the use case responsible for generating
- * enhanced short URLs with additional properties like geolocation data.
+ * Defines the specification for retrieving analytics data based on a short URL hash.
  */
 fun interface AnalyticsService {
+
     /**
-     * Obtains the original url of a short url.
+     * Retrieves analytics data for a given short URL hash.
      *
-     * @param hash The identifier of the short url.
-     * @param request The HTTP request object, used for extracting contextual information (e.g., IP address).
-     * @return A data object containing the generated short URL and optional QR code URL.
+     * @param hash The identifier of the short URL.
+     * @param includeBrowser Whether to include browser information in the analytics.
+     * @param includeCountry Whether to include country information in the analytics.
+     * @param includePlatform Whether to include platform information in the analytics.
+     * @return A [Mono] emitting a [Result] containing the [AnalyticsData] or a [HashError].
      */
     fun get(
         hash: String,
@@ -30,9 +32,12 @@ fun interface AnalyticsService {
 }
 
 /**
- * Implementation of the `GenerateEnhancedShortUrlUseCase` interface.
+ * [AnalyticsServiceImpl] is an implementation of the [AnalyticsService] interface.
  *
- * This class acts as the controller to handle requests for generating enhanced short URLs.
+ * This class handles the retrieval of analytics data for short URLs using the provided [GetAnalyticsUseCase].
+ *
+ * @property hashValidatorService Service for validating the short URL hash.
+ * @property analyticsUseCase Use case for retrieving analytics data.
  */
 class AnalyticsServiceImpl(
     private val hashValidatorService: HashValidatorService,
@@ -40,13 +45,14 @@ class AnalyticsServiceImpl(
 ) : AnalyticsService {
 
     /**
-     * Retrieves analytics data for a given short URL.
+     * Retrieves analytics data for a given short URL hash with optional filters for browser, country
+     * and platform information.
      *
      * @param hash The identifier of the short URL.
-     * @param includeBrowser Whether to include analytics data grouped by browser.
-     * @param includeCountry Whether to include analytics data grouped by country.
-     * @param includePlatform Whether to include analytics data grouped by platform.
-     * @return A Mono emitting a Result containing either the analytics data or a HashError.
+     * @param includeBrowser Whether to include browser information.
+     * @param includeCountry Whether to include country information.
+     * @param includePlatform Whether to include platform information.
+     * @return A [Mono] emitting a [Result] containing the [AnalyticsData] or a [HashError].
      */
     override fun get(
         hash: String,
